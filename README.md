@@ -1,1 +1,3 @@
 # LifeLog
+
+## Author: Jeremy Fulbright
