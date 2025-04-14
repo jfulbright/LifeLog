@@ -5,8 +5,8 @@ import ItemForm from "components/shared/ItemForm";
 import travelSchema from "features/travel/travelSchema";
 
 /**
- * TravelForm uses the shared ItemForm component.
- * Keeps UI and logic consistent with other forms.
+ * Wrapper for the shared ItemForm.
+ * Passes travel-specific schema and custom form title/button text.
  */
 function TravelForm({ formData, setFormData, onSubmit }) {
   return (

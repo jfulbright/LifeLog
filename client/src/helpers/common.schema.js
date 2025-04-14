@@ -1,29 +1,54 @@
-// src/utils/commonSchema.js
+// src/schemas/common.schema.js
+
+export const STATUS_OPTIONS = [
+  "owned",
+  "attended",
+  "visited",
+  "wishlist",
+  "rented",
+];
 
 export const baseSchema = [
+  {
+    name: "status",
+    label: "Status",
+    type: "select",
+    options: STATUS_OPTIONS,
+    optional: false,
+    section: "Main",
+    order: 1,
+  },
   {
     name: "startDate",
     label: "Start Date",
     type: "date",
     optional: true,
+    section: "Details",
+    order: 2,
   },
   {
     name: "endDate",
     label: "End Date",
     type: "date",
     optional: true,
+    section: "Details",
+    order: 3,
   },
   {
     name: "tags",
     label: "Tags (comma separated)",
     type: "text",
     optional: true,
+    section: "Details",
+    order: 4,
   },
   {
     name: "notes",
-    label: "notes",
+    label: "Notes",
     type: "textarea",
     optional: true,
+    section: "Story",
+    order: 5,
   },
   {
     name: "photoLink",
@@ -32,5 +57,25 @@ export const baseSchema = [
     optional: true,
     hidden: true,
     isLink: true,
+    section: "Hidden",
+    order: 99,
+  },
+  {
+    name: "section",
+    label: "Section Group",
+    type: "text",
+    optional: true,
+    hidden: true,
+    section: "Hidden",
+    order: 100,
+  },
+  {
+    name: "createdAt",
+    label: "Created At",
+    type: "date",
+    optional: true,
+    hidden: true,
+    section: "Hidden",
+    order: 101,
   },
 ];

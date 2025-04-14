@@ -1,10 +1,11 @@
+// client/src/features/homes/components/HomeForm.jsx
+
 import React from "react";
 import ItemForm from "components/shared/ItemForm";
 import homeSchema from "features/homes/homeSchema";
 
 /**
- * HomeForm uses the shared ItemForm component.
- * Keeps UI and logic consistent with other forms.
+ * Wrapper around ItemForm using the home-specific schema.
  */
 function HomeForm({ formData, setFormData, onSubmit }) {
   return (
@@ -13,8 +14,8 @@ function HomeForm({ formData, setFormData, onSubmit }) {
       formData={formData}
       setFormData={setFormData}
       onSubmit={onSubmit}
-      title="Add a Home"
-      buttonText="Add Home"
+      title="Add Home"
+      buttonText="Save Home"
     />
   );
 }
