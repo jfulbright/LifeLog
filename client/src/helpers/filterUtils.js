@@ -1,6 +1,6 @@
 // client/src/helpers/filterUtils.js
 
-import statusLabels from "helpers/statusLabels";
+import statusLabels, { getStatusLabel } from "helpers/statusLabels";
 
 /**
  * Returns a list of available status filters for a category
@@ -19,10 +19,4 @@ export function filterByStatus(items, selectedStatus) {
   return items.filter((item) => item.status === selectedStatus);
 }
 
-/**
- * Returns a display label for the given status + category
- */
-export function getStatusLabel(category, status) {
-  if (status === "all") return "All";
-  return statusLabels[category]?.[status] || status;
-}
+export { getStatusLabel };

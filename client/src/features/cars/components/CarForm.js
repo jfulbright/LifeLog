@@ -23,17 +23,17 @@ function CarForm({ formData, setFormData, onSubmit }) {
 
   return (
     <>
-      <div className="flex gap-2 items-center mb-4">
+      <div className="d-flex gap-2 align-items-center mb-4">
         <input
           type="text"
           placeholder="Enter VIN"
           value={formData.vin || ""}
           onChange={(e) => setFormData({ ...formData, vin: e.target.value })}
-          className="flex-1 border p-2 rounded"
+          className="form-control"
         />
         <button
           onClick={handleVinLookup}
-          className="bg-blue-600 text-white px-4 py-2 rounded"
+          className="btn btn-primary"
         >
           Lookup
         </button>

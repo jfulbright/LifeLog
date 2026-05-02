@@ -1,10 +1,84 @@
-import React from "react";
-import { Form, Button, Card, Row, Col } from "react-bootstrap";
+import React, { useState } from "react";
+import { Form, Button, Row, Col } from "react-bootstrap";
 import {
   formatCurrency,
   handleInputChange,
   isFieldVisible,
 } from "helpers/operator";
+import StateDropdown from "./StateDropdown";
+import CountryDropdown from "./CountryDropdown";
+
+/**
+ * Renders an editable array field (e.g. setlist songs).
+ * Supports add/remove and displays as a read-only list when not editable.
+ */
+function ListFieldRenderer({ field, value, onChange, readOnly }) {
+  const [inputValue, setInputValue] = useState("");
+
+  if (readOnly) {
+    if (!value.length) return null;
+    return (
+      <ul className="mb-0 ps-3">
+        {value.map((item, i) => (
+          <li key={i}>{item}</li>
+        ))}
+      </ul>
+    );
+  }
+
+  const handleAdd = () => {
+    const trimmed = inputValue.trim();
+    if (!trimmed) return;
+    onChange([...value, trimmed]);
+    setInputValue("");
+  };
+
+  const handleRemove = (index) => {
+    onChange(value.filter((_, i) => i !== index));
+  };
+
+  return (
+    <div>
+      <div className="d-flex gap-2 mb-2">
+        <Form.Control
+          type="text"
+          placeholder={field.placeholder || "Add item"}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleAdd();
+            }
+          }}
+        />
+        <Button variant="outline-secondary" size="sm" onClick={handleAdd}>
+          Add
+        </Button>
+      </div>
+      {value.length > 0 && (
+        <ul className="list-group list-group-flush">
+          {value.map((item, i) => (
+            <li
+              key={i}
+              className="list-group-item d-flex justify-content-between align-items-center py-1 px-2"
+            >
+              <span className="small">{item}</span>
+              <Button
+                variant="link"
+                size="sm"
+                className="text-danger p-0"
+                onClick={() => handleRemove(i)}
+              >
+                &times;
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 /**
  * A shared, reusable form component that dynamically renders fields
@@ -16,6 +90,7 @@ function ItemForm({
   formData,
   setFormData,
   onSubmit,
+  onCancel,
   title = "Entry",
   buttonText = "Save",
 }) {
@@ -75,20 +150,83 @@ function ItemForm({
     let inputElement;
     switch (field.type) {
       case "select":
-        inputElement = (
-          <Form.Select {...commonProps}>
-            <option value="">Select</option>
-            {field.options.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </Form.Select>
-        );
+        if (field.renderAs === "stars") {
+          const numValue = parseInt(value, 10) || 0;
+          inputElement = (
+            <div className="d-flex gap-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({ ...prev, [field.name]: String(star) }))
+                  }
+                  className="btn btn-link p-0 text-decoration-none"
+                  style={{ fontSize: "1.5rem", lineHeight: 1, color: star <= numValue ? "#f5a623" : "#ccc" }}
+                >
+                  {star <= numValue ? "\u2605" : "\u2606"}
+                </button>
+              ))}
+            </div>
+          );
+        } else if (field.name === "state") {
+          inputElement = (
+            <StateDropdown
+              value={value}
+              onChange={(e) => handleInputChange(e, setFormData)}
+            />
+          );
+        } else if (field.name === "country") {
+          inputElement = (
+            <CountryDropdown
+              value={value}
+              onChange={(e) => handleInputChange(e, setFormData)}
+            />
+          );
+        } else {
+          inputElement = (
+            <Form.Select {...commonProps}>
+              <option value="">Select</option>
+              {field.options.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </Form.Select>
+          );
+        }
         break;
 
       case "textarea":
-        inputElement = <Form.Control as="textarea" rows={2} {...commonProps} />;
+        inputElement = (
+          <div>
+            <Form.Control
+              as="textarea"
+              rows={2}
+              {...commonProps}
+              placeholder={field.placeholder || ""}
+              maxLength={field.maxLength || undefined}
+            />
+            {field.maxLength && (
+              <div className="text-muted text-end" style={{ fontSize: "0.75rem", marginTop: "0.25rem" }}>
+                {(value || "").length}/{field.maxLength}
+              </div>
+            )}
+          </div>
+        );
+        break;
+
+      case "list":
+        inputElement = (
+          <ListFieldRenderer
+            field={field}
+            value={Array.isArray(value) ? value : []}
+            onChange={(newList) =>
+              setFormData((prev) => ({ ...prev, [field.name]: newList }))
+            }
+            readOnly={isReadOnly}
+          />
+        );
         break;
 
       default:
@@ -118,32 +256,38 @@ function ItemForm({
 
   // 4. Render form layout with sections, columns, and submit button
   return (
-    <Card className="mb-4">
-      <Card.Body>
-        <Card.Title>{isEditing ? `Edit ${title}` : `Add ${title}`}</Card.Title>
-        <Form onSubmit={onSubmit}>
-          {Object.entries(groupedFields).map(([section, fields]) => (
-            <fieldset key={section} className="mb-4">
-              <legend className="fw-bold">{section}</legend>
-              <Row>
-                {fields.map((field) => (
-                  <Col md={field.fullWidth ? 12 : 6} key={field.name}>
-                    {renderField(field)}
-                  </Col>
-                ))}
-              </Row>
-            </fieldset>
-          ))}
+    <Form onSubmit={onSubmit}>
+      {Object.entries(groupedFields).map(([section, fields], sIdx) => (
+        <div key={section}>
+          <h6
+            className="form-section-heading"
+            style={sIdx === 0 ? { paddingTop: 0, borderTop: "none" } : undefined}
+          >
+            {section}
+          </h6>
+          <Row>
+            {fields.map((field) => (
+              <Col md={field.fullWidth ? 12 : 6} key={field.name}>
+                {renderField(field)}
+              </Col>
+            ))}
+          </Row>
+        </div>
+      ))}
 
-          {/* Submit button appears only if the form is editable */}
-          {!isReadOnly && (
-            <Button variant="primary" type="submit">
-              {isEditing ? `Update ${buttonText}` : `Add ${buttonText}`}
+      {!isReadOnly && (
+        <div className="d-flex gap-2 mt-3">
+          <Button variant="primary" type="submit" className="flex-grow-1">
+            {isEditing ? `Update ${buttonText}` : `Save ${buttonText}`}
+          </Button>
+          {onCancel && (
+            <Button variant="outline-secondary" onClick={onCancel}>
+              Cancel
             </Button>
           )}
-        </Form>
-      </Card.Body>
-    </Card>
+        </div>
+      )}
+    </Form>
   );
 }
 

@@ -1,11 +1,11 @@
 // src/schemas/common.schema.js
 
 export const STATUS_OPTIONS = [
-  "owned",
-  "attended",
-  "visited",
-  "wishlist",
-  "rented",
+  "Owned",
+  "Attended",
+  "Visited",
+  "Wishlist",
+  "Rented",
 ];
 
 export const baseSchema = [
