@@ -2,6 +2,7 @@
 
 import { baseSchema } from "helpers/common.schema";
 import { getStatusValues } from "helpers/statusLabels";
+import { getReflectionFields } from "helpers/reflection.schema";
 
 const carSchema = [
   // Use status options specific to cars (e.g. "owned", "wishlist")
@@ -156,8 +157,9 @@ const carSchema = [
     order: 18,
   },
 
-  // Add shared fields (e.g. tags, notes, photoLink), excluding the default status
-  ...baseSchema.filter((field) => field.name !== "status"),
+  ...getReflectionFields("owned"),
+
+  ...baseSchema.filter((field) => !["status", "notes"].includes(field.name)),
 ];
 
 export default carSchema;
