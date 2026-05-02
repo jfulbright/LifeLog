@@ -9,6 +9,7 @@ const travelFields = [
     label: "Status",
     type: "select",
     options: getStatusValues("travel"),
+    required: true,
     section: "Main",
     order: 0,
   },
@@ -16,6 +17,8 @@ const travelFields = [
     name: "title",
     label: "Trip Name",
     type: "text",
+    required: true,
+    placeholder: "e.g. Spring Break in Cancun",
     section: "Main",
     order: 1,
   },
@@ -30,7 +33,11 @@ const travelFields = [
 
   ...baseSchema
     .filter((f) => ["startDate", "endDate"].includes(f.name))
-    .map((f) => ({ ...f, section: "Dates", order: 20 + (f.name === "endDate" ? 1 : 0) })),
+    .map((f) => ({
+      ...f,
+      section: "Dates",
+      order: 20 + (f.name === "endDate" ? 1 : 0),
+    })),
 
   ...getReflectionFields("visited"),
 
@@ -39,6 +46,7 @@ const travelFields = [
     label: "Target Month",
     type: "text",
     optional: true,
+    placeholder: "e.g. June",
     visibleWhen: { status: "wishlist" },
     section: "Planning",
     order: 35,
@@ -48,6 +56,8 @@ const travelFields = [
     label: "Target Year",
     type: "number",
     optional: true,
+    placeholder: "e.g. 2026",
+    inputMode: "numeric",
     visibleWhen: { status: "wishlist" },
     section: "Planning",
     order: 36,
@@ -72,6 +82,7 @@ const travelFields = [
     label: "Cover Photo URL",
     type: "url",
     optional: true,
+    placeholder: "https://...",
     section: "Details",
     order: 41,
   },

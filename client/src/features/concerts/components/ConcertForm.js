@@ -139,14 +139,12 @@ function ConcertForm({ formData, setFormData, onSubmit, onCancel }) {
         </div>
         <div className="col-md-6">
           <StateDropdown
-            className="form-control form-select"
             value={search.state}
             onChange={(e) => setSearch({ ...search, state: e.target.value })}
           />
         </div>
         <div className="col-md-6">
           <CountryDropdown
-            className="form-control form-select"
             value={search.country}
             onChange={(e) => setSearch({ ...search, country: e.target.value })}
           />

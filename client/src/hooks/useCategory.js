@@ -9,8 +9,9 @@ import dataService from "services/dataService";
  * @param {object} options
  * @param {function} [options.migrate] - Optional migration function applied to each item on load
  * @param {function} [options.normalize] - Optional normalization function applied before save
+ * @param {Array} [options.schema] - Optional schema array to derive default values from
  */
-export default function useCategory(category, { migrate, normalize } = {}) {
+export default function useCategory(category, { migrate, normalize, schema } = {}) {
   const [items, setItems] = useState(() => {
     let loaded = dataService.getItems(category);
     if (migrate) loaded = loaded.map(migrate);
@@ -73,10 +74,18 @@ export default function useCategory(category, { migrate, normalize } = {}) {
   }, []);
 
   const openForm = useCallback(() => {
-    setFormData({});
+    const defaults = {};
+    if (schema) {
+      schema.forEach((field) => {
+        if (field.defaultValue !== undefined) {
+          defaults[field.name] = field.defaultValue;
+        }
+      });
+    }
+    setFormData(defaults);
     setEditIndex(null);
     setShowForm(true);
-  }, []);
+  }, [schema]);
 
   return {
     items,

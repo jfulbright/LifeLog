@@ -1,43 +1,63 @@
-// client/src/features/cars/CarForm.js
-
-import React from "react";
+import React, { useState } from "react";
+import { Spinner, Alert } from "react-bootstrap";
 import ItemForm from "components/shared/ItemForm";
 import carSchema from "features/cars/carSchema";
-import { fetchCarDataFromVin } from "features/cars/api/carApi";
+import { fetchCarDataFromVin, isValidVin } from "features/cars/api/carApi";
 
-/**
- * CarForm uses the shared ItemForm component.
- * Keeps UI and logic consistent with other forms.
- */
 function CarForm({ formData, setFormData, onSubmit }) {
-  const handleVinLookup = async () => {
-    if (!formData.vin) return;
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
+  const handleVinLookup = async () => {
+    const vin = (formData.vin || "").trim();
+    if (!vin) {
+      setError("Please enter a VIN.");
+      return;
+    }
+    if (!isValidVin(vin)) {
+      setError("VIN must be exactly 17 alphanumeric characters (no I, O, or Q).");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
     try {
-      const vinData = await fetchCarDataFromVin(formData.vin);
+      const vinData = await fetchCarDataFromVin(vin);
       setFormData((prev) => ({ ...prev, ...vinData }));
-    } catch (error) {
-      console.error("VIN lookup failed:", error);
+    } catch (err) {
+      setError("VIN lookup failed. Please check the VIN and try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <>
-      <div className="d-flex gap-2 align-items-center mb-4">
+      <div className="d-flex gap-2 align-items-center mb-3">
         <input
           type="text"
-          placeholder="Enter VIN"
+          placeholder="e.g. 1HGCM82633A004352"
+          maxLength={17}
           value={formData.vin || ""}
-          onChange={(e) => setFormData({ ...formData, vin: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, vin: e.target.value.toUpperCase() })
+          }
           className="form-control"
         />
         <button
           onClick={handleVinLookup}
           className="btn btn-primary"
+          disabled={loading}
         >
-          Lookup
+          {loading ? <Spinner animation="border" size="sm" /> : "Lookup"}
         </button>
       </div>
+
+      {error && (
+        <Alert variant="warning" dismissible onClose={() => setError(null)} className="mb-3">
+          {error}
+        </Alert>
+      )}
 
       <ItemForm
         schema={carSchema}
@@ -45,7 +65,7 @@ function CarForm({ formData, setFormData, onSubmit }) {
         setFormData={setFormData}
         onSubmit={onSubmit}
         title="Add a Car"
-        buttonText="Add Car"
+        buttonText="Car"
       />
     </>
   );

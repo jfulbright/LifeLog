@@ -22,7 +22,7 @@ function HomeList() {
     filterStatus, setFilterStatus,
     showToast, setShowToast,
     handleSubmit, startEditing, deleteItem, closeForm, openForm,
-  } = useCategory("homes");
+  } = useCategory("homes", { schema: homeSchema });
 
   const homeStatuses = getStatusFilterOptions("homes");
   const filteredHomes = filterByStatus(homes, filterStatus);

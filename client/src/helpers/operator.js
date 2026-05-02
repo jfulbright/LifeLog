@@ -1,41 +1,46 @@
 // src/utils/operator.js
 
-// Format raw number string into "$15,000.00"
+const CURRENCY_FIELDS = new Set([
+  "purchasePrice",
+  "soldPrice",
+  "monthlyRent",
+]);
+
 export const formatCurrency = (value) => {
-  if (!value) return "";
-  const numeric = value.replace(/[^\d]/g, "");
+  if (!value && value !== 0) return "";
+  const numeric = String(value).replace(/[^\d.]/g, "");
+  if (!numeric) return "";
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-  }).format(numeric / 100);
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(Number(numeric));
 };
 
-// Strip non-numeric characters for storing as raw cents
 export const formatCurrencyInput = (value) => {
-  return value.replace(/[^\d]/g, "");
+  return String(value).replace(/[^\d]/g, "");
 };
 
-// Generic input change handler for forms
+export const isCurrencyField = (name) => {
+  return CURRENCY_FIELDS.has(name) || name.toLowerCase().includes("amount");
+};
+
 export const handleInputChange = (e, setter) => {
   const { name, value } = e.target;
-  const isCurrencyField =
-    name.toLowerCase().includes("amount") || name === "monthlyRent";
 
   setter((prev) => ({
     ...prev,
-    [name]: isCurrencyField ? formatCurrencyInput(value) : value,
+    [name]: isCurrencyField(name) ? formatCurrencyInput(value) : value,
   }));
 };
 
-// For edit forms
 export const handleEditChange = (e, editData, setEditData) => {
   const { name, value } = e.target;
-  const isCurrencyField =
-    name.toLowerCase().includes("amount") || name === "monthlyRent";
 
   setEditData({
     ...editData,
-    [name]: isCurrencyField ? formatCurrencyInput(value) : value,
+    [name]: isCurrencyField(name) ? formatCurrencyInput(value) : value,
   });
 };
 

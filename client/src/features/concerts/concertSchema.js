@@ -9,6 +9,7 @@ const concertSchema = [
     label: "Status",
     type: "select",
     options: getStatusValues("concerts"),
+    required: true,
     section: "Main",
     order: 0,
   },
@@ -16,6 +17,8 @@ const concertSchema = [
     name: "artist",
     label: "Artist",
     type: "text",
+    required: true,
+    placeholder: "e.g. Coldplay",
     section: "Main",
     order: 1,
   },
@@ -39,6 +42,7 @@ const concertSchema = [
     label: "Venue",
     type: "text",
     optional: true,
+    placeholder: "e.g. AT&T Stadium",
     section: "Details",
     order: 4,
   },
@@ -47,6 +51,7 @@ const concertSchema = [
     label: "Tour Name",
     type: "text",
     optional: true,
+    placeholder: "e.g. Music of the Spheres Tour",
     section: "Details",
     order: 5,
   },
@@ -65,6 +70,7 @@ const concertSchema = [
     type: "url",
     optional: true,
     isLink: true,
+    placeholder: "https://www.setlist.fm/...",
     section: "Details",
     order: 7,
   },
@@ -80,7 +86,8 @@ const concertSchema = [
   ...getReflectionFields("attended"),
 
   ...baseSchema.filter(
-    (field) => !["status", "startDate", "endDate", "notes"].includes(field.name)
+    (field) =>
+      !["status", "startDate", "endDate", "notes"].includes(field.name)
   ),
 ];
 

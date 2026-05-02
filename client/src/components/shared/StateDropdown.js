@@ -1,17 +1,44 @@
-// client/src/components/shared/StateDropdown.js
 import React from "react";
-import { States } from "data/states"; // [{ name: "Alabama", abbreviation: "AL" }, ...]
+import Select from "react-select";
+import { States } from "data/states";
 
-function StateDropdown({ value, onChange, name = "state", ...props }) {
+const options = States.map((s) => ({
+  value: s.abbreviation,
+  label: s.name,
+}));
+
+const selectStyles = {
+  control: (base) => ({
+    ...base,
+    minHeight: "38px",
+    borderColor: "#dee2e6",
+    "&:hover": { borderColor: "#86b7fe" },
+  }),
+  menu: (base) => ({ ...base, zIndex: 9999 }),
+};
+
+function StateDropdown({ value, onChange, name = "state", id, ...props }) {
+  const selected = options.find((o) => o.value === value) || null;
+
+  const handleChange = (option) => {
+    const syntheticEvent = {
+      target: { name, value: option ? option.value : "" },
+    };
+    onChange(syntheticEvent);
+  };
+
   return (
-    <select name={name} value={value || ""} onChange={onChange} {...props}>
-      <option value="">Select a state</option>
-      {States.map((state) => (
-        <option key={state.abbreviation} value={state.abbreviation}>
-          {state.name}
-        </option>
-      ))}
-    </select>
+    <Select
+      inputId={id}
+      options={options}
+      value={selected}
+      onChange={handleChange}
+      placeholder="Search states..."
+      isClearable
+      styles={selectStyles}
+      aria-label="State"
+      {...props}
+    />
   );
 }
 

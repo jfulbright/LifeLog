@@ -1,17 +1,26 @@
-import React from "react";
+import React, { useRef } from "react";
 import { Offcanvas } from "react-bootstrap";
 
-/**
- * Shared slide-in panel for forms.
- * Desktop: slides in from the right (480px wide).
- * Mobile: full-width overlay.
- * Each category List wraps its form component inside this.
- */
 function FormPanel({ show, onHide, title, children }) {
+  const bodyRef = useRef(null);
+
+  const handleEntered = () => {
+    if (bodyRef.current) {
+      bodyRef.current.scrollTop = 0;
+      const firstInput = bodyRef.current.querySelector(
+        "input:not([type=hidden]), select, textarea, [role=combobox]"
+      );
+      if (firstInput) {
+        setTimeout(() => firstInput.focus(), 50);
+      }
+    }
+  };
+
   return (
     <Offcanvas
       show={show}
       onHide={onHide}
+      onEntered={handleEntered}
       placement="end"
       className="form-panel"
       style={{ width: "min(480px, 100%)" }}
@@ -19,7 +28,7 @@ function FormPanel({ show, onHide, title, children }) {
       <Offcanvas.Header closeButton className="form-panel-header">
         <Offcanvas.Title style={{ fontWeight: 600 }}>{title}</Offcanvas.Title>
       </Offcanvas.Header>
-      <Offcanvas.Body>{children}</Offcanvas.Body>
+      <Offcanvas.Body ref={bodyRef}>{children}</Offcanvas.Body>
     </Offcanvas>
   );
 }

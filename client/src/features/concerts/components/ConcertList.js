@@ -34,7 +34,7 @@ function ConcertList() {
     filterStatus, setFilterStatus,
     showToast, setShowToast,
     handleSubmit, startEditing, deleteItem, closeForm, openForm,
-  } = useCategory("concerts", { normalize: normalizeConcert });
+  } = useCategory("concerts", { normalize: normalizeConcert, schema: concertSchema });
 
   const concertStatuses = getStatusFilterOptions("concerts");
   const filteredConcerts = filterByStatus(concerts, filterStatus);

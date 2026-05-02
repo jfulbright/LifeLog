@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Form, Button, Row, Col } from "react-bootstrap";
 import {
   formatCurrency,
@@ -8,10 +8,6 @@ import {
 import StateDropdown from "./StateDropdown";
 import CountryDropdown from "./CountryDropdown";
 
-/**
- * Renders an editable array field (e.g. setlist songs).
- * Supports add/remove and displays as a read-only list when not editable.
- */
 function ListFieldRenderer({ field, value, onChange, readOnly }) {
   const [inputValue, setInputValue] = useState("");
 
@@ -69,6 +65,7 @@ function ListFieldRenderer({ field, value, onChange, readOnly }) {
                 size="sm"
                 className="text-danger p-0"
                 onClick={() => handleRemove(i)}
+                aria-label={`Remove ${item}`}
               >
                 &times;
               </Button>
@@ -80,11 +77,6 @@ function ListFieldRenderer({ field, value, onChange, readOnly }) {
   );
 }
 
-/**
- * A shared, reusable form component that dynamically renders fields
- * based on a schema definition.
- * Supports: conditional visibility, sections, custom ordering, read-only mode.
- */
 function ItemForm({
   schema,
   formData,
@@ -95,20 +87,19 @@ function ItemForm({
   buttonText = "Save",
 }) {
   const isReadOnly = !setFormData;
+  const formRef = useRef(null);
+  const [validationErrors, setValidationErrors] = useState({});
 
-  // Detect if we're editing based on key identifying fields
   const isEditing =
     !!formData?.id ||
     !!formData?.title ||
     !!formData?.make ||
     !!formData?.artist;
 
-  // 1. Filter and sort visible fields
   const visibleFields = schema
     .filter((field) => !field.hidden && isFieldVisible(field, formData))
     .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-  // 2. Group fields by `section` for display layout
   const groupedFields = visibleFields.reduce((acc, field) => {
     const section = field.section || "Main";
     if (!acc[section]) acc[section] = [];
@@ -116,11 +107,46 @@ function ItemForm({
     return acc;
   }, {});
 
-  // 3. Renders a single form field based on type
+  const validate = () => {
+    const errors = {};
+    visibleFields.forEach((field) => {
+      if (field.required) {
+        const val = formData[field.name];
+        if (val === undefined || val === null || val === "") {
+          errors[field.name] = `${field.label} is required`;
+        }
+      }
+    });
+    return errors;
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const errors = validate();
+    setValidationErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      const firstErrorField = visibleFields.find((f) => errors[f.name]);
+      if (firstErrorField && formRef.current) {
+        const el = formRef.current.querySelector(
+          `[name="${firstErrorField.name}"], [id="field-${firstErrorField.name}"]`
+        );
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.focus?.();
+        }
+      }
+      return;
+    }
+
+    onSubmit(e);
+  };
+
   const renderField = (field) => {
     const value = formData[field.name] ?? "";
+    const hasError = !!validationErrors[field.name];
+    const fieldId = `field-${field.name}`;
 
-    // Render read-only links (e.g. Setlist.fm, Photo Link)
     if (isReadOnly && field.isLink && value) {
       return (
         <Form.Group key={field.name} className="mb-3">
@@ -139,30 +165,50 @@ function ItemForm({
       );
     }
 
-    // Common props for input fields
     const commonProps = {
       name: field.name,
       value,
-      onChange: (e) => handleInputChange(e, setFormData),
+      onChange: (e) => {
+        handleInputChange(e, setFormData);
+        if (validationErrors[field.name]) {
+          setValidationErrors((prev) => {
+            const next = { ...prev };
+            delete next[field.name];
+            return next;
+          });
+        }
+      },
     };
 
-    // Input element rendering based on type
     let inputElement;
     switch (field.type) {
       case "select":
         if (field.renderAs === "stars") {
           const numValue = parseInt(value, 10) || 0;
           inputElement = (
-            <div className="d-flex gap-1">
+            <div
+              className="d-flex gap-1"
+              role="radiogroup"
+              aria-label={`${field.label} rating`}
+            >
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
                   type="button"
                   onClick={() =>
-                    setFormData((prev) => ({ ...prev, [field.name]: String(star) }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      [field.name]: String(star),
+                    }))
                   }
                   className="btn btn-link p-0 text-decoration-none"
-                  style={{ fontSize: "1.5rem", lineHeight: 1, color: star <= numValue ? "#f5a623" : "#ccc" }}
+                  style={{
+                    fontSize: "1.5rem",
+                    lineHeight: 1,
+                    color: star <= numValue ? "#f5a623" : "#ccc",
+                  }}
+                  aria-label={`${star} star${star > 1 ? "s" : ""}`}
+                  aria-pressed={star === numValue}
                 >
                   {star <= numValue ? "\u2605" : "\u2606"}
                 </button>
@@ -172,20 +218,44 @@ function ItemForm({
         } else if (field.name === "state") {
           inputElement = (
             <StateDropdown
+              id={fieldId}
               value={value}
-              onChange={(e) => handleInputChange(e, setFormData)}
+              onChange={(e) => {
+                handleInputChange(e, setFormData);
+                if (validationErrors[field.name]) {
+                  setValidationErrors((prev) => {
+                    const next = { ...prev };
+                    delete next[field.name];
+                    return next;
+                  });
+                }
+              }}
             />
           );
         } else if (field.name === "country") {
           inputElement = (
             <CountryDropdown
+              id={fieldId}
               value={value}
-              onChange={(e) => handleInputChange(e, setFormData)}
+              onChange={(e) => {
+                handleInputChange(e, setFormData);
+                if (validationErrors[field.name]) {
+                  setValidationErrors((prev) => {
+                    const next = { ...prev };
+                    delete next[field.name];
+                    return next;
+                  });
+                }
+              }}
             />
           );
         } else {
           inputElement = (
-            <Form.Select {...commonProps}>
+            <Form.Select
+              {...commonProps}
+              id={fieldId}
+              isInvalid={hasError}
+            >
               <option value="">Select</option>
               {field.options.map((opt) => (
                 <option key={opt} value={opt}>
@@ -204,11 +274,16 @@ function ItemForm({
               as="textarea"
               rows={2}
               {...commonProps}
+              id={fieldId}
               placeholder={field.placeholder || ""}
               maxLength={field.maxLength || undefined}
+              isInvalid={hasError}
             />
             {field.maxLength && (
-              <div className="text-muted text-end" style={{ fontSize: "0.75rem", marginTop: "0.25rem" }}>
+              <div
+                className="text-muted text-end"
+                style={{ fontSize: "0.75rem", marginTop: "0.25rem" }}
+              >
                 {(value || "").length}/{field.maxLength}
               </div>
             )}
@@ -234,34 +309,49 @@ function ItemForm({
           <Form.Control
             type={field.isCurrency ? "text" : field.type || "text"}
             {...commonProps}
+            id={fieldId}
             value={field.isCurrency ? formatCurrency(value) : value}
+            placeholder={field.placeholder || ""}
+            maxLength={field.maxLength || undefined}
+            inputMode={field.inputMode || undefined}
+            isInvalid={hasError}
           />
         );
         break;
     }
 
-    // Wrap field with label and optional hint
     return (
       <Form.Group key={field.name} className="mb-3">
-        <Form.Label>
+        <Form.Label htmlFor={fieldId}>
           {field.label}
           {field.optional && (
             <span className="text-muted ms-1">(optional)</span>
           )}
+          {field.required && (
+            <span className="text-danger ms-1">*</span>
+          )}
         </Form.Label>
         {inputElement}
+        {hasError && (
+          <Form.Control.Feedback type="invalid" style={{ display: "block" }}>
+            {validationErrors[field.name]}
+          </Form.Control.Feedback>
+        )}
       </Form.Group>
     );
   };
 
-  // 4. Render form layout with sections, columns, and submit button
   return (
-    <Form onSubmit={onSubmit}>
+    <Form ref={formRef} onSubmit={handleSubmit} noValidate>
       {Object.entries(groupedFields).map(([section, fields], sIdx) => (
         <div key={section}>
           <h6
             className="form-section-heading"
-            style={sIdx === 0 ? { paddingTop: 0, borderTop: "none" } : undefined}
+            style={
+              sIdx === 0
+                ? { paddingTop: 0, borderTop: "none" }
+                : undefined
+            }
           >
             {section}
           </h6>

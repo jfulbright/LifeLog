@@ -22,7 +22,7 @@ function CarList() {
     filterStatus, setFilterStatus,
     showToast, setShowToast,
     handleSubmit, startEditing, deleteItem, closeForm, openForm,
-  } = useCategory("cars");
+  } = useCategory("cars", { schema: carSchema });
 
   const carStatuses = getStatusFilterOptions("cars");
   const filteredCars = filterByStatus(cars, filterStatus);

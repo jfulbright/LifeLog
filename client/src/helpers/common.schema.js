@@ -1,5 +1,3 @@
-// src/schemas/common.schema.js
-
 export const STATUS_OPTIONS = [
   "Owned",
   "Attended",
@@ -14,7 +12,7 @@ export const baseSchema = [
     label: "Status",
     type: "select",
     options: STATUS_OPTIONS,
-    optional: false,
+    required: true,
     section: "Main",
     order: 1,
   },
@@ -36,9 +34,10 @@ export const baseSchema = [
   },
   {
     name: "tags",
-    label: "Tags (comma separated)",
+    label: "Tags",
     type: "text",
     optional: true,
+    placeholder: "e.g. family, vacation, summer",
     section: "Details",
     order: 4,
   },
@@ -47,6 +46,7 @@ export const baseSchema = [
     label: "Notes",
     type: "textarea",
     optional: true,
+    placeholder: "Any additional notes...",
     section: "Story",
     order: 5,
   },

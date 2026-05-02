@@ -1,18 +1,15 @@
-// client/src/features/homes/homeSchema.js
-
 import { baseSchema } from "helpers/common.schema";
 import { locationSchema } from "helpers/location.schema";
 import { getStatusValues } from "helpers/statusLabels";
 import { getReflectionFields } from "helpers/reflection.schema";
 
 const homeSchema = [
-  // Use status options specific to homes (e.g. "owned", "rented", "wishlist")
-  // These values and labels are defined in helpers/statusLabels.js
   {
     name: "status",
     label: "Status",
     type: "select",
     options: getStatusValues("homes"),
+    required: true,
     section: "Main",
     order: 0,
   },
@@ -22,23 +19,24 @@ const homeSchema = [
     label: "Home Type",
     type: "select",
     options: ["House", "Condo", "Townhouse", "Apartment", "Other"],
+    required: true,
     section: "Main",
     order: 1,
   },
 
-  // RENTERS
   {
     name: "monthlyRent",
     label: "Monthly Rent",
     type: "number",
     isCurrency: true,
     optional: true,
+    placeholder: "$1,500",
+    inputMode: "numeric",
     visibleWhen: { status: "rented" },
     section: "Rent Info",
     order: 2,
   },
 
-  // OWNERS
   {
     name: "purchaseDate",
     label: "Purchase Date",
@@ -52,6 +50,8 @@ const homeSchema = [
     label: "Purchase Price",
     type: "number",
     isCurrency: true,
+    placeholder: "$250,000",
+    inputMode: "numeric",
     visibleWhen: { status: "owned" },
     section: "Ownership Info",
     order: 4,
@@ -71,6 +71,8 @@ const homeSchema = [
     type: "number",
     isCurrency: true,
     optional: true,
+    placeholder: "$275,000",
+    inputMode: "numeric",
     visibleWhen: { status: "owned" },
     section: "Ownership Info",
     order: 6,
@@ -81,6 +83,8 @@ const homeSchema = [
     label: "Years Lived",
     type: "number",
     optional: true,
+    placeholder: "e.g. 5",
+    inputMode: "numeric",
     section: "Details",
     order: 7,
   },
@@ -89,6 +93,8 @@ const homeSchema = [
     label: "Square Feet",
     type: "number",
     optional: true,
+    placeholder: "e.g. 2400",
+    inputMode: "numeric",
     section: "Details",
     order: 8,
   },
@@ -97,6 +103,8 @@ const homeSchema = [
     label: "Bedrooms",
     type: "number",
     optional: true,
+    placeholder: "e.g. 3",
+    inputMode: "numeric",
     section: "Details",
     order: 9,
   },
@@ -105,11 +113,12 @@ const homeSchema = [
     label: "Bathrooms",
     type: "number",
     optional: true,
+    placeholder: "e.g. 2",
+    inputMode: "numeric",
     section: "Details",
     order: 10,
   },
 
-  // Location fields (grouped under Location section)
   ...locationSchema.map((field, i) => ({
     ...field,
     section: "Location",

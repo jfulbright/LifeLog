@@ -33,7 +33,7 @@ function TravelList() {
     filterStatus, setFilterStatus,
     showToast, setShowToast,
     handleSubmit, startEditing, deleteItem, closeForm, openForm,
-  } = useCategory("travel", { migrate: migrateMemoryToSnapshot });
+  } = useCategory("travel", { migrate: migrateMemoryToSnapshot, schema: travelSchema });
 
   const travelStatuses = getStatusFilterOptions("travel");
   const filteredTravels = filterByStatus(travels, filterStatus);
