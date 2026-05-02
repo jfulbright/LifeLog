@@ -1,13 +1,13 @@
-// client/src/features/cars/CarList.js
-
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Button } from "react-bootstrap";
 import CarForm from "features/cars/components/CarForm";
 import ItemCardList from "components/shared/ItemCardList";
-import ItemExtras from "components/shared/ItemExtras";
+import StatusToggle from "components/shared/StatusToggle";
+import FormPanel from "components/shared/FormPanel";
+import SaveToast from "components/shared/SaveToast";
 import carSchema from "features/cars/carSchema";
+import useCategory from "hooks/useCategory";
 
-// Helpers to manage status filter logic across all categories
 import {
   getStatusFilterOptions,
   filterByStatus,
@@ -15,119 +15,82 @@ import {
 } from "helpers/filterUtils";
 
 function CarList() {
-  // Retrieve saved cars from localStorage on load
-  const [cars, setCars] = useState(() => {
-    const saved = localStorage.getItem("cars");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const {
+    items: cars,
+    formData, setFormData,
+    showForm, editIndex,
+    filterStatus, setFilterStatus,
+    showToast, setShowToast,
+    handleSubmit, startEditing, deleteItem, closeForm, openForm,
+  } = useCategory("cars");
 
-  // Form data state (used for both adding and editing)
-  const [formData, setFormData] = useState({});
-
-  // Toggles whether the form is visible
-  const [showForm, setShowForm] = useState(false);
-
-  // Tracks which item (by index) is being edited, if any
-  const [editIndex, setEditIndex] = useState(null);
-
-  // Tracks selected filter status ("all", "owned", "wishlist", etc.)
-  const [filterStatus, setFilterStatus] = useState("all");
-
-  // Save cars to localStorage whenever the list updates
-  useEffect(() => {
-    localStorage.setItem("cars", JSON.stringify(cars));
-  }, [cars]);
-
-  // Handles form submission to add or update a car
-  const handleAddCar = (e) => {
-    e.preventDefault();
-
-    if (editIndex !== null) {
-      // If editing, update the item at the given index
-      setCars((prev) =>
-        prev.map((car, i) => (i === editIndex ? formData : car))
-      );
-      setEditIndex(null);
-    } else {
-      // Otherwise, add a new item to the list
-      setCars([...cars, formData]);
-    }
-
-    setFormData({});
-    setShowForm(false);
-  };
-
-  // Initiates editing for the selected item
-  const startEditing = (index) => {
-    setFormData(cars[index]);
-    setEditIndex(index);
-    setShowForm(true);
-  };
-
-  // Removes an item from the list and resets form if needed
-  const deleteCar = (index) => {
-    setCars((prev) => prev.filter((_, i) => i !== index));
-    if (editIndex === index) {
-      setFormData({});
-      setEditIndex(null);
-      setShowForm(false);
-    }
-  };
-
-  // Pull the list of status options for the dropdown
   const carStatuses = getStatusFilterOptions("cars");
-
-  // Filter the list based on the selected status (e.g., "owned")
   const filteredCars = filterByStatus(cars, filterStatus);
-
-  // Update the section title dynamically based on current filter
   const sectionTitle = `Cars - ${getStatusLabel("cars", filterStatus)}`;
 
   return (
     <>
-      {/* Show "Add Car" button only when form is hidden */}
-      {!showForm && (
-        <Button
-          variant="primary"
-          className="mb-3"
-          onClick={() => setShowForm(true)}
-        >
-          Add Car
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h4 className="mb-0" style={{ fontWeight: 700 }}>Cars</h4>
+        <Button variant="primary" size="sm" onClick={openForm}>
+          + Add Car
         </Button>
-      )}
-
-      {/* Render the form when adding or editing */}
-      {showForm && (
-        <CarForm
-          formData={formData}
-          setFormData={setFormData}
-          onSubmit={handleAddCar}
-        />
-      )}
-
-      {/* Dropdown to filter cars by status (e.g. Owned, Wishlist) */}
-      <div className="mb-3">
-        <label>Status Filter: </label>
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-        >
-          {carStatuses.map((status) => (
-            <option key={status} value={status}>
-              {getStatusLabel("cars", status)}
-            </option>
-          ))}
-        </select>
       </div>
 
-      {/* Reusable card list for displaying car entries */}
+      <StatusToggle
+        category="cars"
+        options={carStatuses}
+        value={filterStatus}
+        onChange={setFilterStatus}
+      />
+
+      {filteredCars.length === 0 && (
+        <div className="empty-state">
+          <div className="empty-state-icon" style={{ backgroundColor: "var(--color-cars)", color: "#fff" }}>
+            &#128663;
+          </div>
+          <div className="empty-state-title">
+            {cars.length === 0 ? "No cars yet" : "No matches"}
+          </div>
+          <div className="empty-state-text">
+            {cars.length === 0
+              ? "Add your first car to start tracking."
+              : "No cars found for this filter."}
+          </div>
+          {cars.length === 0 && (
+            <Button variant="primary" onClick={openForm}>
+              Add Your First Car
+            </Button>
+          )}
+        </div>
+      )}
+
       <ItemCardList
+        category="cars"
         title={sectionTitle}
         items={filteredCars}
         schema={carSchema}
         onEdit={startEditing}
-        onDelete={deleteCar}
-        renderItemExtras={(item) => <ItemExtras item={item} />}
+        onDelete={deleteItem}
+      />
+
+      <FormPanel
+        show={showForm}
+        onHide={closeForm}
+        title={editIndex !== null ? "Edit Car" : "Add Car"}
+      >
+        <CarForm
+          formData={formData}
+          setFormData={setFormData}
+          onSubmit={handleSubmit}
+          onCancel={closeForm}
+        />
+      </FormPanel>
+
+      <SaveToast
+        show={showToast}
+        onClose={() => setShowToast(false)}
+        message="Car saved"
       />
     </>
   );

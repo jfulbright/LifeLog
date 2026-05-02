@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Button } from "react-bootstrap";
 import TravelForm from "features/travel/components/TravelForm";
 import ItemCardList from "components/shared/ItemCardList";
@@ -6,6 +6,7 @@ import StatusToggle from "components/shared/StatusToggle";
 import FormPanel from "components/shared/FormPanel";
 import SaveToast from "components/shared/SaveToast";
 import travelSchema from "features/travel/travelSchema";
+import useCategory from "hooks/useCategory";
 
 import {
   getStatusFilterOptions,
@@ -25,55 +26,14 @@ function migrateMemoryToSnapshot(item) {
 }
 
 function TravelList() {
-  const [travels, setTravels] = useState(() => {
-    const saved = localStorage.getItem("travels");
-    if (!saved) return [];
-    const parsed = JSON.parse(saved);
-    return parsed.map(migrateMemoryToSnapshot);
-  });
-  const [formData, setFormData] = useState({});
-  const [showForm, setShowForm] = useState(false);
-  const [editIndex, setEditIndex] = useState(null);
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [showToast, setShowToast] = useState(false);
-
-  useEffect(() => {
-    localStorage.setItem("travels", JSON.stringify(travels));
-  }, [travels]);
-
-  const handleAddTravel = (e) => {
-    e.preventDefault();
-    if (editIndex !== null) {
-      setTravels((prev) => prev.map((t, i) => (i === editIndex ? formData : t)));
-      setEditIndex(null);
-    } else {
-      setTravels([...travels, formData]);
-    }
-    setFormData({});
-    setShowForm(false);
-    setShowToast(true);
-  };
-
-  const startEditing = (index) => {
-    setFormData(travels[index]);
-    setEditIndex(index);
-    setShowForm(true);
-  };
-
-  const deleteTravel = (index) => {
-    setTravels((prev) => prev.filter((_, i) => i !== index));
-    if (editIndex === index) {
-      setFormData({});
-      setEditIndex(null);
-      setShowForm(false);
-    }
-  };
-
-  const closeForm = () => {
-    setFormData({});
-    setEditIndex(null);
-    setShowForm(false);
-  };
+  const {
+    items: travels,
+    formData, setFormData,
+    showForm, editIndex,
+    filterStatus, setFilterStatus,
+    showToast, setShowToast,
+    handleSubmit, startEditing, deleteItem, closeForm, openForm,
+  } = useCategory("travel", { migrate: migrateMemoryToSnapshot });
 
   const travelStatuses = getStatusFilterOptions("travel");
   const filteredTravels = filterByStatus(travels, filterStatus);
@@ -83,7 +43,7 @@ function TravelList() {
     <>
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h4 className="mb-0" style={{ fontWeight: 700 }}>Travel</h4>
-        <Button variant="primary" size="sm" onClick={() => setShowForm(true)}>
+        <Button variant="primary" size="sm" onClick={openForm}>
           + Add Trip
         </Button>
       </div>
@@ -109,7 +69,7 @@ function TravelList() {
               : "No trips found for this filter."}
           </div>
           {travels.length === 0 && (
-            <Button variant="primary" onClick={() => setShowForm(true)}>
+            <Button variant="primary" onClick={openForm}>
               Add Your First Trip
             </Button>
           )}
@@ -122,7 +82,7 @@ function TravelList() {
         items={filteredTravels}
         schema={travelSchema}
         onEdit={startEditing}
-        onDelete={deleteTravel}
+        onDelete={deleteItem}
       />
 
       <FormPanel
@@ -133,7 +93,7 @@ function TravelList() {
         <TravelForm
           formData={formData}
           setFormData={setFormData}
-          onSubmit={handleAddTravel}
+          onSubmit={handleSubmit}
           onCancel={closeForm}
         />
       </FormPanel>
