@@ -17,7 +17,7 @@ export const formatCurrencyInput = (value) => {
 
 // Generic input change handler for forms
 export const handleInputChange = (e, setter) => {
-  const { name, value, type } = e.target;
+  const { name, value } = e.target;
   const isCurrencyField =
     name.toLowerCase().includes("amount") || name === "monthlyRent";
 
@@ -53,6 +53,8 @@ export const isFieldVisible = (field, formData) => {
   if (!field.visibleWhen) return true;
 
   return Object.entries(field.visibleWhen).every(([key, expectedValue]) => {
-    return formData[key] === expectedValue;
+    return Array.isArray(expectedValue)
+      ? expectedValue.includes(formData[key])
+      : formData[key] === expectedValue;
   });
 };
