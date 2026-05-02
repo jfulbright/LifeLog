@@ -1,41 +1,39 @@
-// client/src/features/travel/travelSchema.js
-
 import { baseSchema } from "helpers/common.schema";
 import { locationSchema } from "helpers/location.schema";
 import { getStatusValues } from "helpers/statusLabels";
+import { getReflectionFields } from "helpers/reflection.schema";
 
-// Remove baseSchema's status field and replace it with a scoped one for travel
-const travelSchema = [
-  // Use status options specific to travel (e.g. "visited", "wishlist")
-  // These values and labels are defined in helpers/statusLabels.js
-
+const travelFields = [
   {
     name: "status",
     label: "Status",
     type: "select",
-    options: getStatusValues("travel"), // ["visited", "wishlist"]
+    options: getStatusValues("travel"),
     section: "Main",
     order: 0,
   },
-
   {
     name: "title",
-    label: "Trip Title",
+    label: "Trip Name",
     type: "text",
-    optional: true,
     section: "Main",
-    order: 0,
-  },
-
-  {
-    name: "rating",
-    label: "Rating (1–10)",
-    type: "number",
-    optional: true,
-    visibleWhen: { status: "visited" },
-    section: "Review",
     order: 1,
   },
+
+  ...locationSchema
+    .filter((f) => !["street", "zip"].includes(f.name))
+    .map((field, i) => ({
+      ...field,
+      section: "Location",
+      order: 10 + i,
+    })),
+
+  ...baseSchema
+    .filter((f) => ["startDate", "endDate"].includes(f.name))
+    .map((f) => ({ ...f, section: "Dates", order: 20 + (f.name === "endDate" ? 1 : 0) })),
+
+  ...getReflectionFields("visited"),
+
   {
     name: "targetMonth",
     label: "Target Month",
@@ -43,7 +41,7 @@ const travelSchema = [
     optional: true,
     visibleWhen: { status: "wishlist" },
     section: "Planning",
-    order: 2,
+    order: 35,
   },
   {
     name: "targetYear",
@@ -52,18 +50,35 @@ const travelSchema = [
     optional: true,
     visibleWhen: { status: "wishlist" },
     section: "Planning",
-    order: 3,
+    order: 36,
+  },
+  {
+    name: "wishlistReason",
+    label: "Why this place?",
+    type: "textarea",
+    placeholder: "What draws you here?",
+    optional: true,
+    visibleWhen: { status: "wishlist" },
+    section: "Planning",
+    order: 37,
+    fullWidth: true,
   },
 
-  // Add location fields under "Location" section
-  ...locationSchema.map((field, i) => ({
-    ...field,
-    section: "Location",
-    order: 10 + i,
-  })),
+  ...baseSchema
+    .filter((f) => f.name === "tags")
+    .map((f) => ({ ...f, section: "Details", order: 40 })),
+  {
+    name: "photoLink",
+    label: "Cover Photo URL",
+    type: "url",
+    optional: true,
+    section: "Details",
+    order: 41,
+  },
 
-  // Include all shared fields except the default status field
-  ...baseSchema.filter((field) => field.name !== "status"),
+  ...baseSchema
+    .filter((f) => ["createdAt", "section"].includes(f.name))
+    .map((f) => ({ ...f, hidden: true })),
 ];
 
-export default travelSchema;
+export default travelFields;

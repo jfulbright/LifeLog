@@ -1,65 +1,65 @@
-// client/src/features/travel/TravelList.js
-
 import React, { useState, useEffect } from "react";
 import { Button } from "react-bootstrap";
 import TravelForm from "features/travel/components/TravelForm";
 import ItemCardList from "components/shared/ItemCardList";
+import StatusToggle from "components/shared/StatusToggle";
+import FormPanel from "components/shared/FormPanel";
+import SaveToast from "components/shared/SaveToast";
 import travelSchema from "features/travel/travelSchema";
 
-// Shared helpers for filtering logic
 import {
   getStatusFilterOptions,
   filterByStatus,
   getStatusLabel,
 } from "helpers/filterUtils";
 
+function migrateMemoryToSnapshot(item) {
+  if (item.memory1 !== undefined || item.memory2 !== undefined || item.memory3 !== undefined) {
+    const migrated = { ...item };
+    if (migrated.memory1 !== undefined) { migrated.snapshot1 = migrated.snapshot1 || migrated.memory1; delete migrated.memory1; }
+    if (migrated.memory2 !== undefined) { migrated.snapshot2 = migrated.snapshot2 || migrated.memory2; delete migrated.memory2; }
+    if (migrated.memory3 !== undefined) { migrated.snapshot3 = migrated.snapshot3 || migrated.memory3; delete migrated.memory3; }
+    return migrated;
+  }
+  return item;
+}
+
 function TravelList() {
-  // Load travels from localStorage when the component mounts
   const [travels, setTravels] = useState(() => {
     const saved = localStorage.getItem("travels");
-    return saved ? JSON.parse(saved) : [];
+    if (!saved) return [];
+    const parsed = JSON.parse(saved);
+    return parsed.map(migrateMemoryToSnapshot);
   });
-
-  // State for form data, visibility, editing index
   const [formData, setFormData] = useState({});
   const [showForm, setShowForm] = useState(false);
   const [editIndex, setEditIndex] = useState(null);
-
-  // Track current filter (e.g., "visited", "wishlist")
   const [filterStatus, setFilterStatus] = useState("all");
+  const [showToast, setShowToast] = useState(false);
 
-  // Save updated travels back to localStorage
   useEffect(() => {
     localStorage.setItem("travels", JSON.stringify(travels));
   }, [travels]);
 
-  // Add or update a travel entry
   const handleAddTravel = (e) => {
     e.preventDefault();
-
     if (editIndex !== null) {
-      // Edit existing entry
-      setTravels((prev) =>
-        prev.map((t, i) => (i === editIndex ? formData : t))
-      );
+      setTravels((prev) => prev.map((t, i) => (i === editIndex ? formData : t)));
       setEditIndex(null);
     } else {
-      // Add new entry
       setTravels([...travels, formData]);
     }
-
     setFormData({});
     setShowForm(false);
+    setShowToast(true);
   };
 
-  // Start editing an existing entry
   const startEditing = (index) => {
     setFormData(travels[index]);
     setEditIndex(index);
     setShowForm(true);
   };
 
-  // Delete a travel entry
   const deleteTravel = (index) => {
     setTravels((prev) => prev.filter((_, i) => i !== index));
     if (editIndex === index) {
@@ -69,59 +69,79 @@ function TravelList() {
     }
   };
 
-  // Pull available status filters for the dropdown
+  const closeForm = () => {
+    setFormData({});
+    setEditIndex(null);
+    setShowForm(false);
+  };
+
   const travelStatuses = getStatusFilterOptions("travel");
-
-  // Filter entries based on the selected status
   const filteredTravels = filterByStatus(travels, filterStatus);
-
-  // Set a dynamic title based on filter
   const sectionTitle = `Travel - ${getStatusLabel("travel", filterStatus)}`;
 
   return (
     <>
-      {/* Show Add button when form is not open */}
-      {!showForm && (
-        <Button
-          variant="primary"
-          className="mb-3"
-          onClick={() => setShowForm(true)}
-        >
-          Add Travel Entry
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h4 className="mb-0" style={{ fontWeight: 700 }}>Travel</h4>
+        <Button variant="primary" size="sm" onClick={() => setShowForm(true)}>
+          + Add Trip
         </Button>
-      )}
-
-      {/* Show form when adding or editing */}
-      {showForm && (
-        <TravelForm
-          formData={formData}
-          setFormData={setFormData}
-          onSubmit={handleAddTravel}
-        />
-      )}
-
-      {/* Status filter dropdown */}
-      <div className="mb-3">
-        <label>Status Filter: </label>
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-        >
-          {travelStatuses.map((status) => (
-            <option key={status} value={status}>
-              {getStatusLabel("travel", status)}
-            </option>
-          ))}
-        </select>
       </div>
 
-      {/* Display the filtered list of travel entries */}
+      <StatusToggle
+        category="travel"
+        options={travelStatuses}
+        value={filterStatus}
+        onChange={setFilterStatus}
+      />
+
+      {filteredTravels.length === 0 && (
+        <div className="empty-state">
+          <div className="empty-state-icon" style={{ backgroundColor: "var(--color-travel)", color: "#fff" }}>
+            &#9992;&#65039;
+          </div>
+          <div className="empty-state-title">
+            {travels.length === 0 ? "No trips yet" : "No matches"}
+          </div>
+          <div className="empty-state-text">
+            {travels.length === 0
+              ? "Add your first trip to start tracking."
+              : "No trips found for this filter."}
+          </div>
+          {travels.length === 0 && (
+            <Button variant="primary" onClick={() => setShowForm(true)}>
+              Add Your First Trip
+            </Button>
+          )}
+        </div>
+      )}
+
       <ItemCardList
+        category="travel"
         title={sectionTitle}
         items={filteredTravels}
         schema={travelSchema}
         onEdit={startEditing}
         onDelete={deleteTravel}
+      />
+
+      <FormPanel
+        show={showForm}
+        onHide={closeForm}
+        title={editIndex !== null ? "Edit Trip" : "Add Trip"}
+      >
+        <TravelForm
+          formData={formData}
+          setFormData={setFormData}
+          onSubmit={handleAddTravel}
+          onCancel={closeForm}
+        />
+      </FormPanel>
+
+      <SaveToast
+        show={showToast}
+        onClose={() => setShowToast(false)}
+        message="Trip saved"
       />
     </>
   );
