@@ -3,6 +3,7 @@
 import { baseSchema } from "helpers/common.schema";
 import { locationSchema } from "helpers/location.schema";
 import { getStatusValues } from "helpers/statusLabels";
+import { getReflectionFields } from "helpers/reflection.schema";
 
 const homeSchema = [
   // Use status options specific to homes (e.g. "owned", "rented", "wishlist")
@@ -115,8 +116,9 @@ const homeSchema = [
     order: 20 + i,
   })),
 
-  // Shared fields (e.g., notes, tags, createdDate), minus base status
-  ...baseSchema.filter((field) => field.name !== "status"),
+  ...getReflectionFields(["owned", "rented"]),
+
+  ...baseSchema.filter((field) => !["status", "notes"].includes(field.name)),
 ];
 
 export default homeSchema;
