@@ -5,6 +5,7 @@ import ItemCardList from "components/shared/ItemCardList";
 import StatusToggle from "components/shared/StatusToggle";
 import FormPanel from "components/shared/FormPanel";
 import SaveToast from "components/shared/SaveToast";
+import SnapCaptureModal from "components/shared/SnapCaptureModal";
 import travelSchema from "features/travel/travelSchema";
 import useCategory from "hooks/useCategory";
 
@@ -33,6 +34,7 @@ function TravelList() {
     filterStatus, setFilterStatus,
     showToast, setShowToast,
     handleSubmit, startEditing, deleteItem, closeForm, openForm,
+    showSnapPrompt, snapPromptTitle, handleSnapSave, dismissSnapPrompt,
   } = useCategory("travel", { migrate: migrateMemoryToSnapshot, schema: travelSchema });
 
   const travelStatuses = getStatusFilterOptions("travel");
@@ -102,6 +104,13 @@ function TravelList() {
         show={showToast}
         onClose={() => setShowToast(false)}
         message="Trip saved"
+      />
+
+      <SnapCaptureModal
+        show={showSnapPrompt}
+        onClose={dismissSnapPrompt}
+        onSave={handleSnapSave}
+        itemTitle={snapPromptTitle}
       />
     </>
   );

@@ -6,6 +6,7 @@ import ItemCardList from "components/shared/ItemCardList";
 import StatusToggle from "components/shared/StatusToggle";
 import FormPanel from "components/shared/FormPanel";
 import SaveToast from "components/shared/SaveToast";
+import SnapCaptureModal from "components/shared/SnapCaptureModal";
 import useCategory from "hooks/useCategory";
 
 import {
@@ -34,6 +35,7 @@ function ConcertList() {
     filterStatus, setFilterStatus,
     showToast, setShowToast,
     handleSubmit, startEditing, deleteItem, closeForm, openForm,
+    showSnapPrompt, snapPromptTitle, handleSnapSave, dismissSnapPrompt,
   } = useCategory("concerts", { normalize: normalizeConcert, schema: concertSchema });
 
   const concertStatuses = getStatusFilterOptions("concerts");
@@ -106,6 +108,13 @@ function ConcertList() {
         show={showToast}
         onClose={() => setShowToast(false)}
         message="Concert saved"
+      />
+
+      <SnapCaptureModal
+        show={showSnapPrompt}
+        onClose={dismissSnapPrompt}
+        onSave={handleSnapSave}
+        itemTitle={snapPromptTitle}
       />
     </>
   );

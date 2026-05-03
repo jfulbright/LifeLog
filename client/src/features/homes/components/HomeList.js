@@ -5,6 +5,7 @@ import ItemCardList from "components/shared/ItemCardList";
 import StatusToggle from "components/shared/StatusToggle";
 import FormPanel from "components/shared/FormPanel";
 import SaveToast from "components/shared/SaveToast";
+import SnapCaptureModal from "components/shared/SnapCaptureModal";
 import homeSchema from "features/homes/homeSchema";
 import useCategory from "hooks/useCategory";
 
@@ -22,6 +23,7 @@ function HomeList() {
     filterStatus, setFilterStatus,
     showToast, setShowToast,
     handleSubmit, startEditing, deleteItem, closeForm, openForm,
+    showSnapPrompt, snapPromptTitle, handleSnapSave, dismissSnapPrompt,
   } = useCategory("homes", { schema: homeSchema });
 
   const homeStatuses = getStatusFilterOptions("homes");
@@ -91,6 +93,13 @@ function HomeList() {
         show={showToast}
         onClose={() => setShowToast(false)}
         message="Home saved"
+      />
+
+      <SnapCaptureModal
+        show={showSnapPrompt}
+        onClose={dismissSnapPrompt}
+        onSave={handleSnapSave}
+        itemTitle={snapPromptTitle}
       />
     </>
   );

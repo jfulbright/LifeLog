@@ -52,8 +52,25 @@ export const getGoogleMapsLink = ({ street, city, state, zip }) => {
   )}`;
 };
 
-// Determines if a field should be shown based on other form values
-// Handles multiple dependencies too (visibleWhen: { type: 'Car', ownership: 'Leased' })
+export const getSnapshotTeaser = (item) => {
+  for (let i = 1; i <= 3; i++) {
+    const val = item[`snapshot${i}`];
+    if (val && typeof val === "string" && val.trim()) return val.trim();
+  }
+  return null;
+};
+
+export const getAllSnapshots = (item) => {
+  const snaps = [];
+  for (let i = 1; i <= 3; i++) {
+    const val = item[`snapshot${i}`];
+    if (val && typeof val === "string" && val.trim()) snaps.push(val.trim());
+  }
+  return snaps;
+};
+
+export const hasAnySnapshot = (item) => getSnapshotTeaser(item) !== null;
+
 export const isFieldVisible = (field, formData) => {
   if (!field.visibleWhen) return true;
 

@@ -5,6 +5,7 @@ import ItemCardList from "components/shared/ItemCardList";
 import StatusToggle from "components/shared/StatusToggle";
 import FormPanel from "components/shared/FormPanel";
 import SaveToast from "components/shared/SaveToast";
+import SnapCaptureModal from "components/shared/SnapCaptureModal";
 import carSchema from "features/cars/carSchema";
 import useCategory from "hooks/useCategory";
 
@@ -22,6 +23,7 @@ function CarList() {
     filterStatus, setFilterStatus,
     showToast, setShowToast,
     handleSubmit, startEditing, deleteItem, closeForm, openForm,
+    showSnapPrompt, snapPromptTitle, handleSnapSave, dismissSnapPrompt,
   } = useCategory("cars", { schema: carSchema });
 
   const carStatuses = getStatusFilterOptions("cars");
@@ -91,6 +93,13 @@ function CarList() {
         show={showToast}
         onClose={() => setShowToast(false)}
         message="Car saved"
+      />
+
+      <SnapCaptureModal
+        show={showSnapPrompt}
+        onClose={dismissSnapPrompt}
+        onSave={handleSnapSave}
+        itemTitle={snapPromptTitle}
       />
     </>
   );
