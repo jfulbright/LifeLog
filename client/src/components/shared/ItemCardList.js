@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Badge, Button } from "react-bootstrap";
-import { isFieldVisible } from "helpers/operator";
+import { isFieldVisible, getSnapshotTeaser } from "helpers/operator";
 import { getStatusLabel } from "helpers/statusLabels";
 import { getCategoryMeta } from "helpers/categoryMeta";
 
@@ -166,6 +166,13 @@ function ItemCardList({
                     )}
                   </div>
                 </div>
+
+                {/* Snapshot teaser when collapsed */}
+                {!isExpanded && getSnapshotTeaser(item) && (
+                  <div className="snapshot-teaser">
+                    &ldquo;{getSnapshotTeaser(item)}&rdquo;
+                  </div>
+                )}
 
                 {/* Expand/collapse toggle */}
                 <button
