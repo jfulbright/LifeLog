@@ -1,39 +1,47 @@
 /* ===== Design Tokens ===== */
 :root {
-  /* Typography */
-  --font-display: 'Fraunces', Georgia, serif;
-  --font-body: 'Source Sans 3', -apple-system, BlinkMacSystemFont, sans-serif;
+  /* Typography — DM Sans (headlines/display) + Lato (body) */
+  --font-display: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Lato', -apple-system, BlinkMacSystemFont, sans-serif;
 
   /* Background & Surface */
-  --color-bg: #FAF8F5;
+  --color-bg: #F4F4F5;
   --color-surface: #FFFFFF;
-  --color-surface-warm: #F5F0EB;
+  --color-surface-hover: #F8F8F8;
 
-  /* Text */
-  --color-text-primary: #2D2A26;
-  --color-text-secondary: #6B6560;
-  --color-text-tertiary: #9C9590;
+  /* Text — Slack Black + grays */
+  --color-text-primary: #1D1C1D;
+  --color-text-secondary: #696969;
+  --color-text-tertiary: #9E9E9E;
 
-  /* Borders */
-  --color-border: #E8E2DB;
+  /* Borders — Slack Lt Gray 1 */
+  --color-border: #EBEAEB;
 
-  /* Brand / Actions */
-  --color-primary: #C2410C;
-  --color-primary-hover: #9A3412;
+  /* Brand / Actions — Slack Aubergine */
+  --color-primary: #4A154B;
+  --color-primary-hover: #3D1040;
 
-  /* Status */
-  --color-success: #166534;
-  --color-warning: #A16207;
-  --color-info: #0E7490;
-  --color-danger: #B91C1C;
+  /* Status — Slack brand colors */
+  --color-success: #2EB67D;
+  --color-warning: #ECB22E;
+  --color-info: #36C5F0;
+  --color-danger: #E01E5A;
 
-  /* Category Accents */
-  --color-concerts: #7C3AED;
-  --color-travel: #0284C7;
-  --color-cars: #DC2626;
-  --color-homes: #D97706;
-  --color-restaurants: #059669;
-  --color-movies: #DB2777;
+  /* Category Accents — Slack palette */
+  --color-concerts: #4A154B;
+  --color-travel: #36C5F0;
+  --color-cars: #E01E5A;
+  --color-homes: #ECB22E;
+  --color-restaurants: #2EB67D;
+  --color-movies: #E01E5A;
+
+  /* Sidebar — Aubergine theme */
+  --color-sidebar-bg: #4A154B;
+  --color-sidebar-active: rgba(255, 255, 255, 0.15);
+  --color-sidebar-hover: rgba(255, 255, 255, 0.08);
+  --color-sidebar-text: rgba(255, 255, 255, 0.82);
+  --color-sidebar-text-active: #FFFFFF;
+  --color-sidebar-border: rgba(255, 255, 255, 0.12);
 
   /* Typography Scale */
   --font-size-xs: 0.75rem;
@@ -49,12 +57,12 @@
   --spacing-section: 2rem;
 
   /* Card */
-  --card-radius: 12px;
-  --card-shadow: 0 1px 3px rgba(45, 42, 38, 0.06);
-  --card-shadow-hover: 0 4px 16px rgba(45, 42, 38, 0.1);
+  --card-radius: 8px;
+  --card-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  --card-shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.12);
 
   /* Sidebar */
-  --sidebar-width: 220px;
+  --sidebar-width: 240px;
 }
 
 /* ===== Base Styles ===== */
@@ -66,7 +74,13 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
   color: var(--color-text-primary);
+  font-weight: 700;
 }
+
+h1 { letter-spacing: -2px; }
+h2 { letter-spacing: -1.5px; }
+h3 { letter-spacing: -1px; }
+h4 { letter-spacing: -0.5px; }
 
 /* Bootstrap primary color override */
 .btn-primary {
@@ -78,6 +92,9 @@ h1, h2, h3, h4, h5, h6 {
   --bs-btn-active-border-color: var(--color-primary-hover);
   --bs-btn-disabled-bg: var(--color-primary);
   --bs-btn-disabled-border-color: var(--color-primary);
+  --bs-btn-border-radius: 6px;
+  font-weight: 600;
+  letter-spacing: 0.1px;
 }
 
 .btn-outline-primary {
@@ -87,6 +104,14 @@ h1, h2, h3, h4, h5, h6 {
   --bs-btn-hover-border-color: var(--color-primary);
   --bs-btn-active-bg: var(--color-primary-hover);
   --bs-btn-active-border-color: var(--color-primary-hover);
+  --bs-btn-border-radius: 6px;
+}
+
+/* Pill-style primary CTA (Save / Add new) */
+.btn-primary.btn-pill {
+  --bs-btn-border-radius: 24px;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
 }
 
 a {
@@ -135,7 +160,7 @@ a:hover {
 }
 
 .item-card:hover {
-  background-color: var(--color-surface-warm);
+  background-color: var(--color-surface-hover);
 }
 
 .item-card-header {
@@ -145,9 +170,9 @@ a:hover {
 }
 
 .item-card-thumb {
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
   object-fit: cover;
   flex-shrink: 0;
   display: flex;
@@ -169,6 +194,7 @@ a:hover {
   color: var(--color-text-primary);
   margin: 0;
   line-height: 1.3;
+  letter-spacing: -0.3px;
 }
 
 .item-card-subtitle {
@@ -217,7 +243,7 @@ a:hover {
 .item-card-detail-row {
   display: flex;
   padding: 0.375rem 0;
-  border-bottom: 1px solid var(--color-surface-warm);
+  border-bottom: 1px solid var(--color-border);
   font-size: var(--font-size-sm);
 }
 
@@ -261,16 +287,46 @@ a:hover {
   font-weight: 500;
   border-color: var(--color-border);
   color: var(--color-text-secondary);
+  background-color: var(--color-surface);
 }
 
 .status-toggle .btn.active {
   background-color: var(--color-primary);
   border-color: var(--color-primary);
   color: #fff;
+  font-weight: 600;
 }
 
 .status-toggle .btn:not(.active):hover {
-  background-color: var(--color-surface-warm);
+  background-color: var(--color-surface-hover);
+  border-color: var(--color-text-tertiary);
+  color: var(--color-text-primary);
+}
+
+/* Status badge color mapping — Slack brand palette */
+.badge-status-attended,
+.badge-status-visited,
+.badge-status-owned {
+  background-color: var(--color-success) !important;
+  color: #fff !important;
+}
+
+.badge-status-wishlist,
+.badge-status-interested {
+  background-color: var(--color-info) !important;
+  color: #1D1C1D !important;
+}
+
+.badge-status-sold,
+.badge-status-past,
+.badge-status-rented {
+  background-color: var(--color-warning) !important;
+  color: #1D1C1D !important;
+}
+
+.badge-status-cancelled {
+  background-color: var(--color-danger) !important;
+  color: #fff !important;
 }
 
 /* ===== Form Panel ===== */
@@ -311,15 +367,16 @@ a:hover {
 /* ===== Sidebar ===== */
 .app-sidebar {
   width: var(--sidebar-width);
-  background: var(--color-surface);
-  border-right: 1px solid var(--color-border);
+  background: var(--color-sidebar-bg);
+  border-right: none;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.18);
   height: 100vh;
   position: fixed;
   top: 0;
   left: 0;
-  padding-top: 1rem;
   z-index: 1030;
   display: none;
+  overflow-y: auto;
 }
 
 @media (min-width: 992px) {
@@ -333,50 +390,80 @@ a:hover {
 }
 
 .sidebar-brand {
-  font-family: var(--font-display);
-  font-size: var(--font-size-xl);
-  font-weight: 700;
-  color: var(--color-text-primary);
-  padding: 0.5rem 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 1.125rem 1.25rem 1rem;
+  background: linear-gradient(160deg, #611f69 0%, #4A154B 100%);
   text-decoration: none;
-  display: block;
+  border-bottom: 1px solid var(--color-sidebar-border);
+}
+
+.sidebar-brand-emoji {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.sidebar-brand-name {
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-sidebar-text-active);
+  letter-spacing: -0.5px;
+}
+
+.sidebar-section-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.42);
+  padding: 1rem 1.25rem 0.375rem;
 }
 
 .sidebar-nav-item {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.625rem 1.25rem;
-  color: var(--color-text-secondary);
+  gap: 0.625rem;
+  padding: 0.5rem 0.875rem;
+  color: var(--color-sidebar-text);
   text-decoration: none;
   font-size: var(--font-size-sm);
   font-weight: 500;
-  border-radius: 8px;
-  margin: 0 0.5rem;
-  transition: background-color 150ms ease, color 150ms ease;
+  border-radius: 6px;
+  margin: 0.0625rem 0.5rem;
+  transition: background-color 120ms ease, color 120ms ease;
 }
 
 .sidebar-nav-item:hover {
-  background-color: var(--color-surface-warm);
-  color: var(--color-text-primary);
+  background-color: var(--color-sidebar-hover);
+  color: var(--color-sidebar-text-active);
 }
 
 .sidebar-nav-item.active {
-  background-color: #FFF7ED;
-  color: var(--color-primary);
+  background-color: var(--color-sidebar-active);
+  color: var(--color-sidebar-text-active);
+  font-weight: 600;
 }
 
 .sidebar-nav-icon {
   width: 20px;
   text-align: center;
   flex-shrink: 0;
+  font-size: 1rem;
+  opacity: 0.9;
 }
 
 .sidebar-nav-count {
   margin-left: auto;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
-  font-weight: 400;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.9);
+  padding: 0.1rem 0.45rem;
+  border-radius: 10px;
+  min-width: 1.25rem;
+  text-align: center;
 }
 
 /* ===== Dashboard ===== */
@@ -384,7 +471,42 @@ a:hover {
   font-family: var(--font-display);
   font-size: var(--font-size-2xl);
   font-weight: 700;
+  letter-spacing: -1.5px;
+  margin-bottom: 0.375rem;
+}
+
+.dashboard-welcome-sub {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
   margin-bottom: 1.5rem;
+  font-weight: 400;
+}
+
+.dashboard-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.625rem;
+}
+
+.dashboard-channel-name {
+  font-family: var(--font-display);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: -0.2px;
+}
+
+.dashboard-channel-name::before {
+  content: "# ";
+  opacity: 0.6;
+}
+
+.dashboard-aubergine-banner {
+  height: 5px;
+  background: linear-gradient(90deg, #4A154B 0%, #611f69 50%, #36C5F0 100%);
+  margin: -1rem -1rem 1.5rem;
+  border-radius: 0 0 3px 3px;
 }
 
 .category-summary-card {
@@ -493,7 +615,7 @@ a:hover {
   align-items: flex-start;
   gap: 0.75rem;
   padding: 0.625rem 0;
-  border-bottom: 1px solid var(--color-surface-warm);
+  border-bottom: 1px solid var(--color-border);
   font-size: var(--font-size-sm);
 }
 
@@ -523,7 +645,7 @@ a:hover {
   border-radius: var(--card-radius);
   padding: 1rem;
   margin-bottom: var(--spacing-card-gap);
-  background: var(--color-surface-warm);
+  background: var(--color-surface-hover);
   transition: border-color 150ms ease;
 }
 
@@ -668,11 +790,11 @@ a:hover {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: linear-gradient(135deg, var(--color-surface-warm) 0%, #F9F4EE 100%);
+  background: linear-gradient(135deg, #F5EEF8 0%, #EDE0F0 100%);
   border-radius: var(--card-radius);
   padding: 1rem 1.25rem;
   margin-bottom: 1.25rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid #DDD0E2;
 }
 
 .snap-section-icon {
@@ -695,7 +817,7 @@ a:hover {
 }
 
 .snapshot-field-group {
-  background: var(--color-surface-warm);
+  background: #F5EEF8;
   border-radius: var(--card-radius);
   padding: 1rem;
   margin-bottom: 1rem;
@@ -720,7 +842,7 @@ a:hover {
 
 .snapshot-field-group textarea.form-control:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 0.2rem rgba(194, 65, 12, 0.15);
+  box-shadow: 0 0 0 0.2rem rgba(74, 21, 75, 0.15);
 }
 
 /* ===== Dashboard Snapshot Scroll Row ===== */
@@ -738,7 +860,7 @@ a:hover {
 }
 
 .snapshot-scroll-row::-webkit-scrollbar-track {
-  background: var(--color-surface-warm);
+  background: var(--color-surface-hover);
   border-radius: 2px;
 }
 
@@ -807,7 +929,7 @@ a:hover {
 }
 
 .snap-capture-body {
-  background: linear-gradient(180deg, var(--color-surface-warm) 0%, var(--color-surface) 40%);
+  background: linear-gradient(180deg, #F5EEF8 0%, var(--color-surface) 40%);
   padding: 2.5rem 2rem 2rem;
   position: relative;
 }
@@ -898,7 +1020,7 @@ a:hover {
 .snap-capture-textarea:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 0.2rem rgba(194, 65, 12, 0.15);
+  box-shadow: 0 0 0 0.2rem rgba(74, 21, 75, 0.15);
 }
 
 .snap-capture-counter {

@@ -22,27 +22,35 @@ function App() {
       {/* Desktop sidebar (lg+) */}
       <aside className="app-sidebar">
         <Link to="/" className="sidebar-brand">
-          LifeSnaps
+          <span className="sidebar-brand-emoji">📸</span>
+          <span className="sidebar-brand-name">LifeSnaps</span>
         </Link>
         <SidebarNav counts={counts} />
       </aside>
 
       {/* Mobile navbar (below lg) */}
       <Navbar
-        bg="dark"
-        variant="dark"
         className="d-lg-none"
-        style={{ position: "sticky", top: 0, zIndex: 1040 }}
+        style={{
+          backgroundColor: "var(--color-sidebar-bg)",
+          position: "sticky",
+          top: 0,
+          zIndex: 1040,
+        }}
       >
         <Container fluid>
-          <Navbar.Brand as={Link} to="/" style={{ fontWeight: 700 }}>
-            LifeSnaps
+          <Navbar.Brand
+            as={Link}
+            to="/"
+            style={{ fontWeight: 700, color: "#fff", letterSpacing: "-0.5px" }}
+          >
+            📸 LifeSnaps
           </Navbar.Brand>
           <button
-            className="btn btn-link text-white p-0"
+            className="btn btn-link p-0"
             onClick={() => setShowMobileNav(true)}
             aria-label="Open navigation"
-            style={{ fontSize: "1.5rem", lineHeight: 1 }}
+            style={{ fontSize: "1.5rem", lineHeight: 1, color: "rgba(255,255,255,0.85)" }}
           >
             &#9776;
           </button>
@@ -54,12 +62,28 @@ function App() {
         show={showMobileNav}
         onHide={() => setShowMobileNav(false)}
         placement="start"
-        style={{ width: "280px" }}
+        style={{
+          width: "280px",
+          backgroundColor: "var(--color-sidebar-bg)",
+        }}
       >
-        <Offcanvas.Header closeButton>
-          <Offcanvas.Title style={{ fontWeight: 700 }}>LifeSnaps</Offcanvas.Title>
+        <Offcanvas.Header
+          closeButton
+          closeVariant="white"
+          style={{ borderBottom: "1px solid var(--color-sidebar-border)" }}
+        >
+          <Offcanvas.Title
+            style={{
+              fontWeight: 700,
+              color: "#fff",
+              fontFamily: "var(--font-display)",
+              letterSpacing: "-0.5px",
+            }}
+          >
+            📸 LifeSnaps
+          </Offcanvas.Title>
         </Offcanvas.Header>
-        <Offcanvas.Body>
+        <Offcanvas.Body style={{ padding: 0 }}>
           <SidebarNav
             counts={counts}
             onItemClick={() => setShowMobileNav(false)}

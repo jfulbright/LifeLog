@@ -52,12 +52,12 @@ function CarList() {
             &#128663;
           </div>
           <div className="empty-state-title">
-            {cars.length === 0 ? "No cars yet" : "No matches"}
+            {cars.length === 0 ? "No cars yet 🚗" : "No matches"}
           </div>
           <div className="empty-state-text">
             {cars.length === 0
               ? "Add your first car to start tracking."
-              : "No cars found for this filter."}
+              : "No cars match this filter."}
           </div>
           {cars.length === 0 && (
             <Button variant="primary" onClick={openForm}>
@@ -92,7 +92,7 @@ function CarList() {
       <SaveToast
         show={showToast}
         onClose={() => setShowToast(false)}
-        message="Car saved"
+        message="Car saved ✅"
       />
 
       <SnapCaptureModal

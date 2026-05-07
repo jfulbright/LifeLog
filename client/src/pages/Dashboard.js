@@ -12,7 +12,15 @@ const categories = Object.keys(STORAGE_KEYS).map((key) => ({
   label: key.charAt(0).toUpperCase() + key.slice(1),
 }));
 
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return { text: "Good morning", emoji: "☀️" };
+  if (hour < 17) return { text: "Good afternoon", emoji: "🌤" };
+  return { text: "Good evening", emoji: "🌙" };
+}
+
 function Dashboard() {
+  const greeting = getGreeting();
   const allData = categories.map((cat) => ({
     ...cat,
     items: dataService.getItems(cat.key),
@@ -71,7 +79,13 @@ function Dashboard() {
 
   return (
     <div>
-      <h2 className="dashboard-welcome">Welcome to LifeSnaps</h2>
+      {/* Aubergine gradient banner strip */}
+      <div className="dashboard-aubergine-banner" />
+
+      <h2 className="dashboard-welcome">
+        {greeting.text}, LifeSnapper {greeting.emoji}
+      </h2>
+      <p className="dashboard-welcome-sub">Your life, captured.</p>
 
       {totalItems === 0 ? (
         <div className="empty-state">
@@ -79,11 +93,11 @@ function Dashboard() {
             className="empty-state-icon"
             style={{ backgroundColor: "var(--color-primary)", color: "#fff" }}
           >
-            &#128214;
+            📸
           </div>
-          <div className="empty-state-title">Start capturing your life</div>
+          <div className="empty-state-title">Start capturing your life 🚀</div>
           <div className="empty-state-text">
-            Pick a category to add your first entry.
+            Pick a category below to add your first entry.
           </div>
           <div className="d-flex gap-2 justify-content-center flex-wrap">
             {allData.map((cat) => (
@@ -105,9 +119,12 @@ function Dashboard() {
           {recentSnapshots.length > 0 && (
             <div className="mb-4">
               <div className="d-flex justify-content-between align-items-center mb-2">
-                <h5 style={{ fontWeight: 600, marginBottom: 0 }}>Recent Snapshots</h5>
-                <Link to="/snaps" className="text-decoration-none" style={{ fontSize: "var(--font-size-sm)" }}>
-                  View all &rarr;
+                <div className="dashboard-section-header">
+                  <span className="dashboard-channel-name">recent-snapshots</span>
+                  <span style={{ fontSize: "var(--font-size-sm)" }}>📸</span>
+                </div>
+                <Link to="/snaps" className="text-decoration-none" style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)" }}>
+                  View all →
                 </Link>
               </div>
               <div className="snapshot-scroll-row">
@@ -130,6 +147,10 @@ function Dashboard() {
           )}
 
           {/* Category summary cards */}
+          <div className="dashboard-section-header mb-2">
+            <span className="dashboard-channel-name">life-categories</span>
+            <span style={{ fontSize: "var(--font-size-sm)" }}>🗂️</span>
+          </div>
           <Row className="g-3 mb-4">
             {allData.map((cat) => {
               const statusKeys = Object.keys(cat.statuses);
@@ -171,9 +192,10 @@ function Dashboard() {
           {/* Recent activity */}
           {recentActivity.length > 0 && (
             <div>
-              <h5 style={{ fontWeight: 600, marginBottom: "1rem" }}>
-                Recent Activity
-              </h5>
+              <div className="dashboard-section-header mb-3">
+                <span className="dashboard-channel-name">recent-activity</span>
+                <span style={{ fontSize: "var(--font-size-sm)" }}>⚡</span>
+              </div>
               <div className="card">
                 <div style={{ padding: "var(--spacing-card-padding)" }}>
                   {recentActivity.map((entry, i) => (

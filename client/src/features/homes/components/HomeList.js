@@ -52,12 +52,12 @@ function HomeList() {
             &#127968;
           </div>
           <div className="empty-state-title">
-            {homes.length === 0 ? "No homes yet" : "No matches"}
+            {homes.length === 0 ? "No homes yet 🏠" : "No matches"}
           </div>
           <div className="empty-state-text">
             {homes.length === 0
               ? "Add your first home to start tracking."
-              : "No homes found for this filter."}
+              : "No homes match this filter."}
           </div>
           {homes.length === 0 && (
             <Button variant="primary" onClick={openForm}>
@@ -92,7 +92,7 @@ function HomeList() {
       <SaveToast
         show={showToast}
         onClose={() => setShowToast(false)}
-        message="Home saved"
+        message="Home saved ✅"
       />
 
       <SnapCaptureModal

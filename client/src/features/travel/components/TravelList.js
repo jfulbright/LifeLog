@@ -63,12 +63,12 @@ function TravelList() {
             &#9992;&#65039;
           </div>
           <div className="empty-state-title">
-            {travels.length === 0 ? "No trips yet" : "No matches"}
+            {travels.length === 0 ? "No trips yet ✈️" : "No matches"}
           </div>
           <div className="empty-state-text">
             {travels.length === 0
               ? "Add your first trip to start tracking."
-              : "No trips found for this filter."}
+              : "No trips match this filter."}
           </div>
           {travels.length === 0 && (
             <Button variant="primary" onClick={openForm}>
@@ -103,7 +103,7 @@ function TravelList() {
       <SaveToast
         show={showToast}
         onClose={() => setShowToast(false)}
-        message="Trip saved"
+        message="Trip saved ✅"
       />
 
       <SnapCaptureModal

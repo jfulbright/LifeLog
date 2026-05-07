@@ -67,12 +67,12 @@ function ConcertList() {
             &#9835;
           </div>
           <div className="empty-state-title">
-            {concerts.length === 0 ? "No concerts yet" : "No matches"}
+            {concerts.length === 0 ? "No concerts yet 🎸" : "No matches"}
           </div>
           <div className="empty-state-text">
             {concerts.length === 0
               ? "Search Setlist.fm or add one manually to get started."
-              : "No concerts found for this filter."}
+              : "No concerts match this filter."}
           </div>
           {concerts.length === 0 && (
             <Button variant="primary" onClick={openForm}>
@@ -107,7 +107,7 @@ function ConcertList() {
       <SaveToast
         show={showToast}
         onClose={() => setShowToast(false)}
-        message="Concert saved"
+        message="Concert saved ✅"
       />
 
       <SnapCaptureModal
