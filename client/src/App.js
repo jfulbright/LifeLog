@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Container, Navbar, Offcanvas } from "react-bootstrap";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import CarList from "features/cars/components/CarList";
@@ -14,8 +14,13 @@ import "App.css";
 
 function App() {
   const [showMobileNav, setShowMobileNav] = useState(false);
+  const [counts, setCounts] = useState(() => dataService.getCounts());
 
-  const counts = dataService.getCounts();
+  useEffect(() => {
+    const refresh = () => setCounts(dataService.getCounts());
+    window.addEventListener("data-changed", refresh);
+    return () => window.removeEventListener("data-changed", refresh);
+  }, []);
 
   return (
     <Router>

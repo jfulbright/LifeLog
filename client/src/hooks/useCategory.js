@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import dataService from "services/dataService";
 import { hasAnySnapshot } from "helpers/operator";
 
@@ -40,8 +40,16 @@ export default function useCategory(category, { migrate, normalize, schema } = {
   const [snapPromptItemIndex, setSnapPromptItemIndex] = useState(null);
   const [snapPromptTitle, setSnapPromptTitle] = useState("");
 
+  // Skip dispatching on initial mount — only fire when items actually change
+  const isFirstSave = useRef(true);
+
   useEffect(() => {
     dataService.saveItems(category, items);
+    if (isFirstSave.current) {
+      isFirstSave.current = false;
+    } else {
+      window.dispatchEvent(new Event("data-changed"));
+    }
   }, [category, items]);
 
   const handleSubmit = useCallback(
