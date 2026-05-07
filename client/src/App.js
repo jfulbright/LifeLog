@@ -22,7 +22,7 @@ function App() {
       {/* Desktop sidebar (lg+) */}
       <aside className="app-sidebar">
         <Link to="/" className="sidebar-brand">
-          Snaps
+          LifeSnaps
         </Link>
         <SidebarNav counts={counts} />
       </aside>
@@ -36,7 +36,7 @@ function App() {
       >
         <Container fluid>
           <Navbar.Brand as={Link} to="/" style={{ fontWeight: 700 }}>
-            Snaps
+            LifeSnaps
           </Navbar.Brand>
           <button
             className="btn btn-link text-white p-0"
@@ -57,7 +57,7 @@ function App() {
         style={{ width: "280px" }}
       >
         <Offcanvas.Header closeButton>
-          <Offcanvas.Title style={{ fontWeight: 700 }}>Snaps</Offcanvas.Title>
+          <Offcanvas.Title style={{ fontWeight: 700 }}>LifeSnaps</Offcanvas.Title>
         </Offcanvas.Header>
         <Offcanvas.Body>
           <SidebarNav
