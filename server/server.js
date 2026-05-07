@@ -35,7 +35,7 @@ app.get("/api/proxy", async (req, res) => {
       headers: {
         "x-api-key": process.env.SETLISTFM_API_KEY, // API key from your .env file
         Accept: "application/json",
-        "User-Agent": "SnapsApp/1.0 (jfulbright@gmail.com)", // required by Setlist.fm
+        "User-Agent": "LifeSnapsApp/1.0 (jfulbright@gmail.com)", // required by Setlist.fm
       },
     });
 

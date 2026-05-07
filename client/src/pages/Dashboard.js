@@ -71,7 +71,7 @@ function Dashboard() {
 
   return (
     <div>
-      <h2 className="dashboard-welcome">Welcome to Snaps</h2>
+      <h2 className="dashboard-welcome">Welcome to LifeSnaps</h2>
 
       {totalItems === 0 ? (
         <div className="empty-state">

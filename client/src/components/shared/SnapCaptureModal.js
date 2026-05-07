@@ -4,18 +4,18 @@ import { Modal, Button } from "react-bootstrap";
 const SNAP_FIELDS = [
   {
     key: "snapshot1",
-    prompt: "What\u2019s the first thing that comes to mind?",
-    placeholder: "Close your eyes and picture it\u2026",
+    prompt: "Snapshot 1",
+    placeholder: "Add a quick memory\u2026",
   },
   {
     key: "snapshot2",
-    prompt: "A small detail you don\u2019t want to lose",
-    placeholder: "The sound, the smell, the light\u2026",
+    prompt: "Snapshot 2",
+    placeholder: "Add a quick memory\u2026",
   },
   {
     key: "snapshot3",
-    prompt: "How did it make you feel?",
-    placeholder: "One sentence, your words\u2026",
+    prompt: "Snapshot 3",
+    placeholder: "Add a quick memory\u2026",
   },
 ];
 
