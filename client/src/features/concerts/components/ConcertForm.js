@@ -71,8 +71,8 @@ function ConcertForm({ formData, setFormData, onSubmit, onCancel }) {
     setManualEntry(false);
   };
 
-  // Step 2: Edit form after selecting a concert or choosing manual entry
-  if (selectedConcert || manualEntry) {
+  // Step 2: Edit form after selecting a concert, choosing manual entry, or editing an existing concert
+  if (selectedConcert || manualEntry || formData?.artist) {
     return (
       <div>
         <button
