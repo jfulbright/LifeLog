@@ -223,8 +223,6 @@ function ItemCardList({
                               key={field.name}
                               className="item-card-snapshot"
                               style={{
-                                borderLeft: `3px solid ${meta.color || "var(--color-primary, #0d6efd)"}`,
-                                paddingLeft: "0.75rem",
                                 marginBottom: "0.5rem",
                                 fontStyle: "italic",
                                 fontSize: "var(--font-size-sm, 0.875rem)",
