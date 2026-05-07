@@ -51,7 +51,7 @@ function ItemCardList({
   onDelete,
   renderItemExtras,
 }) {
-  const [expandedIndex, setExpandedIndex] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
   const meta = getCategoryMeta(category);
 
   if (!Array.isArray(items)) {
@@ -59,8 +59,8 @@ function ItemCardList({
     return null;
   }
 
-  const toggleExpand = (index) => {
-    setExpandedIndex(expandedIndex === index ? null : index);
+  const toggleExpand = (id) => {
+    setExpandedId(expandedId === id ? null : id);
   };
 
   const getPrimaryLabel = (item) => {
@@ -99,13 +99,14 @@ function ItemCardList({
       )}
       <div className="d-flex flex-column" style={{ gap: "var(--spacing-card-gap)" }}>
         {items.map((item, index) => {
-          const isExpanded = expandedIndex === index;
+          const itemId = item.id ?? index;
+          const isExpanded = expandedId === itemId;
           const statusVariant = getStatusBadgeVariant(item.status);
           const badgeClass =
             statusVariant === "warning" ? "text-dark" : "";
 
           return (
-            <div key={index} className="card">
+            <div key={itemId} className="card">
               <div className="item-card">
                 {/* Compact header: thumbnail + info + badge */}
                 <div className="item-card-header">
@@ -177,7 +178,7 @@ function ItemCardList({
                 {/* Expand/collapse toggle */}
                 <button
                   className="item-card-toggle"
-                  onClick={() => toggleExpand(index)}
+                  onClick={() => toggleExpand(itemId)}
                 >
                   {isExpanded ? "Hide details" : "Show details"}
                   <span style={{ fontSize: "0.625rem" }}>
@@ -270,7 +271,7 @@ function ItemCardList({
                             <Button
                               size="sm"
                               variant="outline-primary"
-                              onClick={() => onEdit(index)}
+                              onClick={() => onEdit(itemId)}
                             >
                               Edit
                             </Button>
@@ -279,7 +280,7 @@ function ItemCardList({
                             <Button
                               size="sm"
                               variant="outline-danger"
-                              onClick={() => onDelete(index)}
+                              onClick={() => onDelete(itemId)}
                             >
                               Delete
                             </Button>

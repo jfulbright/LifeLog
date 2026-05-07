@@ -36,18 +36,18 @@ const dataService = {
     return items;
   },
 
-  updateItem(category, index, item) {
+  updateItem(category, id, item) {
     const items = dataService.getItems(category);
-    items[index] = item;
-    dataService.saveItems(category, items);
-    return items;
+    const updated = items.map((i) => (i.id === id ? { ...item, id } : i));
+    dataService.saveItems(category, updated);
+    return updated;
   },
 
-  deleteItem(category, index) {
+  deleteItem(category, id) {
     const items = dataService.getItems(category);
-    items.splice(index, 1);
-    dataService.saveItems(category, items);
-    return items;
+    const filtered = items.filter((i) => i.id !== id);
+    dataService.saveItems(category, filtered);
+    return filtered;
   },
 
   getAllItems() {
