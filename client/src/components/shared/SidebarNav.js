@@ -5,7 +5,7 @@ import categoryMeta from "helpers/categoryMeta";
 const navItems = [
   { path: "/", label: "Home", icon: "\uD83C\uDFE0" },
   { path: "/timeline", label: "Timeline", icon: "\uD83D\uDCC5" },
-  { path: "/snaps", label: "Snapshots", icon: "\u2728" },
+  { path: "/snaps", label: "Snapshots", icon: "\uD83D\uDCF7" },
 ];
 
 const categoryItems = [

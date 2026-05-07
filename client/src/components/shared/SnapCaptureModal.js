@@ -4,17 +4,17 @@ import { Modal, Button } from "react-bootstrap";
 const SNAP_FIELDS = [
   {
     key: "snapshot1",
-    prompt: "\uD83D\uDCA1 Snap 1",
+    prompt: "\u2728 Snap 1",
     placeholder: "Add a quick memory\u2026",
   },
   {
     key: "snapshot2",
-    prompt: "\uD83D\uDCA1 Snap 2",
+    prompt: "\u2728 Snap 2",
     placeholder: "Add a quick memory\u2026",
   },
   {
     key: "snapshot3",
-    prompt: "\uD83D\uDCA1 Snap 3",
+    prompt: "\u2728 Snap 3",
     placeholder: "Add a quick memory\u2026",
   },
 ];

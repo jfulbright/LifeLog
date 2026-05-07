@@ -20,7 +20,7 @@ export function getReflectionFields(experiencedStatus) {
     },
     {
       name: "snapshot1",
-      label: "\uD83D\uDCA1 Snap 1",
+      label: "\u2728 Snap 1",
       type: "textarea",
       maxLength: 140,
       placeholder: "Add a quick memory\u2026",
@@ -32,7 +32,7 @@ export function getReflectionFields(experiencedStatus) {
     },
     {
       name: "snapshot2",
-      label: "\uD83D\uDCA1 Snap 2",
+      label: "\u2728 Snap 2",
       type: "textarea",
       maxLength: 140,
       placeholder: "Add a quick memory\u2026",
@@ -44,7 +44,7 @@ export function getReflectionFields(experiencedStatus) {
     },
     {
       name: "snapshot3",
-      label: "\uD83D\uDCA1 Snap 3",
+      label: "\u2728 Snap 3",
       type: "textarea",
       maxLength: 140,
       placeholder: "Add a quick memory\u2026",

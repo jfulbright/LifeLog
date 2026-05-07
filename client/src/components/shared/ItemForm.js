@@ -353,7 +353,7 @@ function ItemForm({
           <div key={section} className={isSnapSection ? "snap-section-wrapper" : ""}>
             {isSnapSection ? (
               <div className="snap-section-banner">
-                <span className="snap-section-icon" aria-hidden="true">&#10024;</span>
+                <span className="snap-section-icon" aria-hidden="true">&#128247;</span>
                 <div>
                   <div className="snap-section-title">Capture your snapshots</div>
                   <div className="snap-section-subtitle">
