@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Badge, Button } from "react-bootstrap";
-import { isFieldVisible, getSnapshotTeaser } from "helpers/operator";
+import { isFieldVisible, getSnapshotTeaser, getAllSnapshots } from "helpers/operator";
 import { getStatusLabel } from "helpers/statusLabels";
 import { getCategoryMeta } from "helpers/categoryMeta";
 
@@ -167,12 +167,12 @@ function ItemCardList({
                   </div>
                 </div>
 
-                {/* Snapshot teaser when collapsed */}
-                {!isExpanded && getSnapshotTeaser(item) && (
-                  <div className="snapshot-teaser">
-                    &#10024; &ldquo;{getSnapshotTeaser(item)}&rdquo;
+                {/* Snapshot teasers when collapsed — show all non-empty snapshots */}
+                {!isExpanded && getAllSnapshots(item).map((snap, i) => (
+                  <div key={i} className="snapshot-teaser">
+                    &#10024; &ldquo;{snap}&rdquo;
                   </div>
-                )}
+                ))}
 
                 {/* Expand/collapse toggle */}
                 <button

@@ -47,7 +47,7 @@ function Snaps() {
 
   return (
     <div>
-      <h4 className="mb-4" style={{ fontWeight: 700 }}>Snapshots</h4>
+      <h4 className="mb-4" style={{ fontWeight: 700 }}>📸 Snaps</h4>
 
       {/* Category filter pills */}
       <div className="status-toggle mb-4">

@@ -3,9 +3,9 @@ import { NavLink } from "react-router-dom";
 import categoryMeta from "helpers/categoryMeta";
 
 const navItems = [
-  { path: "/", label: "Home", icon: "\uD83C\uDFE0" },
-  { path: "/timeline", label: "Timeline", icon: "\uD83D\uDCC5" },
-  { path: "/snaps", label: "Snapshots", icon: "\uD83D\uDCF7" },
+  { path: "/", label: "Home", icon: "🏠" },
+  { path: "/timeline", label: "Timeline", icon: "📅" },
+  { path: "/snaps", label: "Snapshots", icon: "📸" },
 ];
 
 const categoryItems = [
@@ -22,7 +22,9 @@ const categoryItems = [
  */
 function SidebarNav({ counts = {}, onItemClick }) {
   return (
-    <nav>
+    <nav style={{ paddingBottom: "1rem" }}>
+      <div className="sidebar-section-label">Navigate</div>
+
       {navItems.map((item) => (
         <NavLink
           key={item.path}
@@ -38,7 +40,7 @@ function SidebarNav({ counts = {}, onItemClick }) {
         </NavLink>
       ))}
 
-      <hr style={{ margin: "0.75rem 1.25rem", borderColor: "var(--color-border)" }} />
+      <div className="sidebar-section-label" style={{ marginTop: "0.5rem" }}>Snap Categories</div>
 
       {categoryItems.map((item) => {
         const meta = categoryMeta[item.key] || {};

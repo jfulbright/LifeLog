@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Badge } from "react-bootstrap";
 import categoryMeta from "helpers/categoryMeta";
 import { getStatusLabel } from "helpers/statusLabels";
@@ -11,6 +11,8 @@ const categories = Object.keys(STORAGE_KEYS).map((key) => ({
 }));
 
 function Timeline() {
+  const [activeYear, setActiveYear] = useState("all");
+
   const allEntries = categories
     .flatMap((cat) => {
       const meta = categoryMeta[cat.key] || {};
@@ -37,8 +39,24 @@ function Timeline() {
     .filter((e) => e.date)
     .sort((a, b) => b.date.localeCompare(a.date));
 
+  const years = [
+    ...new Set(
+      allEntries
+        .map((e) => new Date(e.date + "T00:00:00").getFullYear())
+        .filter((y) => !isNaN(y))
+    ),
+  ].sort((a, b) => b - a);
+
+  const filteredEntries =
+    activeYear === "all"
+      ? allEntries
+      : allEntries.filter(
+          (e) =>
+            String(new Date(e.date + "T00:00:00").getFullYear()) === activeYear
+        );
+
   const grouped = {};
-  allEntries.forEach((entry) => {
+  filteredEntries.forEach((entry) => {
     const d = new Date(entry.date + "T00:00:00");
     const key = isNaN(d.getTime())
       ? "Unknown"
@@ -51,7 +69,35 @@ function Timeline() {
 
   return (
     <div>
-      <h4 className="mb-4" style={{ fontWeight: 700 }}>Timeline</h4>
+      <h4 className="mb-3" style={{ fontWeight: 700 }}>Timeline</h4>
+
+      {years.length > 0 && (
+        <div className="status-toggle mb-4">
+          <button
+            className={`btn ${activeYear === "all" ? "active" : ""}`}
+            onClick={() => setActiveYear("all")}
+          >
+            All
+          </button>
+          {years.map((year) => {
+            const count = allEntries.filter(
+              (e) =>
+                String(new Date(e.date + "T00:00:00").getFullYear()) ===
+                String(year)
+            ).length;
+            return (
+              <button
+                key={year}
+                className={`btn ${activeYear === String(year) ? "active" : ""}`}
+                onClick={() => setActiveYear(String(year))}
+              >
+                {year}
+                <span className="ms-1 opacity-75">({count})</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {months.length === 0 ? (
         <div className="empty-state">
