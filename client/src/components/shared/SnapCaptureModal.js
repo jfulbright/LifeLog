@@ -4,17 +4,17 @@ import { Modal, Button } from "react-bootstrap";
 const SNAP_FIELDS = [
   {
     key: "snapshot1",
-    prompt: "Snap 1",
+    prompt: "\uD83D\uDCA1 Snap 1",
     placeholder: "Add a quick memory\u2026",
   },
   {
     key: "snapshot2",
-    prompt: "Snap 2",
+    prompt: "\uD83D\uDCA1 Snap 2",
     placeholder: "Add a quick memory\u2026",
   },
   {
     key: "snapshot3",
-    prompt: "Snap 3",
+    prompt: "\uD83D\uDCA1 Snap 3",
     placeholder: "Add a quick memory\u2026",
   },
 ];
@@ -128,7 +128,7 @@ function SnapCaptureModal({ show, onClose, onSave, itemTitle }) {
     >
       <Modal.Body className="snap-capture-body">
         <div className="snap-capture-header">
-          <span className="snap-capture-sparkle" aria-hidden="true">&#10024;</span>
+          <span className="snap-capture-sparkle" aria-hidden="true">&#128247;</span>
           <div className="snap-capture-heading">
             Capture a snapshot
           </div>
