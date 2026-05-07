@@ -118,7 +118,7 @@ function Dashboard() {
                     style={{ borderLeftColor: snap.color }}
                   >
                     <div className="snapshot-scroll-quote">
-                      &ldquo;{snap.snapshot}&rdquo;
+                      &#10024; &ldquo;{snap.snapshot}&rdquo;
                     </div>
                     <div className="snapshot-scroll-source">
                       {snap.title} &middot; {snap.label}

@@ -327,9 +327,6 @@ function ItemForm({
       >
         <Form.Label htmlFor={fieldId}>
           {field.label}
-          {field.optional && (
-            <span className="text-muted ms-1">(optional)</span>
-          )}
           {field.required && (
             <span className="text-danger ms-1">*</span>
           )}

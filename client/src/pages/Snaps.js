@@ -99,7 +99,7 @@ function Snaps() {
               style={{ borderLeftColor: snap.color }}
             >
               <div className="snap-card-quote">
-                &ldquo;{snap.text}&rdquo;
+                &#10024; &ldquo;{snap.text}&rdquo;
               </div>
               <div className="snap-card-source">
                 <span className="snap-card-icon" aria-hidden="true">

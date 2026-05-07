@@ -170,7 +170,7 @@ function ItemCardList({
                 {/* Snapshot teaser when collapsed */}
                 {!isExpanded && getSnapshotTeaser(item) && (
                   <div className="snapshot-teaser">
-                    &ldquo;{getSnapshotTeaser(item)}&rdquo;
+                    &#10024; &ldquo;{getSnapshotTeaser(item)}&rdquo;
                   </div>
                 )}
 
@@ -231,7 +231,7 @@ function ItemCardList({
                                 color: "var(--text-secondary, #6c757d)",
                               }}
                             >
-                              {value}
+                              &#10024; {value}
                             </div>
                           );
                         }

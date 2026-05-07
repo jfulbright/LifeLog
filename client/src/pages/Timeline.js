@@ -99,7 +99,7 @@ function Timeline() {
                       </div>
                       {entry.snapshot && (
                         <div className="timeline-snapshot">
-                          &ldquo;{entry.snapshot}&rdquo;
+                          &#10024; &ldquo;{entry.snapshot}&rdquo;
                         </div>
                       )}
                     </div>
