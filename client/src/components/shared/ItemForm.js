@@ -272,7 +272,7 @@ function ItemForm({
           <div>
             <Form.Control
               as="textarea"
-              rows={2}
+              rows={field.isSnapshot ? 3 : 2}
               {...commonProps}
               id={fieldId}
               placeholder={field.placeholder || ""}
@@ -321,7 +321,10 @@ function ItemForm({
     }
 
     return (
-      <Form.Group key={field.name} className="mb-3">
+      <Form.Group
+        key={field.name}
+        className={`mb-3${field.isSnapshot ? " snapshot-field-group" : ""}`}
+      >
         <Form.Label htmlFor={fieldId}>
           {field.label}
           {field.optional && (
@@ -343,27 +346,43 @@ function ItemForm({
 
   return (
     <Form ref={formRef} onSubmit={handleSubmit} noValidate>
-      {Object.entries(groupedFields).map(([section, fields], sIdx) => (
-        <div key={section}>
-          <h6
-            className="form-section-heading"
-            style={
-              sIdx === 0
-                ? { paddingTop: 0, borderTop: "none" }
-                : undefined
-            }
-          >
-            {section}
-          </h6>
-          <Row>
-            {fields.map((field) => (
-              <Col md={field.fullWidth ? 12 : 6} key={field.name}>
-                {renderField(field)}
-              </Col>
-            ))}
-          </Row>
-        </div>
-      ))}
+      {Object.entries(groupedFields).map(([section, fields], sIdx) => {
+        const isSnapSection = section === "Snapshots";
+
+        return (
+          <div key={section} className={isSnapSection ? "snap-section-wrapper" : ""}>
+            {isSnapSection ? (
+              <div className="snap-section-banner">
+                <span className="snap-section-icon" aria-hidden="true">&#10024;</span>
+                <div>
+                  <div className="snap-section-title">Capture your snapshots</div>
+                  <div className="snap-section-subtitle">
+                    Three quick memories -- 140 characters each
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <h6
+                className="form-section-heading"
+                style={
+                  sIdx === 0
+                    ? { paddingTop: 0, borderTop: "none" }
+                    : undefined
+                }
+              >
+                {section}
+              </h6>
+            )}
+            <Row>
+              {fields.map((field) => (
+                <Col md={field.fullWidth ? 12 : 6} key={field.name}>
+                  {renderField(field)}
+                </Col>
+              ))}
+            </Row>
+          </div>
+        );
+      })}
 
       {!isReadOnly && (
         <div className="d-flex gap-2 mt-3">

@@ -2,6 +2,7 @@ import React from "react";
 import { Badge } from "react-bootstrap";
 import categoryMeta from "helpers/categoryMeta";
 import { getStatusLabel } from "helpers/statusLabels";
+import { getSnapshotTeaser } from "helpers/operator";
 import dataService, { STORAGE_KEYS } from "services/dataService";
 
 const categories = Object.keys(STORAGE_KEYS).map((key) => ({
@@ -30,12 +31,12 @@ function Timeline() {
           .join(", "),
         status: item.status,
         date: item.startDate || item.createdAt || "",
+        snapshot: getSnapshotTeaser(item),
       }));
     })
     .filter((e) => e.date)
     .sort((a, b) => b.date.localeCompare(a.date));
 
-  // Group by month/year
   const grouped = {};
   allEntries.forEach((entry) => {
     const d = new Date(entry.date + "T00:00:00");
@@ -96,6 +97,11 @@ function Timeline() {
                         {" \u2022 "}
                         {entry.label}
                       </div>
+                      {entry.snapshot && (
+                        <div className="timeline-snapshot">
+                          &ldquo;{entry.snapshot}&rdquo;
+                        </div>
+                      )}
                     </div>
                     {entry.status && (
                       <Badge

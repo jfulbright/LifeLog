@@ -4,6 +4,7 @@ import { Row, Col, Badge, Button } from "react-bootstrap";
 import categoryMeta from "helpers/categoryMeta";
 import statusLabels from "helpers/statusLabels";
 import { getStatusLabel } from "helpers/statusLabels";
+import { getSnapshotTeaser } from "helpers/operator";
 import dataService, { STORAGE_KEYS } from "services/dataService";
 
 const categories = Object.keys(STORAGE_KEYS).map((key) => ({
@@ -19,7 +20,6 @@ function Dashboard() {
     statuses: statusLabels[cat.key] || {},
   }));
 
-  // Build recent activity from all categories, sorted by startDate desc
   const recentActivity = allData
     .flatMap((cat) =>
       cat.items.map((item) => ({
@@ -41,11 +41,37 @@ function Dashboard() {
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 8);
 
+  const recentSnapshots = allData
+    .flatMap((cat) =>
+      cat.items.map((item) => {
+        const snap = getSnapshotTeaser(item);
+        if (!snap) return null;
+        return {
+          category: cat.key,
+          label: cat.label,
+          meta: cat.meta,
+          title:
+            item[cat.meta.primaryField] ||
+            item.artist ||
+            item.title ||
+            item.type ||
+            item.make ||
+            "Untitled",
+          snapshot: snap,
+          date: item.startDate || item.createdAt || "",
+          color: (categoryMeta[cat.key] || {}).color || "var(--color-primary)",
+        };
+      })
+    )
+    .filter(Boolean)
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 5);
+
   const totalItems = allData.reduce((sum, c) => sum + c.items.length, 0);
 
   return (
     <div>
-      <h2 className="dashboard-welcome">Welcome to LifeLog</h2>
+      <h2 className="dashboard-welcome">Welcome to Snaps</h2>
 
       {totalItems === 0 ? (
         <div className="empty-state">
@@ -55,7 +81,7 @@ function Dashboard() {
           >
             &#128214;
           </div>
-          <div className="empty-state-title">Start logging your life</div>
+          <div className="empty-state-title">Start capturing your life</div>
           <div className="empty-state-text">
             Pick a category to add your first entry.
           </div>
@@ -75,6 +101,34 @@ function Dashboard() {
         </div>
       ) : (
         <>
+          {/* Recent snapshots scroll row */}
+          {recentSnapshots.length > 0 && (
+            <div className="mb-4">
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <h5 style={{ fontWeight: 600, marginBottom: 0 }}>Recent Snapshots</h5>
+                <Link to="/snaps" className="text-decoration-none" style={{ fontSize: "var(--font-size-sm)" }}>
+                  View all &rarr;
+                </Link>
+              </div>
+              <div className="snapshot-scroll-row">
+                {recentSnapshots.map((snap, i) => (
+                  <div
+                    key={i}
+                    className="snapshot-scroll-card"
+                    style={{ borderLeftColor: snap.color }}
+                  >
+                    <div className="snapshot-scroll-quote">
+                      &ldquo;{snap.snapshot}&rdquo;
+                    </div>
+                    <div className="snapshot-scroll-source">
+                      {snap.title} &middot; {snap.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Category summary cards */}
           <Row className="g-3 mb-4">
             {allData.map((cat) => {

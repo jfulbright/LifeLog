@@ -7,6 +7,7 @@ import TravelList from "features/travel/components/TravelList";
 import ConcertList from "features/concerts/components/ConcertList";
 import Dashboard from "pages/Dashboard";
 import Timeline from "pages/Timeline";
+import Snaps from "pages/Snaps";
 import SidebarNav from "components/shared/SidebarNav";
 import dataService from "services/dataService";
 import "App.css";
@@ -21,7 +22,7 @@ function App() {
       {/* Desktop sidebar (lg+) */}
       <aside className="app-sidebar">
         <Link to="/" className="sidebar-brand">
-          LifeLog
+          Snaps
         </Link>
         <SidebarNav counts={counts} />
       </aside>
@@ -35,7 +36,7 @@ function App() {
       >
         <Container fluid>
           <Navbar.Brand as={Link} to="/" style={{ fontWeight: 700 }}>
-            LifeLog
+            Snaps
           </Navbar.Brand>
           <button
             className="btn btn-link text-white p-0"
@@ -56,7 +57,7 @@ function App() {
         style={{ width: "280px" }}
       >
         <Offcanvas.Header closeButton>
-          <Offcanvas.Title style={{ fontWeight: 700 }}>LifeLog</Offcanvas.Title>
+          <Offcanvas.Title style={{ fontWeight: 700 }}>Snaps</Offcanvas.Title>
         </Offcanvas.Header>
         <Offcanvas.Body>
           <SidebarNav
@@ -72,6 +73,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/timeline" element={<Timeline />} />
+            <Route path="/snaps" element={<Snaps />} />
             <Route path="/cars" element={<CarList />} />
             <Route path="/homes" element={<HomeList />} />
             <Route path="/travel" element={<TravelList />} />

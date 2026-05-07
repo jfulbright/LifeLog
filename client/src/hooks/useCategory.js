@@ -1,5 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import dataService from "services/dataService";
+import { hasAnySnapshot } from "helpers/operator";
+
+const EXPERIENCED_STATUSES = new Set([
+  "attended",
+  "visited",
+  "owned",
+  "rented",
+]);
 
 /**
  * Shared hook that encapsulates the CRUD + UI state pattern
@@ -24,6 +32,10 @@ export default function useCategory(category, { migrate, normalize, schema } = {
   const [filterStatus, setFilterStatus] = useState("all");
   const [showToast, setShowToast] = useState(false);
 
+  const [showSnapPrompt, setShowSnapPrompt] = useState(false);
+  const [snapPromptItemIndex, setSnapPromptItemIndex] = useState(null);
+  const [snapPromptTitle, setSnapPromptTitle] = useState("");
+
   useEffect(() => {
     dataService.saveItems(category, items);
   }, [category, items]);
@@ -32,19 +44,58 @@ export default function useCategory(category, { migrate, normalize, schema } = {
     (e) => {
       if (e?.preventDefault) e.preventDefault();
       const data = normalize ? normalize(formData) : formData;
+      let savedIndex;
 
       if (editIndex !== null) {
         setItems((prev) => prev.map((item, i) => (i === editIndex ? data : item)));
+        savedIndex = editIndex;
         setEditIndex(null);
       } else {
-        setItems((prev) => [...prev, data]);
+        setItems((prev) => {
+          savedIndex = prev.length;
+          return [...prev, data];
+        });
       }
       setFormData({});
       setShowForm(false);
-      setShowToast(true);
+
+      const isExperienced = EXPERIENCED_STATUSES.has(data.status);
+      if (isExperienced && !hasAnySnapshot(data)) {
+        const title =
+          data.artist || data.title || data.type || data.make || "this entry";
+        setSnapPromptTitle(title);
+        setSnapPromptItemIndex(savedIndex);
+        setShowSnapPrompt(true);
+      } else {
+        setShowToast(true);
+      }
     },
     [formData, editIndex, normalize]
   );
+
+  const handleSnapSave = useCallback(
+    (snapData) => {
+      if (snapPromptItemIndex !== null && Object.keys(snapData).length > 0) {
+        setItems((prev) =>
+          prev.map((item, i) =>
+            i === snapPromptItemIndex ? { ...item, ...snapData } : item
+          )
+        );
+      }
+      setShowSnapPrompt(false);
+      setSnapPromptItemIndex(null);
+      setSnapPromptTitle("");
+      setShowToast(true);
+    },
+    [snapPromptItemIndex]
+  );
+
+  const dismissSnapPrompt = useCallback(() => {
+    setShowSnapPrompt(false);
+    setSnapPromptItemIndex(null);
+    setSnapPromptTitle("");
+    setShowToast(true);
+  }, []);
 
   const startEditing = useCallback(
     (index) => {
@@ -102,5 +153,9 @@ export default function useCategory(category, { migrate, normalize, schema } = {
     deleteItem,
     closeForm,
     openForm,
+    showSnapPrompt,
+    snapPromptTitle,
+    handleSnapSave,
+    dismissSnapPrompt,
   };
 }
