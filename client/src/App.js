@@ -14,10 +14,11 @@ import "App.css";
 
 function App() {
   const [showMobileNav, setShowMobileNav] = useState(false);
-  const [counts, setCounts] = useState(() => dataService.getCounts());
+  const [counts, setCounts] = useState({ concerts: 0, travel: 0, cars: 0, homes: 0 });
 
   useEffect(() => {
-    const refresh = () => setCounts(dataService.getCounts());
+    const refresh = () => dataService.getCounts().then(setCounts);
+    refresh(); // initial async load
     window.addEventListener("data-changed", refresh);
     return () => window.removeEventListener("data-changed", refresh);
   }, []);

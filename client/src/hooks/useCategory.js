@@ -15,20 +15,14 @@ const EXPERIENCED_STATUSES = new Set([
  *
  * @param {string} category - Category key (e.g. "travel", "concerts")
  * @param {object} options
- * @param {function} [options.migrate] - Optional migration function applied to each item on load
- * @param {function} [options.normalize] - Optional normalization function applied before save
+ * @param {function} [options.migrate] - Optional migration applied to each item on load (must be stable)
+ * @param {function} [options.normalize] - Optional normalization applied before save
  * @param {Array} [options.schema] - Optional schema array to derive default values from
  */
 export default function useCategory(category, { migrate, normalize, schema } = {}) {
-  const [items, setItems] = useState(() => {
-    let loaded = dataService.getItems(category);
-    if (migrate) loaded = loaded.map(migrate);
-    // One-time migration: assign stable UUIDs to any items that lack one
-    loaded = loaded.map((item) =>
-      item.id ? item : { ...item, id: crypto.randomUUID() }
-    );
-    return loaded;
-  });
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [formData, setFormData] = useState({});
   const [showForm, setShowForm] = useState(false);
@@ -40,16 +34,45 @@ export default function useCategory(category, { migrate, normalize, schema } = {
   const [snapPromptItemIndex, setSnapPromptItemIndex] = useState(null);
   const [snapPromptTitle, setSnapPromptTitle] = useState("");
 
-  // Skip dispatching on initial mount — only fire when items actually change
-  const isFirstSave = useRef(true);
+  // Gate saves: prevents writing back to storage before initial async load completes
+  const isReady = useRef(false);
 
+  // Async initial load — migrate is intentionally excluded from deps (must be a stable reference)
   useEffect(() => {
-    dataService.saveItems(category, items);
-    if (isFirstSave.current) {
-      isFirstSave.current = false;
-    } else {
-      window.dispatchEvent(new Event("data-changed"));
+    let cancelled = false;
+    async function load() {
+      try {
+        let loaded = await dataService.getItems(category);
+        if (migrate) loaded = loaded.map(migrate);
+        // One-time migration: assign stable UUIDs to any items that lack one
+        loaded = loaded.map((item) =>
+          item.id ? item : { ...item, id: crypto.randomUUID() }
+        );
+        if (!cancelled) {
+          isReady.current = true;
+          setItems(loaded);
+          setLoading(false);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err.message || "Failed to load data");
+          setLoading(false);
+        }
+      }
     }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [category]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Persist after every mutation — skips pre-load renders, surfaces storage errors
+  useEffect(() => {
+    if (!isReady.current) return;
+    dataService
+      .saveItems(category, items)
+      .then(() => window.dispatchEvent(new Event("data-changed")))
+      .catch((err) => console.error("[useCategory] save failed:", err));
   }, [category, items]);
 
   const handleSubmit = useCallback(
@@ -160,6 +183,8 @@ export default function useCategory(category, { migrate, normalize, schema } = {
 
   return {
     items,
+    loading,
+    error,
     formData,
     setFormData,
     showForm,

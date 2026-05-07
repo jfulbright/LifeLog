@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Row, Col, Badge, Button } from "react-bootstrap";
 import categoryMeta from "helpers/categoryMeta";
@@ -21,12 +21,33 @@ function getGreeting() {
 
 function Dashboard() {
   const greeting = getGreeting();
-  const allData = categories.map((cat) => ({
-    ...cat,
-    items: dataService.getItems(cat.key),
-    meta: categoryMeta[cat.key] || {},
-    statuses: statusLabels[cat.key] || {},
-  }));
+  const [allData, setAllData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      const loaded = await Promise.all(
+        categories.map(async (cat) => ({
+          ...cat,
+          items: await dataService.getItems(cat.key),
+          meta: categoryMeta[cat.key] || {},
+          statuses: statusLabels[cat.key] || {},
+        }))
+      );
+      if (!cancelled) {
+        setAllData(loaded);
+        setLoading(false);
+      }
+    }
+    load();
+    const refresh = () => load();
+    window.addEventListener("data-changed", refresh);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("data-changed", refresh);
+    };
+  }, []);
 
   const recentActivity = allData
     .flatMap((cat) =>
@@ -76,6 +97,8 @@ function Dashboard() {
     .slice(0, 5);
 
   const totalItems = allData.reduce((sum, c) => sum + c.items.length, 0);
+
+  if (loading) return null;
 
   return (
     <div>

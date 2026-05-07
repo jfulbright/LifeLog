@@ -29,6 +29,7 @@ function migrateMemoryToSnapshot(item) {
 function TravelList() {
   const {
     items: travels,
+    loading,
     formData, setFormData,
     showForm, editIndex,
     filterStatus, setFilterStatus,
@@ -57,7 +58,7 @@ function TravelList() {
         onChange={setFilterStatus}
       />
 
-      {filteredTravels.length === 0 && (
+      {filteredTravels.length === 0 && !loading && (
         <div className="empty-state">
           <div className="empty-state-icon" style={{ backgroundColor: "var(--color-travel)", color: "#fff" }}>
             &#9992;&#65039;

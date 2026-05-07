@@ -1,7 +1,7 @@
 /**
  * Data service abstraction layer.
- * Phase 3: localStorage implementation.
- * Phase 4: swap internals with API calls — no consumer changes needed.
+ * Phase 3: localStorage implementation — all methods return Promises.
+ * Phase 6: swap internals with real API calls — no consumer changes needed.
  */
 
 const STORAGE_KEYS = {
@@ -16,56 +16,69 @@ function getStorageKey(category) {
 }
 
 const dataService = {
-  getItems(category) {
+  async getItems(category) {
     try {
       const raw = localStorage.getItem(getStorageKey(category));
       return raw ? JSON.parse(raw) : [];
-    } catch {
+    } catch (err) {
+      console.error(`[dataService] getItems(${category}) failed:`, err);
       return [];
     }
   },
 
-  saveItems(category, items) {
-    localStorage.setItem(getStorageKey(category), JSON.stringify(items));
+  async saveItems(category, items) {
+    try {
+      localStorage.setItem(getStorageKey(category), JSON.stringify(items));
+    } catch (err) {
+      console.error(`[dataService] saveItems(${category}) failed:`, err);
+      throw err;
+    }
   },
 
-  addItem(category, item) {
-    const items = dataService.getItems(category);
+  async addItem(category, item) {
+    const items = await dataService.getItems(category);
     items.push(item);
-    dataService.saveItems(category, items);
+    await dataService.saveItems(category, items);
     return items;
   },
 
-  updateItem(category, id, item) {
-    const items = dataService.getItems(category);
+  async updateItem(category, id, item) {
+    const items = await dataService.getItems(category);
     const updated = items.map((i) => (i.id === id ? { ...item, id } : i));
-    dataService.saveItems(category, updated);
+    await dataService.saveItems(category, updated);
     return updated;
   },
 
-  deleteItem(category, id) {
-    const items = dataService.getItems(category);
+  async deleteItem(category, id) {
+    const items = await dataService.getItems(category);
     const filtered = items.filter((i) => i.id !== id);
-    dataService.saveItems(category, filtered);
+    await dataService.saveItems(category, filtered);
     return filtered;
   },
 
-  getAllItems() {
-    return Object.keys(STORAGE_KEYS).flatMap((category) =>
-      dataService.getItems(category).map((item) => ({ ...item, _category: category }))
+  async getAllItems() {
+    const groups = await Promise.all(
+      Object.keys(STORAGE_KEYS).map(async (category) => {
+        const items = await dataService.getItems(category);
+        return items.map((item) => ({ ...item, _category: category }));
+      })
     );
+    return groups.flat();
   },
 
-  getCount(category) {
-    return dataService.getItems(category).length;
+  async getCount(category) {
+    const items = await dataService.getItems(category);
+    return items.length;
   },
 
-  getCounts() {
-    const counts = {};
-    for (const category of Object.keys(STORAGE_KEYS)) {
-      counts[category] = dataService.getCount(category);
-    }
-    return counts;
+  async getCounts() {
+    const entries = await Promise.all(
+      Object.keys(STORAGE_KEYS).map(async (category) => [
+        category,
+        await dataService.getCount(category),
+      ])
+    );
+    return Object.fromEntries(entries);
   },
 };
 

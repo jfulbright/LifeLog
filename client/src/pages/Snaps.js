@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import categoryMeta from "helpers/categoryMeta";
 import { getAllSnapshots } from "helpers/operator";
@@ -11,32 +11,50 @@ const categories = Object.keys(STORAGE_KEYS).map((key) => ({
 
 function Snaps() {
   const [activeFilter, setActiveFilter] = useState("all");
+  const [allSnaps, setAllSnaps] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const allSnaps = categories.flatMap((cat) => {
-    const meta = categoryMeta[cat.key] || {};
-    return dataService.getItems(cat.key).flatMap((item) => {
-      const snaps = getAllSnapshots(item);
-      if (snaps.length === 0) return [];
-      const title =
-        item[meta.primaryField] ||
-        item.artist ||
-        item.title ||
-        item.type ||
-        item.make ||
-        "Untitled";
-      const date = item.startDate || item.createdAt || "";
-      return snaps.map((text, i) => ({
-        text,
-        title,
-        category: cat.key,
-        label: cat.label,
-        icon: meta.icon,
-        color: meta.color,
-        date,
-        key: `${cat.key}-${title}-${i}`,
-      }));
-    });
-  });
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      const groups = await Promise.all(
+        categories.map(async (cat) => {
+          const meta = categoryMeta[cat.key] || {};
+          const items = await dataService.getItems(cat.key);
+          return items.flatMap((item) => {
+            const snaps = getAllSnapshots(item);
+            if (snaps.length === 0) return [];
+            const title =
+              item[meta.primaryField] ||
+              item.artist ||
+              item.title ||
+              item.type ||
+              item.make ||
+              "Untitled";
+            const date = item.startDate || item.createdAt || "";
+            return snaps.map((text, i) => ({
+              text,
+              title,
+              category: cat.key,
+              label: cat.label,
+              icon: meta.icon,
+              color: meta.color,
+              date,
+              key: `${cat.key}-${title}-${i}`,
+            }));
+          });
+        })
+      );
+      if (!cancelled) {
+        setAllSnaps(groups.flat());
+        setLoading(false);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filtered =
     activeFilter === "all"
@@ -44,6 +62,8 @@ function Snaps() {
       : allSnaps.filter((s) => s.category === activeFilter);
 
   const sorted = [...filtered].sort((a, b) => b.date.localeCompare(a.date));
+
+  if (loading) return null;
 
   return (
     <div>

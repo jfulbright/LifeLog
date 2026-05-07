@@ -18,6 +18,7 @@ import {
 function CarList() {
   const {
     items: cars,
+    loading,
     formData, setFormData,
     showForm, editIndex,
     filterStatus, setFilterStatus,
@@ -46,7 +47,7 @@ function CarList() {
         onChange={setFilterStatus}
       />
 
-      {filteredCars.length === 0 && (
+      {filteredCars.length === 0 && !loading && (
         <div className="empty-state">
           <div className="empty-state-icon" style={{ backgroundColor: "var(--color-cars)", color: "#fff" }}>
             &#128663;

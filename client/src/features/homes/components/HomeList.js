@@ -18,6 +18,7 @@ import {
 function HomeList() {
   const {
     items: homes,
+    loading,
     formData, setFormData,
     showForm, editIndex,
     filterStatus, setFilterStatus,
@@ -46,7 +47,7 @@ function HomeList() {
         onChange={setFilterStatus}
       />
 
-      {filteredHomes.length === 0 && (
+      {filteredHomes.length === 0 && !loading && (
         <div className="empty-state">
           <div className="empty-state-icon" style={{ backgroundColor: "var(--color-homes)", color: "#fff" }}>
             &#127968;

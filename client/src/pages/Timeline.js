@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Badge } from "react-bootstrap";
 import categoryMeta from "helpers/categoryMeta";
 import { getStatusLabel } from "helpers/statusLabels";
@@ -12,32 +12,51 @@ const categories = Object.keys(STORAGE_KEYS).map((key) => ({
 
 function Timeline() {
   const [activeYear, setActiveYear] = useState("all");
+  const [allEntries, setAllEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const allEntries = categories
-    .flatMap((cat) => {
-      const meta = categoryMeta[cat.key] || {};
-      return dataService.getItems(cat.key).map((item) => ({
-        category: cat.key,
-        label: cat.label,
-        meta,
-        title:
-          item[meta.primaryField] ||
-          item.artist ||
-          item.title ||
-          item.type ||
-          item.make ||
-          "Untitled",
-        subtitle: (meta.secondaryFields || [])
-          .map((f) => item[f])
-          .filter(Boolean)
-          .join(", "),
-        status: item.status,
-        date: item.startDate || item.createdAt || "",
-        snapshot: getSnapshotTeaser(item),
-      }));
-    })
-    .filter((e) => e.date)
-    .sort((a, b) => b.date.localeCompare(a.date));
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      const rows = await Promise.all(
+        categories.map(async (cat) => {
+          const meta = categoryMeta[cat.key] || {};
+          const items = await dataService.getItems(cat.key);
+          return items.map((item) => ({
+            category: cat.key,
+            label: cat.label,
+            meta,
+            title:
+              item[meta.primaryField] ||
+              item.artist ||
+              item.title ||
+              item.type ||
+              item.make ||
+              "Untitled",
+            subtitle: (meta.secondaryFields || [])
+              .map((f) => item[f])
+              .filter(Boolean)
+              .join(", "),
+            status: item.status,
+            date: item.startDate || item.createdAt || "",
+            snapshot: getSnapshotTeaser(item),
+          }));
+        })
+      );
+      const sorted = rows
+        .flat()
+        .filter((e) => e.date)
+        .sort((a, b) => b.date.localeCompare(a.date));
+      if (!cancelled) {
+        setAllEntries(sorted);
+        setLoading(false);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const years = [
     ...new Set(
@@ -66,6 +85,8 @@ function Timeline() {
   });
 
   const months = Object.keys(grouped);
+
+  if (loading) return null;
 
   return (
     <div>

@@ -30,6 +30,7 @@ function normalizeConcert(data) {
 function ConcertList() {
   const {
     items: concerts,
+    loading,
     formData, setFormData,
     showForm, editIndex,
     filterStatus, setFilterStatus,
@@ -58,7 +59,7 @@ function ConcertList() {
         onChange={setFilterStatus}
       />
 
-      {filteredConcerts.length === 0 && !showForm && (
+      {filteredConcerts.length === 0 && !showForm && !loading && (
         <div className="empty-state">
           <div
             className="empty-state-icon"
