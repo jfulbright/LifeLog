@@ -11,6 +11,7 @@ import Snaps from "./pages/Snaps";
 import Settings from "./pages/Settings";
 import SharedFeed from "./pages/SharedFeed";
 import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetPassword";
 import SidebarNav from "./components/shared/SidebarNav";
 import MigrationBanner from "./components/auth/MigrationBanner";
 import { AppDataProvider, useAppData } from "./contexts/AppDataContext";
@@ -118,13 +119,16 @@ function AppShell() {
 }
 
 function App() {
-  const { user, loading } = useAuth();
+  const { user, loading, isRecovering } = useAuth();
 
   // While Supabase resolves the session, render nothing to avoid flash
   if (loading) return null;
 
   // Unauthenticated users see only the login page
   if (!user) return <Login />;
+
+  // Users who clicked a password-reset link land here before setting a new password
+  if (isRecovering) return <ResetPassword />;
 
   return (
     <AppDataProvider>

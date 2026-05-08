@@ -6,6 +6,7 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isRecovering, setIsRecovering] = useState(false);
 
   useEffect(() => {
     // Hydrate from existing session on mount
@@ -17,8 +18,11 @@ export function AuthProvider({ children }) {
     // Keep in sync with Supabase auth state changes (sign-in, sign-out, token refresh)
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
+      if (event === "PASSWORD_RECOVERY") {
+        setIsRecovering(true);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -32,8 +36,35 @@ export function AuthProvider({ children }) {
 
   const signOut = () => supabase.auth.signOut();
 
+  const sendPasswordReset = (email) =>
+    supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: process.env.REACT_APP_SITE_URL || window.location.origin,
+    });
+
+  const clearRecovery = () => setIsRecovering(false);
+
+  const signInWithGoogle = () =>
+    supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: process.env.REACT_APP_SITE_URL || window.location.origin,
+      },
+    });
+
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        isRecovering,
+        signIn,
+        signUp,
+        signOut,
+        sendPasswordReset,
+        clearRecovery,
+        signInWithGoogle,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
