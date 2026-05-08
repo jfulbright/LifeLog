@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from "react";
 import { Button, Form, Alert } from "react-bootstrap";
 import { useAppData } from "../contexts/AppDataContext";
+import { useAuth } from "../contexts/AuthContext";
 import dataService from "../services/dataService";
 import FormPanel from "../components/shared/FormPanel";
 import { RING_META, RING_LEVELS, INVITE_STATUS_META } from "../helpers/ringMeta";
@@ -479,14 +480,164 @@ function NotificationsTab() {
 }
 
 function AccountTab() {
+  const { user, signOut, linkGoogleAccount } = useAuth();
+  const [linkError, setLinkError] = useState(null);
+  const [linkLoading, setLinkLoading] = useState(false);
+
+  const isGoogleLinked = user?.identities?.some((id) => id.provider === "google");
+  const hasPasswordLogin = user?.identities?.some((id) => id.provider === "email");
+
+  const handleLinkGoogle = async () => {
+    setLinkError(null);
+    setLinkLoading(true);
+    try {
+      const { error } = await linkGoogleAccount();
+      if (error) throw error;
+      // Supabase redirects to Google — page will leave
+    } catch (err) {
+      setLinkError(err.message || "Failed to link Google account.");
+      setLinkLoading(false);
+    }
+  };
+
+  const sectionStyle = {
+    backgroundColor: "#fff",
+    border: "1px solid var(--color-border, #EBEAEB)",
+    borderRadius: 10,
+    padding: "1.25rem 1.5rem",
+    marginBottom: "1rem",
+  };
+
+  const labelStyle = {
+    fontSize: "var(--font-size-sm, 0.875rem)",
+    fontWeight: 600,
+    color: "var(--color-text-secondary, #696969)",
+    textTransform: "uppercase",
+    letterSpacing: "0.05em",
+    marginBottom: "0.75rem",
+  };
+
   return (
-    <div className="empty-state">
-      <div className="empty-state-icon" style={{ backgroundColor: "var(--color-info)", color: "#fff" }}>
-        🔐
+    <div style={{ maxWidth: 480 }}>
+      {/* Account info */}
+      <div style={sectionStyle}>
+        <div style={labelStyle}>Signed in as</div>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              backgroundColor: "var(--color-primary, #4A154B)",
+              color: "#fff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: 700,
+              fontSize: "1rem",
+              flexShrink: 0,
+            }}
+          >
+            {(user?.email?.[0] || "?").toUpperCase()}
+          </div>
+          <div>
+            <div
+              style={{
+                fontWeight: 600,
+                color: "var(--color-text-primary, #1D1C1D)",
+                fontSize: "0.9375rem",
+              }}
+            >
+              {user?.email}
+            </div>
+            <div
+              style={{
+                fontSize: "var(--font-size-sm, 0.875rem)",
+                color: "var(--color-text-secondary, #696969)",
+              }}
+            >
+              {isGoogleLinked && hasPasswordLogin
+                ? "Email + Google"
+                : isGoogleLinked
+                ? "Google"
+                : "Email / Password"}
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="empty-state-title">Account</div>
-      <div className="empty-state-text">
-        Login, profile, and data management will live here once authentication is added in Phase 6.
+
+      {/* Connected accounts */}
+      <div style={sectionStyle}>
+        <div style={labelStyle}>Connected accounts</div>
+
+        {linkError && (
+          <Alert
+            variant="danger"
+            dismissible
+            onClose={() => setLinkError(null)}
+            style={{ fontSize: "var(--font-size-sm)", borderRadius: 8, marginBottom: "0.75rem" }}
+          >
+            {linkError}
+          </Alert>
+        )}
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "1rem",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
+            <svg width="20" height="20" viewBox="0 0 18 18" aria-hidden="true" style={{ flexShrink: 0 }}>
+              <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
+              <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+              <path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z"/>
+              <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z"/>
+            </svg>
+            <span style={{ fontWeight: 500, color: "var(--color-text-primary, #1D1C1D)" }}>
+              Google
+            </span>
+          </div>
+
+          {isGoogleLinked ? (
+            <span
+              style={{
+                fontSize: "var(--font-size-sm, 0.875rem)",
+                color: "var(--color-success, #2EB67D)",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: "0.25rem",
+              }}
+            >
+              ✓ Connected
+            </span>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline-secondary"
+              onClick={handleLinkGoogle}
+              disabled={linkLoading}
+              style={{ borderRadius: 6, fontWeight: 600, fontSize: "var(--font-size-sm)" }}
+            >
+              {linkLoading ? "Redirecting…" : "Link account"}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Sign out */}
+      <div style={sectionStyle}>
+        <div style={labelStyle}>Session</div>
+        <Button
+          variant="outline-danger"
+          onClick={signOut}
+          style={{ borderRadius: 6, fontWeight: 600 }}
+        >
+          Sign out
+        </Button>
       </div>
     </div>
   );

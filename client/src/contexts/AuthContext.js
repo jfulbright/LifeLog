@@ -51,6 +51,14 @@ export function AuthProvider({ children }) {
       },
     });
 
+  const linkGoogleAccount = () =>
+    supabase.auth.linkIdentity({
+      provider: "google",
+      options: {
+        redirectTo: process.env.REACT_APP_SITE_URL || window.location.origin,
+      },
+    });
+
   return (
     <AuthContext.Provider
       value={{
@@ -63,6 +71,7 @@ export function AuthProvider({ children }) {
         sendPasswordReset,
         clearRecovery,
         signInWithGoogle,
+        linkGoogleAccount,
       }}
     >
       {children}
