@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import dataService, { STORAGE_KEYS } from "services/dataService";
+import { STORAGE_KEYS } from "services/dataService";
 import { supabase } from "services/supabaseClient";
 
 const CATEGORY_KEYS = ["concerts", "travel", "cars", "homes"];
