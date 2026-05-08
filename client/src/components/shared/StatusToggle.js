@@ -1,5 +1,5 @@
 import React from "react";
-import { getStatusLabel } from "helpers/filterUtils";
+import { getStatusLabel } from "../../helpers/filterUtils";
 
 /**
  * Reusable pill-style status filter toggle.

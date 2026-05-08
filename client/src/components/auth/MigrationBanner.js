@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { STORAGE_KEYS } from "services/dataService";
-import { supabase } from "services/supabaseClient";
+import { STORAGE_KEYS } from "../../services/dataService";
+import { supabase } from "../../services/supabaseClient";
 
 const CATEGORY_KEYS = ["concerts", "travel", "cars", "homes"];
 const MIGRATION_DONE_KEY = "ls_migrated_to_supabase";

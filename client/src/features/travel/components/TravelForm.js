@@ -1,8 +1,8 @@
 // client/src/features/travel/TravelForm.js
 
 import React from "react";
-import ItemForm from "components/shared/ItemForm";
-import travelSchema from "features/travel/travelSchema";
+import ItemForm from "../../../components/shared/ItemForm";
+import travelSchema from "../../../features/travel/travelSchema";
 
 /**
  * Wrapper for the shared ItemForm.

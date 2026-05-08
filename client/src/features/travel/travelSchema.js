@@ -1,7 +1,7 @@
-import { baseSchema } from "helpers/common.schema";
-import { locationSchema } from "helpers/location.schema";
-import { getStatusValues } from "helpers/statusLabels";
-import { getReflectionFields } from "helpers/reflection.schema";
+import { baseSchema } from "../../helpers/common.schema";
+import { locationSchema } from "../../helpers/location.schema";
+import { getStatusValues } from "../../helpers/statusLabels";
+import { getReflectionFields } from "../../helpers/reflection.schema";
 
 const travelFields = [
   {

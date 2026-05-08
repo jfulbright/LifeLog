@@ -1,6 +1,6 @@
 // client/src/helpers/filterUtils.js
 
-import statusLabels, { getStatusLabel } from "helpers/statusLabels";
+import statusLabels, { getStatusLabel } from "../helpers/statusLabels";
 
 /**
  * Returns a list of available status filters for a category

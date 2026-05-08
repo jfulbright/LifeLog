@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import categoryMeta from "helpers/categoryMeta";
-import { getAllSnapshots } from "helpers/operator";
-import dataService, { STORAGE_KEYS } from "services/dataService";
+import categoryMeta from "../helpers/categoryMeta";
+import { getAllSnapshots } from "../helpers/operator";
+import dataService, { STORAGE_KEYS } from "../services/dataService";
 
 const categories = Object.keys(STORAGE_KEYS).map((key) => ({
   key,

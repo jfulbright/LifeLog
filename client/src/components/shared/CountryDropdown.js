@@ -1,6 +1,6 @@
 import React from "react";
 import Select from "react-select";
-import { CountryList } from "data/countries";
+import { CountryList } from "../../data/countries";
 
 const options = CountryList.map((c) => ({
   value: c.code,

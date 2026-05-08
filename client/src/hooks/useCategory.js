@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import dataService from "services/dataService";
-import { hasAnySnapshot } from "helpers/operator";
+import dataService from "../services/dataService";
+import { hasAnySnapshot } from "../helpers/operator";
 
 const EXPERIENCED_STATUSES = new Set([
   "attended",

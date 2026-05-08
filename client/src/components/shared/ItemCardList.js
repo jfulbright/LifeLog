@@ -1,8 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Badge, Button } from "react-bootstrap";
-import { isFieldVisible, getSnapshotTeaser, getAllSnapshots } from "helpers/operator";
-import { getStatusLabel } from "helpers/statusLabels";
-import { getCategoryMeta } from "helpers/categoryMeta";
+import { isFieldVisible, getAllSnapshots } from "../../helpers/operator";
+import { getStatusLabel } from "../../helpers/statusLabels";
+import { getCategoryMeta } from "../../helpers/categoryMeta";
+import { useAppData } from "../../contexts/AppDataContext";
+import { RING_META } from "../../helpers/ringMeta";
+import dataService from "../../services/dataService";
 
 /**
  * Returns the Bootstrap badge variant for a status value.
@@ -37,11 +40,206 @@ function formatDisplayDate(dateStr) {
 }
 
 /**
- * Redesigned card list with visual hierarchy:
- * - Photo thumbnail / category icon placeholder
- * - Primary title, secondary info, date, status badge
- * - Expand/collapse for full detail
+ * Renders a companions array (which can be legacy strings or new contact objects).
  */
+function CompanionsDisplay({ companions, contacts }) {
+  if (!Array.isArray(companions) || companions.length === 0) return null;
+  return (
+    <span>
+      {companions.map((entry, i) => {
+        if (typeof entry === "string") {
+          return (
+            <span key={i}>
+              {i > 0 ? ", " : ""}
+              {entry}
+            </span>
+          );
+        }
+        if (entry.type === "contact") {
+          const contact = contacts.find((c) => c.id === entry.contactId);
+          const ring = contact ? RING_META[contact.ringLevel] : null;
+          return (
+            <span key={i}>
+              {i > 0 ? ", " : ""}
+              <span
+                style={{
+                  background: ring ? ring.bgColor : "var(--color-surface-hover)",
+                  border: `1px solid ${ring ? ring.borderColor : "var(--color-border)"}`,
+                  borderRadius: 10,
+                  padding: "0.05rem 0.4rem",
+                  fontSize: "0.85em",
+                  color: ring ? ring.color : "var(--color-text-primary)",
+                  fontWeight: 600,
+                }}
+              >
+                {ring ? ring.emoji + " " : ""}
+                {entry.displayName}
+              </span>
+            </span>
+          );
+        }
+        return (
+          <span key={i}>
+            {i > 0 ? ", " : ""}
+            {entry.name}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+/**
+ * Shows sharing metadata (rings + tagged contacts) on the expanded card.
+ */
+function SharingInfo({ item, contacts }) {
+  const rings = item.visibilityRings || [];
+  const taggedIds = item.taggedContactIds || [];
+  if (rings.length === 0 && taggedIds.length === 0) return null;
+
+  const ringLabels = rings.map((r) => RING_META[r]).filter(Boolean);
+  const taggedContacts = taggedIds
+    .map((id) => contacts.find((c) => c.id === id))
+    .filter(Boolean);
+
+  return (
+    <div
+      style={{
+        marginTop: "0.75rem",
+        padding: "0.625rem 0.75rem",
+        background: "linear-gradient(135deg, #F5EEF8 0%, #EAF8FE 100%)",
+        borderRadius: 6,
+        border: "1px solid var(--color-border)",
+        fontSize: "var(--font-size-xs)",
+      }}
+    >
+      <div style={{ fontWeight: 700, marginBottom: "0.25rem", color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+        🤝 Shared with
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.25rem" }}>
+        {ringLabels.map((ring) => (
+          <span
+            key={ring.label}
+            style={{
+              background: ring.bgColor,
+              border: `1px solid ${ring.borderColor}`,
+              borderRadius: 10,
+              padding: "0.1rem 0.5rem",
+              color: ring.color,
+              fontWeight: 700,
+              fontSize: "0.7rem",
+            }}
+          >
+            {ring.emoji} {ring.label}
+          </span>
+        ))}
+        {taggedContacts.map((c) => {
+          const ring = RING_META[c.ringLevel];
+          return (
+            <span
+              key={c.id}
+              style={{
+                background: "var(--color-surface)",
+                border: "1px solid var(--color-border)",
+                borderRadius: 10,
+                padding: "0.1rem 0.5rem",
+                color: "var(--color-text-secondary)",
+                fontWeight: 600,
+                fontSize: "0.7rem",
+              }}
+            >
+              {ring ? ring.emoji : ""} {c.displayName}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Phase 7c: Renders co-participant personal overlays.
+ */
+function CoParticipantOverlays({ itemId, contacts }) {
+  const [overlays, setOverlays] = useState([]);
+
+  useEffect(() => {
+    dataService.getOverlaysForEntry(itemId).then(setOverlays);
+  }, [itemId]);
+
+  if (overlays.length === 0) return null;
+
+  return (
+    <div
+      style={{
+        marginTop: "0.75rem",
+        paddingTop: "0.75rem",
+        borderTop: "1px solid var(--color-border)",
+      }}
+    >
+      <div
+        style={{
+          fontWeight: 700,
+          fontSize: "var(--font-size-xs)",
+          textTransform: "uppercase",
+          letterSpacing: "0.05em",
+          color: "var(--color-text-secondary)",
+          marginBottom: "0.625rem",
+        }}
+      >
+        👥 What others thought
+      </div>
+      {overlays.map((overlay) => {
+        const contact = contacts.find((c) => c.id === overlay.contactId);
+        const snaps = [overlay.snapshot1, overlay.snapshot2, overlay.snapshot3].filter(Boolean);
+        if (!snaps.length && !overlay.rating) return null;
+        return (
+          <div
+            key={overlay.id}
+            style={{
+              marginBottom: "0.625rem",
+              paddingLeft: "0.75rem",
+              borderLeft: "2px solid var(--color-border)",
+            }}
+          >
+            <div
+              style={{
+                fontWeight: 600,
+                fontSize: "var(--font-size-xs)",
+                color: "var(--color-text-secondary)",
+                marginBottom: "0.25rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+              }}
+            >
+              {contact ? contact.displayName : "Someone"}
+              {overlay.rating && (
+                <span style={{ color: "#f5a623", letterSpacing: "0.05em" }}>
+                  {"★".repeat(parseInt(overlay.rating))}
+                  {"☆".repeat(5 - parseInt(overlay.rating))}
+                </span>
+              )}
+            </div>
+            {snaps.map((snap, i) => (
+              <div
+                key={i}
+                style={{
+                  fontStyle: "italic",
+                  fontSize: "var(--font-size-sm)",
+                  color: "var(--color-text-secondary)",
+                  marginBottom: "0.2rem",
+                }}
+              >
+                "{snap}"
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 function ItemCardList({
   category = "",
   title,
@@ -53,6 +251,7 @@ function ItemCardList({
 }) {
   const [expandedId, setExpandedId] = useState(null);
   const meta = getCategoryMeta(category);
+  const { contacts } = useAppData();
 
   if (!Array.isArray(items)) {
     console.warn("ItemCardList received non-array items:", items);
@@ -249,10 +448,12 @@ function ItemCardList({
                                 >
                                   View link
                                 </a>
+                              ) : field.name === "companions" && Array.isArray(value) ? (
+                                <CompanionsDisplay companions={value} contacts={contacts} />
                               ) : Array.isArray(value) ? (
                                 <ol className="mb-0 ps-3" style={{ fontSize: "var(--font-size-sm)" }}>
                                   {value.map((v, i) => (
-                                    <li key={i}>{v}</li>
+                                    <li key={i}>{typeof v === "string" ? v : v.name || v.displayName || JSON.stringify(v)}</li>
                                   ))}
                                 </ol>
                               ) : (
@@ -262,6 +463,9 @@ function ItemCardList({
                           </div>
                         );
                       })}
+
+                      <SharingInfo item={item} contacts={contacts} />
+                      <CoParticipantOverlays itemId={itemId} contacts={contacts} />
 
                       {renderItemExtras && renderItemExtras(item)}
 

@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Spinner, Alert } from "react-bootstrap";
-import ItemForm from "components/shared/ItemForm";
-import carSchema from "features/cars/carSchema";
-import { fetchCarDataFromVin, isValidVin } from "features/cars/api/carApi";
+import ItemForm from "../../../components/shared/ItemForm";
+import carSchema from "../../../features/cars/carSchema";
+import { fetchCarDataFromVin, isValidVin } from "../../../features/cars/api/carApi";
 
 function CarForm({ formData, setFormData, onSubmit }) {
   const [loading, setLoading] = useState(false);

@@ -1,20 +1,20 @@
 import React, { useState } from "react";
 import { Container, Navbar, Offcanvas } from "react-bootstrap";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import CarList from "features/cars/components/CarList";
-import HomeList from "features/homes/components/HomeList";
-import TravelList from "features/travel/components/TravelList";
-import ConcertList from "features/concerts/components/ConcertList";
-import Dashboard from "pages/Dashboard";
-import Timeline from "pages/Timeline";
-import Snaps from "pages/Snaps";
-import Settings from "pages/Settings";
-import SharedFeed from "pages/SharedFeed";
-import Login from "pages/Login";
-import SidebarNav from "components/shared/SidebarNav";
-import MigrationBanner from "components/auth/MigrationBanner";
-import { AppDataProvider, useAppData } from "contexts/AppDataContext";
-import { useAuth } from "contexts/AuthContext";
+import CarList from "./features/cars/components/CarList";
+import HomeList from "./features/homes/components/HomeList";
+import TravelList from "./features/travel/components/TravelList";
+import ConcertList from "./features/concerts/components/ConcertList";
+import Dashboard from "./pages/Dashboard";
+import Timeline from "./pages/Timeline";
+import Snaps from "./pages/Snaps";
+import Settings from "./pages/Settings";
+import SharedFeed from "./pages/SharedFeed";
+import Login from "./pages/Login";
+import SidebarNav from "./components/shared/SidebarNav";
+import MigrationBanner from "./components/auth/MigrationBanner";
+import { AppDataProvider, useAppData } from "./contexts/AppDataContext";
+import { useAuth } from "./contexts/AuthContext";
 import "App.css";
 
 function AppShell() {

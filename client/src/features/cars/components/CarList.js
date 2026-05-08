@@ -1,19 +1,19 @@
 import React from "react";
 import { Button } from "react-bootstrap";
-import CarForm from "features/cars/components/CarForm";
-import ItemCardList from "components/shared/ItemCardList";
-import StatusToggle from "components/shared/StatusToggle";
-import FormPanel from "components/shared/FormPanel";
-import SaveToast from "components/shared/SaveToast";
-import SnapCaptureModal from "components/shared/SnapCaptureModal";
-import carSchema from "features/cars/carSchema";
-import useCategory from "hooks/useCategory";
+import CarForm from "../../../features/cars/components/CarForm";
+import ItemCardList from "../../../components/shared/ItemCardList";
+import StatusToggle from "../../../components/shared/StatusToggle";
+import FormPanel from "../../../components/shared/FormPanel";
+import SaveToast from "../../../components/shared/SaveToast";
+import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
+import carSchema from "../../../features/cars/carSchema";
+import useCategory from "../../../hooks/useCategory";
 
 import {
   getStatusFilterOptions,
   filterByStatus,
   getStatusLabel,
-} from "helpers/filterUtils";
+} from "../../../helpers/filterUtils";
 
 function CarList() {
   const {

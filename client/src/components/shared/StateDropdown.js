@@ -1,6 +1,6 @@
 import React from "react";
 import Select from "react-select";
-import { States } from "data/states";
+import { States } from "../../data/states";
 
 const options = States.map((s) => ({
   value: s.abbreviation,

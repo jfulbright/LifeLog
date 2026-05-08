@@ -6,7 +6,7 @@
  * Phase 7: swap contacts/entryTags/personalOverlays internals — no consumer changes needed.
  */
 
-import { supabase } from "services/supabaseClient";
+import { supabase } from "../services/supabaseClient";
 
 // ── localStorage keys (contacts + Phase 7 social data) ────────────────────────
 

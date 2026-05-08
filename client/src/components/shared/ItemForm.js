@@ -4,9 +4,11 @@ import {
   formatCurrency,
   handleInputChange,
   isFieldVisible,
-} from "helpers/operator";
+} from "../../helpers/operator";
 import StateDropdown from "./StateDropdown";
 import CountryDropdown from "./CountryDropdown";
+import ContactPicker from "./ContactPicker";
+import ShareWithSection from "./ShareWithSection";
 
 function ListFieldRenderer({ field, value, onChange, readOnly }) {
   const [inputValue, setInputValue] = useState("");
@@ -74,6 +76,30 @@ function ListFieldRenderer({ field, value, onChange, readOnly }) {
         </ul>
       )}
     </div>
+  );
+}
+
+/**
+ * Normalizes legacy string-array companions into the new companion object format.
+ * Existing string entries become { type: "freetext", name: string }.
+ * New contact entries stay as { type: "contact", contactId, displayName }.
+ */
+function normalizeCompanions(value) {
+  if (!Array.isArray(value)) return [];
+  return value.map((entry) => {
+    if (typeof entry === "string") return { type: "freetext", name: entry };
+    return entry;
+  });
+}
+
+function ContactListRenderer({ field, value, onChange, readOnly }) {
+  return (
+    <ContactPicker
+      value={value}
+      onChange={onChange}
+      placeholder={field.placeholder || "Add from your people or type a name"}
+      readOnly={readOnly}
+    />
   );
 }
 
@@ -304,6 +330,19 @@ function ItemForm({
         );
         break;
 
+      case "contact-list":
+        inputElement = (
+          <ContactListRenderer
+            field={field}
+            value={normalizeCompanions(value)}
+            onChange={(newList) =>
+              setFormData((prev) => ({ ...prev, [field.name]: newList }))
+            }
+            readOnly={isReadOnly}
+          />
+        );
+        break;
+
       default:
         inputElement = (
           <Form.Control
@@ -382,16 +421,19 @@ function ItemForm({
       })}
 
       {!isReadOnly && (
-        <div className="d-flex gap-2 mt-3">
-          <Button variant="primary" type="submit" className="flex-grow-1">
-            {isEditing ? `Update ${buttonText}` : `Save ${buttonText}`}
-          </Button>
-          {onCancel && (
-            <Button variant="outline-secondary" onClick={onCancel}>
-              Cancel
+        <>
+          <ShareWithSection formData={formData} setFormData={setFormData} />
+          <div className="d-flex gap-2 mt-3">
+            <Button variant="primary" type="submit" className="flex-grow-1">
+              {isEditing ? `Update ${buttonText}` : `Save ${buttonText}`}
             </Button>
-          )}
-        </div>
+            {onCancel && (
+              <Button variant="outline-secondary" onClick={onCancel}>
+                Cancel
+              </Button>
+            )}
+          </div>
+        </>
       )}
     </Form>
   );

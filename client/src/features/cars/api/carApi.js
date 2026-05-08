@@ -1,4 +1,4 @@
-import { getJson } from "helpers/getJson";
+import { getJson } from "../../../helpers/getJson";
 
 const NHTSA_FIELD_MAP = {
   "Make": "make",

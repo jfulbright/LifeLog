@@ -57,8 +57,8 @@ export function getReflectionFields(experiencedStatus) {
     {
       name: "companions",
       label: "Who I was with",
-      type: "list",
-      placeholder: "Add a person",
+      type: "contact-list",
+      placeholder: "Add from your people or type a name",
       optional: true,
       visibleWhen: { status: experiencedStatus },
       section: "Snapshots",

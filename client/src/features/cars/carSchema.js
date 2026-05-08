@@ -1,6 +1,6 @@
-import { baseSchema } from "helpers/common.schema";
-import { getStatusValues } from "helpers/statusLabels";
-import { getReflectionFields } from "helpers/reflection.schema";
+import { baseSchema } from "../../helpers/common.schema";
+import { getStatusValues } from "../../helpers/statusLabels";
+import { getReflectionFields } from "../../helpers/reflection.schema";
 
 const carSchema = [
   {

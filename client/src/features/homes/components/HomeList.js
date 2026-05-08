@@ -1,19 +1,19 @@
 import React from "react";
 import { Button } from "react-bootstrap";
-import HomeForm from "features/homes/components/HomeForm";
-import ItemCardList from "components/shared/ItemCardList";
-import StatusToggle from "components/shared/StatusToggle";
-import FormPanel from "components/shared/FormPanel";
-import SaveToast from "components/shared/SaveToast";
-import SnapCaptureModal from "components/shared/SnapCaptureModal";
-import homeSchema from "features/homes/homeSchema";
-import useCategory from "hooks/useCategory";
+import HomeForm from "../../../features/homes/components/HomeForm";
+import ItemCardList from "../../../components/shared/ItemCardList";
+import StatusToggle from "../../../components/shared/StatusToggle";
+import FormPanel from "../../../components/shared/FormPanel";
+import SaveToast from "../../../components/shared/SaveToast";
+import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
+import homeSchema from "../../../features/homes/homeSchema";
+import useCategory from "../../../hooks/useCategory";
 
 import {
   getStatusFilterOptions,
   filterByStatus,
   getStatusLabel,
-} from "helpers/filterUtils";
+} from "../../../helpers/filterUtils";
 
 function HomeList() {
   const {

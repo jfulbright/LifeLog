@@ -1,19 +1,19 @@
 import React from "react";
 import { Button } from "react-bootstrap";
-import concertSchema from "features/concerts/concertSchema";
+import concertSchema from "../../../features/concerts/concertSchema";
 import ConcertForm from "./ConcertForm";
-import ItemCardList from "components/shared/ItemCardList";
-import StatusToggle from "components/shared/StatusToggle";
-import FormPanel from "components/shared/FormPanel";
-import SaveToast from "components/shared/SaveToast";
-import SnapCaptureModal from "components/shared/SnapCaptureModal";
-import useCategory from "hooks/useCategory";
+import ItemCardList from "../../../components/shared/ItemCardList";
+import StatusToggle from "../../../components/shared/StatusToggle";
+import FormPanel from "../../../components/shared/FormPanel";
+import SaveToast from "../../../components/shared/SaveToast";
+import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
+import useCategory from "../../../hooks/useCategory";
 
 import {
   getStatusFilterOptions,
   filterByStatus,
   getStatusLabel,
-} from "helpers/filterUtils";
+} from "../../../helpers/filterUtils";
 
 function normalizeConcert(data) {
   const updated = {

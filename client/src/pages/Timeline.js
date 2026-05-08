@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Badge } from "react-bootstrap";
-import categoryMeta from "helpers/categoryMeta";
-import { getStatusLabel } from "helpers/statusLabels";
-import { getSnapshotTeaser } from "helpers/operator";
-import dataService, { STORAGE_KEYS } from "services/dataService";
+import categoryMeta from "../helpers/categoryMeta";
+import { getStatusLabel } from "../helpers/statusLabels";
+import { getSnapshotTeaser } from "../helpers/operator";
+import dataService, { STORAGE_KEYS } from "../services/dataService";
 
 const categories = Object.keys(STORAGE_KEYS).map((key) => ({
   key,
