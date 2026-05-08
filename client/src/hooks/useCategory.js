@@ -34,8 +34,10 @@ export default function useCategory(category, { migrate, normalize, schema } = {
   const [snapPromptItemIndex, setSnapPromptItemIndex] = useState(null);
   const [snapPromptTitle, setSnapPromptTitle] = useState("");
 
-  // Gate saves: prevents writing back to storage before initial async load completes
+  // isReady: prevents saving before the initial async load completes
+  // skipNextSave: skips the first post-load save (data hasn't changed — avoids a wasted API call)
   const isReady = useRef(false);
+  const skipNextSave = useRef(false);
 
   // Async initial load — migrate is intentionally excluded from deps (must be a stable reference)
   useEffect(() => {
@@ -50,6 +52,7 @@ export default function useCategory(category, { migrate, normalize, schema } = {
         );
         if (!cancelled) {
           isReady.current = true;
+          skipNextSave.current = true; // the setItems below is a load, not a mutation
           setItems(loaded);
           setLoading(false);
         }
@@ -66,9 +69,13 @@ export default function useCategory(category, { migrate, normalize, schema } = {
     };
   }, [category]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Persist after every mutation — skips pre-load renders, surfaces storage errors
+  // Persist after every mutation — skips pre-load renders and the first post-load echo
   useEffect(() => {
     if (!isReady.current) return;
+    if (skipNextSave.current) {
+      skipNextSave.current = false;
+      return;
+    }
     dataService
       .saveItems(category, items)
       .then(() => window.dispatchEvent(new Event("data-changed")))
