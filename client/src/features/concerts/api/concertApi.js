@@ -5,8 +5,9 @@ export async function fetchSetlists(artist, year, country, state) {
   if (country) queryParams.append("countryCode",  country);
   if (state)   queryParams.append("stateCode",    state);
 
+  const serverUrl = process.env.REACT_APP_SERVER_URL || "http://localhost:5050";
   const response = await fetch(
-    `http://localhost:5050/api/setlists/search?${queryParams.toString()}`
+    `${serverUrl}/api/setlists/search?${queryParams.toString()}`
   );
 
   if (!response.ok) throw new Error("Failed to fetch setlists");
