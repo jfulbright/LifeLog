@@ -263,6 +263,9 @@ function ItemCardList({
   };
 
   const getPrimaryLabel = (item) => {
+    if (meta.getPrimaryDisplay) {
+      return meta.getPrimaryDisplay(item) || "Untitled";
+    }
     return (
       item[meta.primaryField] ||
       item.artist ||
@@ -274,6 +277,7 @@ function ItemCardList({
   };
 
   const getSecondaryLabel = (item) => {
+    if (meta.getSecondaryDisplay) return meta.getSecondaryDisplay(item);
     return meta.secondaryFields
       .map((f) => item[f])
       .filter(Boolean)

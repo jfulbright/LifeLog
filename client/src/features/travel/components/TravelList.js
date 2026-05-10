@@ -1,14 +1,16 @@
-import React from "react";
-import { Button } from "react-bootstrap";
+import React, { useState } from "react";
+import { Button, Badge } from "react-bootstrap";
+import { Link } from "react-router-dom";
 import TravelForm from "../../../features/travel/components/TravelForm";
 import ItemCardList from "../../../components/shared/ItemCardList";
 import StatusToggle from "../../../components/shared/StatusToggle";
 import FormPanel from "../../../components/shared/FormPanel";
 import SaveToast from "../../../components/shared/SaveToast";
 import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
+import WorldMapView from "../../../features/travel/components/WorldMapView";
 import travelSchema from "../../../features/travel/travelSchema";
 import useCategory from "../../../hooks/useCategory";
-
+import { codeToFlag, getCountryName } from "../../../data/countries";
 import {
   getStatusFilterOptions,
   filterByStatus,
@@ -26,7 +28,75 @@ function migrateMemoryToSnapshot(item) {
   return item;
 }
 
+/**
+ * Groups travel items by tripId. Items without a tripId are returned as
+ * individual single-item groups.
+ */
+function groupByItinerary(items) {
+  const groups = {};
+  const ungrouped = [];
+  items.forEach((item) => {
+    if (item.tripId) {
+      if (!groups[item.tripId]) groups[item.tripId] = [];
+      groups[item.tripId].push(item);
+    } else {
+      ungrouped.push(item);
+    }
+  });
+  // Sort each itinerary group by startDate
+  Object.values(groups).forEach((g) =>
+    g.sort((a, b) => (a.startDate || "").localeCompare(b.startDate || ""))
+  );
+  return { groups, ungrouped };
+}
+
+/** Mini row showing the city stops in an itinerary. */
+function ItineraryHeader({ items, tripName, onAddStop }) {
+  const stops = items.map((item) => {
+    const city = item.city || getCountryName(item.country) || "Stop";
+    const flag = item.country ? codeToFlag(item.country) : "📍";
+    return `${flag} ${city}`;
+  }).join(" → ");
+
+  const firstYear = items[0]?.startDate
+    ? new Date(items[0].startDate + "T00:00:00").getFullYear()
+    : null;
+
+  return (
+    <div style={{
+      background: "linear-gradient(135deg, #EAF8FE 0%, #F5EEF8 100%)",
+      border: "1px solid var(--color-border)",
+      borderRadius: "var(--card-radius)",
+      padding: "0.75rem 1rem",
+      marginBottom: "0.5rem",
+    }}>
+      <div className="d-flex justify-content-between align-items-start gap-2">
+        <div>
+          <div style={{ fontWeight: 700, color: "var(--color-text-primary)", marginBottom: "0.2rem" }}>
+            🗺️ {tripName || "Multi-Stop Trip"}
+            {firstYear && <span style={{ fontWeight: 400, color: "var(--color-text-secondary)", marginLeft: "0.5rem", fontSize: "var(--font-size-sm)" }}>{firstYear}</span>}
+          </div>
+          <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)" }}>{stops}</div>
+        </div>
+        {onAddStop && (
+          <Button size="sm" variant="outline-primary" onClick={onAddStop} style={{ whiteSpace: "nowrap", fontSize: "0.75rem" }}>
+            + Add Stop
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const VIEW_TABS = [
+  { id: "list", label: "📋 List" },
+  { id: "map", label: "🗺️ Map" },
+];
+
 function TravelList() {
+  const [activeView, setActiveView] = useState("list");
+  const [selectedCountry, setSelectedCountry] = useState(null);
+
   const {
     items: travels,
     loading,
@@ -42,51 +112,156 @@ function TravelList() {
   const filteredTravels = filterByStatus(travels, filterStatus);
   const sectionTitle = `Travel - ${getStatusLabel("travel", filterStatus)}`;
 
+  const { groups, ungrouped } = groupByItinerary(filteredTravels);
+
+  // Pre-fill tripId + tripName when "adding a stop" to an existing itinerary
+  const handleAddStop = (tripId, tripName) => {
+    setFormData({ tripId, tripName });
+    openForm();
+  };
+
   return (
     <>
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4 className="mb-0" style={{ fontWeight: 700 }}>Travel</h4>
-        <Button variant="primary" size="sm" onClick={openForm}>
-          + Add Trip
-        </Button>
+        <h4 className="mb-0" style={{ fontWeight: 700 }}>✈️ Travel</h4>
+        <div className="d-flex gap-2">
+          <Link to="/travel/stats" className="btn btn-sm btn-outline-secondary">
+            📊 Stats
+          </Link>
+          <Button variant="primary" size="sm" onClick={openForm}>
+            + Add Trip
+          </Button>
+        </div>
       </div>
 
-      <StatusToggle
-        category="travel"
-        options={travelStatuses}
-        value={filterStatus}
-        onChange={setFilterStatus}
-      />
+      {/* View tabs */}
+      <div className="d-flex gap-2 mb-3">
+        {VIEW_TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveView(tab.id)}
+            style={{
+              padding: "0.3rem 0.9rem",
+              borderRadius: "20px",
+              border: "2px solid var(--color-travel)",
+              background: activeView === tab.id ? "var(--color-travel)" : "transparent",
+              color: activeView === tab.id ? "#fff" : "var(--color-travel)",
+              fontWeight: 600,
+              fontSize: "var(--font-size-sm)",
+              cursor: "pointer",
+              transition: "all 0.15s",
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-      {filteredTravels.length === 0 && !loading && (
-        <div className="empty-state">
-          <div className="empty-state-icon" style={{ backgroundColor: "var(--color-travel)", color: "#fff" }}>
-            &#9992;&#65039;
-          </div>
-          <div className="empty-state-title">
-            {travels.length === 0 ? "No trips yet ✈️" : "No matches"}
-          </div>
-          <div className="empty-state-text">
-            {travels.length === 0
-              ? "Add your first trip to start tracking."
-              : "No trips match this filter."}
-          </div>
-          {travels.length === 0 && (
-            <Button variant="primary" onClick={openForm}>
-              Add Your First Trip
-            </Button>
+      {/* Map View */}
+      {activeView === "map" && (
+        <div>
+          <WorldMapView
+            items={travels}
+            onCountryClick={({ code, name, data }) => {
+              setSelectedCountry({ code, name, trips: data?.trips || [] });
+            }}
+          />
+          {selectedCountry && (
+            <div style={{
+              marginTop: "1rem",
+              background: "var(--color-surface)",
+              border: "1px solid var(--color-border)",
+              borderRadius: "var(--card-radius)",
+              padding: "1rem 1.25rem",
+            }}>
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <h6 style={{ fontWeight: 700, margin: 0 }}>
+                  {codeToFlag(selectedCountry.code)} {selectedCountry.name}
+                </h6>
+                <button type="button" onClick={() => setSelectedCountry(null)} style={{ border: "none", background: "none", cursor: "pointer", fontSize: "1rem", color: "var(--color-text-tertiary)" }}>×</button>
+              </div>
+              {selectedCountry.trips.length === 0 && (
+                <Button size="sm" variant="outline-primary" onClick={() => { setFormData({ country: selectedCountry.code }); openForm(); }}>
+                  + Add to Wishlist
+                </Button>
+              )}
+              {selectedCountry.trips.map((trip, i) => (
+                <div key={i} style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "0.25rem", fontSize: "var(--font-size-sm)" }}>
+                  <Badge bg={trip.status === "visited" ? "success" : "warning"} className={trip.status === "wishlist" ? "text-dark" : ""}>
+                    {trip.status}
+                  </Badge>
+                  <span style={{ fontWeight: 600 }}>{trip.title || trip.city || "Trip"}</span>
+                  {trip.startDate && <span style={{ color: "var(--color-text-tertiary)" }}>· {new Date(trip.startDate + "T00:00:00").getFullYear()}</span>}
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}
 
-      <ItemCardList
-        category="travel"
-        title={sectionTitle}
-        items={filteredTravels}
-        schema={travelSchema}
-        onEdit={startEditing}
-        onDelete={deleteItem}
-      />
+      {/* List View */}
+      {activeView === "list" && (
+        <>
+          <StatusToggle
+            category="travel"
+            options={travelStatuses}
+            value={filterStatus}
+            onChange={setFilterStatus}
+          />
+
+          {filteredTravels.length === 0 && !loading && (
+            <div className="empty-state">
+              <div className="empty-state-icon" style={{ backgroundColor: "var(--color-travel)", color: "#fff" }}>
+                &#9992;&#65039;
+              </div>
+              <div className="empty-state-title">
+                {travels.length === 0 ? "No trips yet ✈️" : "No matches"}
+              </div>
+              <div className="empty-state-text">
+                {travels.length === 0
+                  ? "Add your first trip to start tracking."
+                  : "No trips match this filter."}
+              </div>
+              {travels.length === 0 && (
+                <Button variant="primary" onClick={openForm}>
+                  Add Your First Trip
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Itinerary groups */}
+          {Object.entries(groups).map(([tripId, groupItems]) => (
+            <div key={tripId} className="mb-2">
+              <ItineraryHeader
+                items={groupItems}
+                tripName={groupItems[0]?.tripName}
+                onAddStop={() => handleAddStop(tripId, groupItems[0]?.tripName)}
+              />
+              <ItemCardList
+                category="travel"
+                items={groupItems}
+                schema={travelSchema}
+                onEdit={startEditing}
+                onDelete={deleteItem}
+              />
+            </div>
+          ))}
+
+          {/* Standalone items */}
+          {ungrouped.length > 0 && (
+            <ItemCardList
+              category="travel"
+              title={Object.keys(groups).length > 0 ? "Individual Trips" : sectionTitle}
+              items={ungrouped}
+              schema={travelSchema}
+              onEdit={startEditing}
+              onDelete={deleteItem}
+            />
+          )}
+        </>
+      )}
 
       <FormPanel
         show={showForm}

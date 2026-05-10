@@ -10,8 +10,9 @@ const navItems = [
 ];
 
 const categoryItems = [
-  { path: "/concerts", key: "concerts", label: "Concerts" },
+  { path: "/events", key: "events", label: "Events" },
   { path: "/travel", key: "travel", label: "Travel" },
+  { path: "/activities", key: "activities", label: "Activities" },
   { path: "/cars", key: "cars", label: "Cars" },
   { path: "/homes", key: "homes", label: "Homes" },
 ];

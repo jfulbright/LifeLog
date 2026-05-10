@@ -11,6 +11,7 @@ import { supabase } from "../services/supabaseClient";
 // ── localStorage keys (contacts + Phase 7 social data) ────────────────────────
 
 export const STORAGE_KEYS = {
+  events: "events",
   concerts: "concerts",
   travel: "travels",
   cars: "cars",
@@ -21,7 +22,7 @@ export const STORAGE_KEYS = {
 };
 
 // Category keys that are stored in Supabase (not localStorage)
-const SUPABASE_CATEGORIES = new Set(["concerts", "travel", "cars", "homes"]);
+const SUPABASE_CATEGORIES = new Set(["events", "concerts", "travel", "cars", "homes", "activities"]);
 
 // ── Auth helper ────────────────────────────────────────────────────────────────
 
@@ -41,14 +42,17 @@ async function getCurrentUserId() {
  * all other fields live in the `data` JSONB column.
  */
 function itemToRow(item, category, userId) {
+  // Strip transient UI-only form fields that must not be persisted to Supabase
+  // eslint-disable-next-line no-unused-vars
+  const { shareWithCompanionIds, visibilityControl, _taggedCompanions, _recommendedCompanions, ...cleanItem } = item;
   return {
-    id: item.id,
+    id: cleanItem.id,
     user_id: userId,
     category,
-    status: item.status || null,
-    start_date: item.startDate || null,
+    status: cleanItem.status || null,
+    start_date: cleanItem.startDate || null,
     updated_at: new Date().toISOString(),
-    data: item,
+    data: cleanItem,
   };
 }
 
@@ -167,7 +171,7 @@ const dataService = {
   },
 
   async getAllItems() {
-    const categoryKeys = ["concerts", "travel", "cars", "homes"];
+    const categoryKeys = ["events", "concerts", "travel", "cars", "homes", "activities"];
     const groups = await Promise.all(
       categoryKeys.map(async (category) => {
         const items = await dataService.getItems(category);
@@ -199,7 +203,7 @@ const dataService = {
   },
 
   async getCounts() {
-    const categoryKeys = ["concerts", "travel", "cars", "homes"];
+    const categoryKeys = ["events", "concerts", "travel", "cars", "homes", "activities"];
     const entries = await Promise.all(
       categoryKeys.map(async (category) => [
         category,

@@ -1,6 +1,10 @@
 // client/src/helpers/statusLabels.js
 
 const statusLabels = {
+  events: {
+    attended: "Attended",
+    wishlist: "Wishlist",
+  },
   cars: {
     owned: "Owned",
     wishlist: "Wishlist",
@@ -20,6 +24,10 @@ const statusLabels = {
   },
   sports: {
     attended: "Attended",
+    wishlist: "Wishlist",
+  },
+  activities: {
+    done: "Done",
     wishlist: "Wishlist",
   },
 };

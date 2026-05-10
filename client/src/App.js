@@ -5,11 +5,14 @@ import CarList from "./features/cars/components/CarList";
 import HomeList from "./features/homes/components/HomeList";
 import TravelList from "./features/travel/components/TravelList";
 import ConcertList from "./features/concerts/components/ConcertList";
+import EventList from "./features/events/components/EventList";
+import ActivityList from "./features/activities/components/ActivityList";
 import Dashboard from "./pages/Dashboard";
 import Timeline from "./pages/Timeline";
 import Snaps from "./pages/Snaps";
 import Settings from "./pages/Settings";
 import SharedFeed from "./pages/SharedFeed";
+import TravelStatsPage from "./pages/TravelStatsPage";
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
 import SidebarNav from "./components/shared/SidebarNav";
@@ -108,7 +111,10 @@ function AppShell() {
             <Route path="/cars" element={<CarList />} />
             <Route path="/homes" element={<HomeList />} />
             <Route path="/travel" element={<TravelList />} />
+            <Route path="/travel/stats" element={<TravelStatsPage />} />
+            <Route path="/activities" element={<ActivityList />} />
             <Route path="/concerts" element={<ConcertList />} />
+            <Route path="/events" element={<EventList />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/shared" element={<SharedFeed />} />
           </Routes>
