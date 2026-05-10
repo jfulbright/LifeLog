@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Badge, Button } from "react-bootstrap";
-import { isFieldVisible, getAllSnapshots } from "../../helpers/operator";
+import { isFieldVisible, getAllSnapshots, getItemPhotos } from "../../helpers/operator";
 import { getStatusLabel } from "../../helpers/statusLabels";
 import { getCategoryMeta } from "../../helpers/categoryMeta";
 import { useAppData } from "../../contexts/AppDataContext";
 import { RING_META } from "../../helpers/ringMeta";
 import dataService from "../../services/dataService";
+import PhotoGrid from "./PhotoGrid";
 
 /**
  * Returns the Bootstrap badge variant for a status value.
@@ -167,7 +168,14 @@ function CoParticipantOverlays({ itemId, contacts }) {
     dataService.getOverlaysForEntry(itemId).then(setOverlays);
   }, [itemId]);
 
-  if (overlays.length === 0) return null;
+  // Check if any overlay has snaps or photos
+  const overlaysWithContent = overlays.filter((o) => {
+    const hasSnaps = [o.snapshot1, o.snapshot2, o.snapshot3].some(Boolean);
+    const hasPhotos = [o.photo1, o.photo2, o.photo3].some(Boolean);
+    return hasSnaps || hasPhotos || o.rating;
+  });
+
+  if (overlaysWithContent.length === 0) return null;
 
   return (
     <div
@@ -187,17 +195,17 @@ function CoParticipantOverlays({ itemId, contacts }) {
           marginBottom: "0.625rem",
         }}
       >
-        👥 What others thought
+        👥 What others captured
       </div>
-      {overlays.map((overlay) => {
+      {overlaysWithContent.map((overlay) => {
         const contact = contacts.find((c) => c.id === overlay.contactId);
         const snaps = [overlay.snapshot1, overlay.snapshot2, overlay.snapshot3].filter(Boolean);
-        if (!snaps.length && !overlay.rating) return null;
+        const photos = [overlay.photo1, overlay.photo2, overlay.photo3].filter(Boolean);
         return (
           <div
             key={overlay.id}
             style={{
-              marginBottom: "0.625rem",
+              marginBottom: "0.75rem",
               paddingLeft: "0.75rem",
               borderLeft: "2px solid var(--color-border)",
             }}
@@ -207,7 +215,7 @@ function CoParticipantOverlays({ itemId, contacts }) {
                 fontWeight: 600,
                 fontSize: "var(--font-size-xs)",
                 color: "var(--color-text-secondary)",
-                marginBottom: "0.25rem",
+                marginBottom: "0.375rem",
                 display: "flex",
                 alignItems: "center",
                 gap: "0.5rem",
@@ -231,9 +239,14 @@ function CoParticipantOverlays({ itemId, contacts }) {
                   marginBottom: "0.2rem",
                 }}
               >
-                "{snap}"
+                &ldquo;{snap}&rdquo;
               </div>
             ))}
+            {photos.length > 0 && (
+              <div style={{ marginTop: "0.375rem" }}>
+                <PhotoGrid photos={photos} height={100} />
+              </div>
+            )}
           </div>
         );
       })}
@@ -248,6 +261,7 @@ function ItemCardList({
   onEdit,
   onDelete,
   renderItemExtras,
+  renderCompactExtra,
 }) {
   const [expandedId, setExpandedId] = useState(null);
   const meta = getCategoryMeta(category);
@@ -313,32 +327,26 @@ function ItemCardList({
               <div className="item-card">
                 {/* Compact header: thumbnail + info + badge */}
                 <div className="item-card-header">
-                  {/* Thumbnail or icon placeholder */}
-                  <div
-                    className="item-card-thumb"
-                    style={{
-                      backgroundColor: item.photoLink
-                        ? "transparent"
-                        : meta.color,
-                    }}
-                  >
-                    {item.photoLink ? (
-                      <img
-                        src={item.photoLink}
-                        alt=""
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                          borderRadius: "inherit",
-                        }}
-                      />
-                    ) : (
-                      <span role="img" aria-hidden="true">
-                        {meta.icon}
-                      </span>
-                    )}
-                  </div>
+                  {/* Thumbnail: first photo → photoLink → category icon */}
+                  {(() => {
+                    const thumbSrc = item.photo1 || item.photoLink;
+                    return (
+                      <div
+                        className="item-card-thumb"
+                        style={{ backgroundColor: thumbSrc ? "transparent" : meta.color }}
+                      >
+                        {thumbSrc ? (
+                          <img
+                            src={thumbSrc}
+                            alt=""
+                            style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }}
+                          />
+                        ) : (
+                          <span role="img" aria-hidden="true">{meta.icon}</span>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* Text content */}
                   <div className="item-card-body">
@@ -368,6 +376,7 @@ function ItemCardList({
                           ` – ${formatDisplayDate(item.endDate)}`}
                       </div>
                     )}
+                    {renderCompactExtra && renderCompactExtra(item)}
                   </div>
                 </div>
 
@@ -399,6 +408,8 @@ function ItemCardList({
                         if (field.hidden || !isFieldVisible(field, item))
                           return null;
                         if (headerFieldNames.has(field.name)) return null;
+                        // Photo fields are rendered via PhotoGrid above — skip here
+                        if (field.type === "photo") return null;
 
                         const value = item[field.name];
                         if (
@@ -467,6 +478,13 @@ function ItemCardList({
                           </div>
                         );
                       })}
+
+                      {/* Owner's photos */}
+                      {getItemPhotos(item).length > 0 && (
+                        <div style={{ marginTop: "0.75rem" }}>
+                          <PhotoGrid photos={getItemPhotos(item)} height={140} />
+                        </div>
+                      )}
 
                       <SharingInfo item={item} contacts={contacts} />
                       <CoParticipantOverlays itemId={itemId} contacts={contacts} />

@@ -184,6 +184,16 @@ const carSchema = [
 
   ...getReflectionFields("owned"),
 
+  // ── Social (Visible To) ──────────────────────────────────────────────────────
+  {
+    name: "visibilityControl",
+    type: "visible-to",
+    optional: true,
+    section: "Social",
+    order: 38,
+    fullWidth: true,
+  },
+
   ...baseSchema.filter((field) => !["status", "notes"].includes(field.name)),
 ];
 

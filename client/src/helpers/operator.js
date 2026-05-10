@@ -80,3 +80,30 @@ export const isFieldVisible = (field, formData) => {
       : formData[key] === expectedValue;
   });
 };
+
+/** Returns an array of up to 3 photo URLs on a single item, filtering empty slots. */
+export const getItemPhotos = (item) =>
+  [item.photo1, item.photo2, item.photo3].filter(Boolean);
+
+/**
+ * Returns the owner's photos and each companion's overlay photos separately.
+ * @param {object} item - The entry item
+ * @param {object[]} overlays - personalOverlay records for this entry
+ */
+export const getEntryPhotos = (item, overlays = []) => {
+  const own = getItemPhotos(item);
+  const shared = overlays
+    .map((o) => ({
+      contactId: o.contactId,
+      photos: [o.photo1, o.photo2, o.photo3].filter(Boolean),
+    }))
+    .filter((o) => o.photos.length > 0);
+  return { own, shared };
+};
+
+/**
+ * Collects all photos across all stops in a trip itinerary (for the combined view).
+ * @param {object[]} tripItems - Travel entries sharing a tripId
+ */
+export const getTripPhotos = (tripItems) =>
+  tripItems.flatMap((item) => getItemPhotos(item));

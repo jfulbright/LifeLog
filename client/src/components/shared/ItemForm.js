@@ -13,6 +13,7 @@ import RecommendSection from "./RecommendSection";
 import ShareWithSection from "./ShareWithSection";
 import ShareWithCompanionsToggle from "./ShareWithCompanionsToggle";
 import LinkedTripPicker from "./LinkedTripPicker";
+import PhotoUploadField from "./PhotoUploadField";
 import { getCountryContinent } from "../../data/countries";
 
 function ListFieldRenderer({ field, value, onChange, readOnly }) {
@@ -459,6 +460,19 @@ function ItemForm({
         );
         break;
 
+      case "photo":
+        inputElement = (
+          <PhotoUploadField
+            field={field}
+            value={value}
+            onChange={(url) =>
+              setFormData((prev) => ({ ...prev, [field.name]: url }))
+            }
+            itemId={formData.id}
+          />
+        );
+        break;
+
       default:
         inputElement = (
           <Form.Control
@@ -480,7 +494,7 @@ function ItemForm({
         key={field.name}
         className={`mb-3${field.isSnapshot ? " snapshot-field-group" : ""}`}
       >
-        {field.type !== "recommend" && field.type !== "visible-to" && field.type !== "linked-trip" && (
+        {field.type !== "recommend" && field.type !== "visible-to" && field.type !== "linked-trip" && field.type !== "photo" && (
           <Form.Label htmlFor={fieldId}>
             {field.label}
             {field.required && (
@@ -504,8 +518,10 @@ function ItemForm({
         const isSnapSection = section === "Snapshots";
         const isSocialSection = section === "Social";
 
+        const isPhotoSection = section === "Photos";
+
         return (
-          <div key={section} className={isSnapSection ? "snap-section-wrapper" : ""}>
+          <div key={section} className={isSnapSection ? "snap-section-wrapper" : isPhotoSection ? "photo-section-wrapper" : ""}>
             {isSnapSection ? (
               <div className="snap-section-banner">
                 <span className="snap-section-icon" aria-hidden="true">&#128247;</span>
@@ -513,6 +529,16 @@ function ItemForm({
                   <div className="snap-section-title">Capture your snapshots</div>
                   <div className="snap-section-subtitle">
                     Three quick memories -- 140 characters each
+                  </div>
+                </div>
+              </div>
+            ) : isPhotoSection ? (
+              <div className="photo-section-banner">
+                <span className="photo-section-icon" aria-hidden="true">&#128247;</span>
+                <div>
+                  <div className="photo-section-title">Add up to 3 photos</div>
+                  <div className="photo-section-subtitle">
+                    Upload from your camera roll or take a new photo
                   </div>
                 </div>
               </div>
@@ -531,7 +557,7 @@ function ItemForm({
             <Row>
               {fields.map((field) => (
                 <React.Fragment key={field.name}>
-                  <Col md={field.fullWidth ? 12 : 6}>
+                  <Col md={field.fullWidth ? 12 : (field.col || 6)}>
                     {renderField(field)}
                   </Col>
                   {field.name === "companions" && !isReadOnly && (

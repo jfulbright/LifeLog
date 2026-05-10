@@ -30,6 +30,11 @@ const statusLabels = {
     done: "Done",
     wishlist: "Wishlist",
   },
+  wines: {
+    tried: "Tried",
+    cellar: "In Cellar",
+    wishlist: "Wishlist",
+  },
 };
 
 export default statusLabels;

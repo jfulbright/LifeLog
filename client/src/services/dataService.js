@@ -22,7 +22,7 @@ export const STORAGE_KEYS = {
 };
 
 // Category keys that are stored in Supabase (not localStorage)
-const SUPABASE_CATEGORIES = new Set(["events", "concerts", "travel", "cars", "homes", "activities"]);
+const SUPABASE_CATEGORIES = new Set(["events", "concerts", "travel", "cars", "homes", "activities", "wines"]);
 
 // ── Auth helper ────────────────────────────────────────────────────────────────
 
@@ -346,7 +346,17 @@ const dataService = {
     if (existing) {
       updated = overlays.map((o) =>
         o.id === existing.id
-          ? { ...o, ...overlay, updatedAt: new Date().toISOString() }
+          ? {
+              ...o,
+              snapshot1: overlay.snapshot1 ?? o.snapshot1,
+              snapshot2: overlay.snapshot2 ?? o.snapshot2,
+              snapshot3: overlay.snapshot3 ?? o.snapshot3,
+              rating: overlay.rating ?? o.rating,
+              photo1: overlay.photo1 ?? o.photo1,
+              photo2: overlay.photo2 ?? o.photo2,
+              photo3: overlay.photo3 ?? o.photo3,
+              updatedAt: new Date().toISOString(),
+            }
           : o
       );
     } else {
@@ -358,6 +368,9 @@ const dataService = {
         snapshot2: overlay.snapshot2 || "",
         snapshot3: overlay.snapshot3 || "",
         rating: overlay.rating || "",
+        photo1: overlay.photo1 || "",
+        photo2: overlay.photo2 || "",
+        photo3: overlay.photo3 || "",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

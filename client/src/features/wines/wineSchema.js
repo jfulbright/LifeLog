@@ -1,0 +1,346 @@
+import { baseSchema } from "../../helpers/common.schema";
+import { getStatusValues } from "../../helpers/statusLabels";
+import { getReflectionFields } from "../../helpers/reflection.schema";
+
+export const WINE_TYPES = ["Red", "White", "Rosé", "Sparkling", "Dessert", "Fortified", "Orange"];
+
+export const COMMON_VARIETALS = [
+  "Cabernet Sauvignon", "Pinot Noir", "Merlot", "Syrah / Shiraz", "Zinfandel",
+  "Malbec", "Tempranillo", "Sangiovese", "Grenache", "Nebbiolo",
+  "Chardonnay", "Sauvignon Blanc", "Pinot Grigio", "Riesling", "Albariño",
+  "Viognier", "Gewürztraminer", "Moscato", "Chenin Blanc", "Grüner Veltliner",
+  "Blend", "Other",
+];
+
+const wineSchema = [
+  // ── Main ────────────────────────────────────────────────────────────────────
+  {
+    name: "status",
+    label: "Status",
+    type: "select",
+    options: getStatusValues("wines"),
+    required: true,
+    section: "Main",
+    order: 0,
+  },
+  {
+    name: "wineName",
+    label: "Wine Name",
+    type: "text",
+    required: true,
+    fullWidth: true,
+    placeholder: "e.g. Caymus Cabernet Sauvignon",
+    section: "Main",
+    order: 1,
+  },
+  {
+    name: "winery",
+    label: "Winery / Producer",
+    type: "text",
+    optional: true,
+    placeholder: "e.g. Caymus Vineyards",
+    section: "Main",
+    order: 2,
+  },
+  {
+    name: "vintage",
+    label: "Vintage",
+    type: "text",
+    optional: true,
+    inputMode: "numeric",
+    maxLength: 4,
+    placeholder: "e.g. 2019",
+    section: "Main",
+    order: 3,
+  },
+  {
+    name: "wineType",
+    label: "Type",
+    type: "select",
+    options: WINE_TYPES,
+    optional: true,
+    section: "Main",
+    order: 4,
+  },
+  {
+    name: "varietal",
+    label: "Varietal / Grape",
+    type: "select",
+    options: COMMON_VARIETALS,
+    optional: true,
+    placeholder: "e.g. Cabernet Sauvignon",
+    section: "Main",
+    order: 5,
+  },
+
+  // ── Region ──────────────────────────────────────────────────────────────────
+  {
+    name: "region",
+    label: "Region / Appellation",
+    type: "text",
+    optional: true,
+    placeholder: "e.g. Napa Valley, Burgundy, Rioja",
+    section: "Region",
+    order: 10,
+  },
+  {
+    name: "country",
+    label: "Country",
+    type: "select",
+    optional: true,
+    defaultValue: "US",
+    section: "Region",
+    order: 11,
+  },
+  { name: "lat", label: "Lat", type: "text", hidden: true },
+  { name: "lng", label: "Lng", type: "text", hidden: true },
+  { name: "continent", label: "Continent", type: "text", hidden: true },
+
+  // ── Where You Drank It (Tried only) ─────────────────────────────────────────
+  {
+    name: "city",
+    label: "City (Where Tried)",
+    type: "city-autocomplete",
+    optional: true,
+    placeholder: "e.g. Florence, San Francisco",
+    visibleWhen: { status: "tried" },
+    section: "Where",
+    order: 15,
+  },
+  {
+    name: "state",
+    label: "State / Region",
+    type: "state-or-region",
+    optional: true,
+    visibleWhen: { status: "tried" },
+    section: "Where",
+    order: 16,
+  },
+  {
+    name: "occasion",
+    label: "Occasion",
+    type: "select",
+    options: ["Everyday", "Dinner Party", "Gift", "Special Occasion", "Restaurant", "Winery Visit", "Cellar"],
+    optional: true,
+    visibleWhen: { status: "tried" },
+    section: "Where",
+    order: 17,
+  },
+  {
+    name: "linkedTrip",
+    label: "Part of a Trip?",
+    type: "linked-trip",
+    optional: true,
+    visibleWhen: { status: "tried" },
+    section: "Where",
+    order: 18,
+  },
+  {
+    name: "linkedTripId",
+    label: "Linked Trip ID",
+    type: "text",
+    optional: true,
+    hidden: true,
+  },
+  {
+    name: "linkedTripTitle",
+    label: "Linked Trip",
+    type: "text",
+    optional: true,
+    hidden: true,
+  },
+
+  // ── Taste Notes (Tried only) ─────────────────────────────────────────────────
+  {
+    name: "tasteNotes",
+    label: "Taste Notes",
+    type: "textarea",
+    optional: true,
+    placeholder: "Aromas, tannins, acidity, finish…",
+    visibleWhen: { status: "tried" },
+    section: "Taste",
+    order: 22,
+    fullWidth: true,
+  },
+  {
+    name: "foodPairings",
+    label: "Food Pairings",
+    type: "text",
+    optional: true,
+    placeholder: "e.g. Steak, aged cheese, mushroom risotto",
+    visibleWhen: { status: "tried" },
+    section: "Taste",
+    order: 23,
+  },
+
+  // ── Price (Tried + Wishlist) ─────────────────────────────────────────────────
+  {
+    name: "pricePerBottle",
+    label: "Price / Bottle",
+    type: "number",
+    isCurrency: true,
+    optional: true,
+    placeholder: "$35",
+    inputMode: "numeric",
+    visibleWhen: { status: ["tried", "wishlist"] },
+    section: "Details",
+    order: 26,
+  },
+
+  // ── Cellar Fields (Cellar only) ──────────────────────────────────────────────
+  {
+    name: "bottleCount",
+    label: "Bottles in Cellar",
+    type: "number",
+    optional: true,
+    inputMode: "numeric",
+    placeholder: "e.g. 6",
+    visibleWhen: { status: "cellar" },
+    section: "Cellar",
+    order: 40,
+  },
+  {
+    name: "purchasePrice",
+    label: "Price / Bottle",
+    type: "number",
+    isCurrency: true,
+    optional: true,
+    placeholder: "$45",
+    inputMode: "numeric",
+    visibleWhen: { status: "cellar" },
+    section: "Cellar",
+    order: 41,
+  },
+  {
+    name: "purchaseLocation",
+    label: "Where Purchased",
+    type: "text",
+    optional: true,
+    placeholder: "e.g. Total Wine, estate winery, auction",
+    visibleWhen: { status: "cellar" },
+    section: "Cellar",
+    order: 42,
+  },
+  {
+    name: "drinkAfter",
+    label: "Best After",
+    type: "date",
+    optional: true,
+    visibleWhen: { status: "cellar" },
+    section: "Cellar",
+    order: 43,
+  },
+  {
+    name: "drinkBy",
+    label: "Drink By",
+    type: "date",
+    optional: true,
+    visibleWhen: { status: "cellar" },
+    section: "Cellar",
+    order: 44,
+  },
+  {
+    name: "storageLocation",
+    label: "Storage Location",
+    type: "select",
+    options: ["Home Cellar", "Wine Fridge", "Temperature-Controlled Unit", "Offsite Storage", "Other"],
+    optional: true,
+    visibleWhen: { status: "cellar" },
+    section: "Cellar",
+    order: 45,
+  },
+  {
+    name: "purchaseOccasion",
+    label: "Acquisition Story",
+    type: "textarea",
+    optional: true,
+    placeholder: "e.g. Bought at the estate after a tasting in Napa, August 2025",
+    visibleWhen: { status: "cellar" },
+    section: "Cellar",
+    order: 46,
+    fullWidth: true,
+  },
+  {
+    name: "cellarLinkedTrip",
+    label: "Acquired on a Trip?",
+    type: "linked-trip",
+    optional: true,
+    visibleWhen: { status: "cellar" },
+    section: "Cellar",
+    order: 47,
+  },
+
+  // ── Wishlist ─────────────────────────────────────────────────────────────────
+  {
+    name: "wishlistReason",
+    label: "Why do you want to try this?",
+    type: "textarea",
+    optional: true,
+    placeholder: "What draws you to this wine?",
+    visibleWhen: { status: "wishlist" },
+    section: "Planning",
+    order: 37,
+    fullWidth: true,
+  },
+  {
+    name: "recommendedBy",
+    label: "Recommended by",
+    type: "text",
+    optional: true,
+    visibleWhen: { status: "wishlist" },
+    section: "Planning",
+    order: 38,
+  },
+
+  // ── Reflection (Tried only) ──────────────────────────────────────────────────
+  ...getReflectionFields("tried"),
+
+  // ── Social ───────────────────────────────────────────────────────────────────
+  {
+    name: "visibilityControl",
+    type: "visible-to",
+    optional: true,
+    section: "Social",
+    order: 50,
+    fullWidth: true,
+  },
+  {
+    name: "recommendation",
+    label: "Recommend this wine",
+    type: "recommend",
+    optional: true,
+    visibleWhen: { status: "tried" },
+    section: "Social",
+    order: 51,
+  },
+
+  // ── Label Photo ──────────────────────────────────────────────────────────────
+  {
+    name: "photoLink",
+    label: "Label Photo URL",
+    type: "url",
+    optional: true,
+    placeholder: "https://…",
+    section: "Details",
+    order: 52,
+  },
+  {
+    name: "barcodeUpc",
+    label: "Barcode UPC",
+    type: "text",
+    optional: true,
+    hidden: true,
+  },
+
+  // ── Shared base fields ───────────────────────────────────────────────────────
+  ...baseSchema
+    .filter((f) => ["tags", "createdAt", "section"].includes(f.name))
+    .map((f) => ({
+      ...f,
+      section: f.name === "tags" ? "Details" : "Hidden",
+      order: f.name === "tags" ? 53 : 99,
+      hidden: f.name !== "tags",
+    })),
+];
+
+export default wineSchema;

@@ -61,9 +61,51 @@ export function getReflectionFields(experiencedStatus) {
       placeholder: "Add from your people or type a name",
       optional: true,
       visibleWhen: { status: experiencedStatus },
-      section: "Snapshots",
-      order: 34,
+      section: "Reflection",
+      order: 29,
       fullWidth: true,
+    },
+    ...getPhotoFields(experiencedStatus),
+  ];
+}
+
+/**
+ * Three photo upload slots, shown once an entry is in an "experienced" status.
+ * Mirrors the snapshot1/2/3 pattern. Included automatically by getReflectionFields().
+ *
+ * @param {string|string[]} experiencedStatus
+ */
+export function getPhotoFields(experiencedStatus) {
+  return [
+    {
+      name: "photo1",
+      label: "📷 Photo 1",
+      type: "photo",
+      visibleWhen: { status: experiencedStatus },
+      section: "Photos",
+      order: 34,
+      optional: true,
+      col: 4,
+    },
+    {
+      name: "photo2",
+      label: "📷 Photo 2",
+      type: "photo",
+      visibleWhen: { status: experiencedStatus },
+      section: "Photos",
+      order: 35,
+      optional: true,
+      col: 4,
+    },
+    {
+      name: "photo3",
+      label: "📷 Photo 3",
+      type: "photo",
+      visibleWhen: { status: experiencedStatus },
+      section: "Photos",
+      order: 36,
+      optional: true,
+      col: 4,
     },
   ];
 }

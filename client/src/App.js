@@ -7,6 +7,7 @@ import TravelList from "./features/travel/components/TravelList";
 import ConcertList from "./features/concerts/components/ConcertList";
 import EventList from "./features/events/components/EventList";
 import ActivityList from "./features/activities/components/ActivityList";
+import WineList from "./features/wines/components/WineList";
 import Dashboard from "./pages/Dashboard";
 import Timeline from "./pages/Timeline";
 import Snaps from "./pages/Snaps";
@@ -115,6 +116,7 @@ function AppShell() {
             <Route path="/activities" element={<ActivityList />} />
             <Route path="/concerts" element={<ConcertList />} />
             <Route path="/events" element={<EventList />} />
+            <Route path="/wines" element={<WineList />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/shared" element={<SharedFeed />} />
           </Routes>

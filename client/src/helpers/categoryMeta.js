@@ -78,6 +78,17 @@ const categoryMeta = {
     secondaryFields: ["locationName", "city"],
     dateField: "startDate",
   },
+  wines: {
+    icon: "🍷",
+    color: "var(--color-wines, #8B3A8F)",
+    primaryField: "wineName",
+    secondaryFields: ["winery", "vintage", "region"],
+    dateField: "startDate",
+    getSecondaryDisplay: (item) => {
+      const parts = [item.winery, item.vintage, item.region].filter(Boolean);
+      return parts.join(" · ");
+    },
+  },
 };
 
 export default categoryMeta;

@@ -158,27 +158,54 @@ function LinkedTripPicker({
         <div>
           {/* Current selection or search */}
           {linkedTripId ? (
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              padding: "0.5rem 0.75rem",
-              background: "var(--color-surface-hover)",
-              border: "1px solid var(--color-border)",
-              borderRadius: "var(--card-radius)",
-              fontSize: "var(--font-size-sm)",
-            }}>
-              <span>✈️</span>
-              <span style={{ flex: 1, fontWeight: 600 }}>{linkedTripTitle}</span>
-              <button
-                type="button"
-                onClick={handleClear}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-tertiary)", fontSize: "1rem", lineHeight: 1, padding: 0 }}
-                aria-label="Remove linked trip"
-              >
-                ×
-              </button>
-            </div>
+            <>
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                padding: "0.5rem 0.75rem",
+                background: "var(--color-surface-hover)",
+                border: "1px solid var(--color-border)",
+                borderRadius: "var(--card-radius)",
+                fontSize: "var(--font-size-sm)",
+              }}>
+                <span>✈️</span>
+                <span style={{ flex: 1, fontWeight: 600 }}>{linkedTripTitle}</span>
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-tertiary)", fontSize: "1rem", lineHeight: 1, padding: 0 }}
+                  aria-label="Remove linked trip"
+                >
+                  ×
+                </button>
+              </div>
+              {/* Location auto-fill hint */}
+              {(() => {
+                const linkedTrip = trips.find((t) => t.id === linkedTripId);
+                if (!linkedTrip || (!linkedTrip.city && !linkedTrip.country)) return null;
+                const flag = linkedTrip.country ? codeToFlag(linkedTrip.country) : "";
+                const countryName = linkedTrip.country ? getCountryName(linkedTrip.country) : "";
+                const locationText = linkedTrip.city
+                  ? `${linkedTrip.city}${countryName ? `, ${countryName}` : ""}`
+                  : countryName;
+                return (
+                  <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.35rem",
+                    marginTop: "0.4rem",
+                    fontSize: "var(--font-size-xs)",
+                    color: "var(--color-text-secondary)",
+                    padding: "0.2rem 0.1rem",
+                  }}>
+                    <span style={{ color: "var(--color-travel)", fontSize: "0.7rem" }}>✓</span>
+                    <span>Location auto-filled from trip:</span>
+                    <span style={{ fontWeight: 600 }}>{flag} {locationText}</span>
+                  </div>
+                );
+              })()}
+            </>
           ) : (
             <div style={{ position: "relative" }}>
               <Form.Control

@@ -1,5 +1,6 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import { Button } from "react-bootstrap";
+import { useLocation } from "react-router-dom";
 import ActivityForm from "./ActivityForm";
 import ItemCardList from "../../../components/shared/ItemCardList";
 import StatusToggle from "../../../components/shared/StatusToggle";
@@ -134,6 +135,7 @@ function ActivityStats({ items }) {
 }
 
 function ActivityList() {
+  const location = useLocation();
   const [activityTypeFilter, setActivityTypeFilter] = React.useState("all");
 
   const {
@@ -146,6 +148,14 @@ function ActivityList() {
     handleSubmit, startEditing, deleteItem, closeForm, openForm,
     showSnapPrompt, snapPromptTitle, handleSnapSave, dismissSnapPrompt,
   } = useCategory("activities", { schema: activitySchema });
+
+  // Auto-open the form pre-filled when navigated from Travel's next-steps card
+  useEffect(() => {
+    const pre = location.state?.prefilledTripTitle;
+    if (pre) {
+      openForm();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const activityStatuses = getStatusFilterOptions("activities");
   const statusFiltered = filterByStatus(activities, filterStatus);
@@ -200,6 +210,20 @@ function ActivityList() {
         schema={activitySchema}
         onEdit={startEditing}
         onDelete={deleteItem}
+        renderCompactExtra={(item) =>
+          item.linkedTripTitle ? (
+            <div style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.25rem",
+              marginTop: "0.2rem",
+              fontSize: "var(--font-size-xs)",
+              color: "var(--color-text-tertiary)",
+            }}>
+              ✈️ {item.linkedTripTitle}
+            </div>
+          ) : null
+        }
       />
 
       <FormPanel

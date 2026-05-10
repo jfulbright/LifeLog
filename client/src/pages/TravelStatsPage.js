@@ -392,14 +392,32 @@ function TravelStatsPage() {
                   <button type="button" onClick={() => setSelectedCountry(null)} style={{ border: "none", background: "none", cursor: "pointer", fontSize: "1rem", color: "var(--color-text-tertiary)" }}>×</button>
                 </div>
                 {selectedCountry.trips.map((trip, i) => (
-                  <div key={i} style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "0.25rem", fontSize: "var(--font-size-sm)" }}>
+                  <Link
+                    key={i}
+                    to="/travel"
+                    style={{
+                      display: "flex",
+                      gap: "0.5rem",
+                      alignItems: "center",
+                      marginBottom: "0.15rem",
+                      fontSize: "var(--font-size-sm)",
+                      textDecoration: "none",
+                      color: "inherit",
+                      borderRadius: 6,
+                      padding: "0.35rem 0.5rem",
+                      transition: "background 0.1s",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-surface-hover)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}
+                  >
                     <Badge bg={trip.status === "visited" ? "success" : "warning"} className={trip.status === "wishlist" ? "text-dark" : ""}>
                       {trip.status}
                     </Badge>
-                    <span style={{ fontWeight: 600 }}>{trip.title || trip.city || "Trip"}</span>
+                    <span style={{ fontWeight: 600, flex: 1 }}>{trip.title || trip.city || "Trip"}</span>
                     {trip.city && <span style={{ color: "var(--color-text-tertiary)" }}>{trip.city}</span>}
                     {trip.startDate && <span style={{ color: "var(--color-text-tertiary)" }}>· {new Date(trip.startDate + "T00:00:00").getFullYear()}</span>}
-                  </div>
+                    <span style={{ color: "var(--color-text-tertiary)", fontSize: "0.85rem" }}>›</span>
+                  </Link>
                 ))}
               </div>
             )}

@@ -9,7 +9,7 @@ import dataService from "../services/dataService";
 
 const AppDataContext = createContext({
   contacts: [],
-  counts: { events: 0, concerts: 0, travel: 0, cars: 0, homes: 0, activities: 0 },
+  counts: { events: 0, concerts: 0, travel: 0, cars: 0, homes: 0, activities: 0, wines: 0 },
   notifications: [],
   refreshContacts: () => {},
   refreshCounts: () => {},
@@ -25,6 +25,7 @@ export function AppDataProvider({ children }) {
     cars: 0,
     homes: 0,
     activities: 0,
+    wines: 0,
   });
   const [notifications, setNotifications] = useState([]);
 
