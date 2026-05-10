@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Button, Badge } from "react-bootstrap";
+import { Button, Badge, Modal, Form } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import TravelForm from "../../../features/travel/components/TravelForm";
 import ItemCardList from "../../../components/shared/ItemCardList";
@@ -96,6 +96,10 @@ const VIEW_TABS = [
 function TravelList() {
   const [activeView, setActiveView] = useState("list");
   const [selectedCountry, setSelectedCountry] = useState(null);
+  const [showItineraryModal, setShowItineraryModal] = useState(false);
+  const [itineraryName, setItineraryName] = useState("");
+  const [checkedTripIds, setCheckedTripIds] = useState(new Set());
+  const [itinerarySaving, setItinerarySaving] = useState(false);
 
   const {
     items: travels,
@@ -104,7 +108,7 @@ function TravelList() {
     showForm, editIndex,
     filterStatus, setFilterStatus,
     showToast, setShowToast,
-    handleSubmit, startEditing, deleteItem, closeForm, openForm,
+    handleSubmit, startEditing, deleteItem, batchPatch, closeForm, openForm,
     showSnapPrompt, snapPromptTitle, handleSnapSave, dismissSnapPrompt,
   } = useCategory("travel", { migrate: migrateMemoryToSnapshot, schema: travelSchema });
 
@@ -114,10 +118,40 @@ function TravelList() {
 
   const { groups, ungrouped } = groupByItinerary(filteredTravels);
 
+  // All ungrouped trips regardless of current status filter — used in the Create Itinerary modal
+  const { ungrouped: allUngrouped } = groupByItinerary(travels);
+
   // Pre-fill tripId + tripName when "adding a stop" to an existing itinerary
   const handleAddStop = (tripId, tripName) => {
     setFormData({ tripId, tripName });
     openForm();
+  };
+
+  const openItineraryModal = () => {
+    setItineraryName("");
+    setCheckedTripIds(new Set());
+    setShowItineraryModal(true);
+  };
+
+  const toggleTripCheck = (id) => {
+    setCheckedTripIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleCreateItinerary = () => {
+    if (checkedTripIds.size < 2 || !itineraryName.trim()) return;
+    setItinerarySaving(true);
+    const tripId = crypto.randomUUID();
+    batchPatch((item) => checkedTripIds.has(item.id), {
+      tripId,
+      tripName: itineraryName.trim(),
+    });
+    setShowItineraryModal(false);
+    setItinerarySaving(false);
   };
 
   return (
@@ -128,6 +162,11 @@ function TravelList() {
           <Link to="/travel/stats" className="btn btn-sm btn-outline-secondary">
             📊 Stats
           </Link>
+          {allUngrouped.length >= 2 && (
+            <Button variant="outline-secondary" size="sm" onClick={openItineraryModal}>
+              🗺️ Create Itinerary
+            </Button>
+          )}
           <Button variant="primary" size="sm" onClick={openForm}>
             + Add Trip
           </Button>
@@ -288,6 +327,84 @@ function TravelList() {
         onSave={handleSnapSave}
         itemTitle={snapPromptTitle}
       />
+
+      {/* Create Itinerary Modal */}
+      <Modal show={showItineraryModal} onHide={() => setShowItineraryModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title style={{ fontWeight: 700, fontSize: "1.1rem" }}>🗺️ Create Itinerary</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", marginBottom: "1rem" }}>
+            Select two or more standalone trips to group into a multi-stop itinerary.
+          </p>
+          <Form.Group className="mb-3">
+            <Form.Label style={{ fontWeight: 600, fontSize: "var(--font-size-sm)" }}>Itinerary Name</Form.Label>
+            <Form.Control
+              type="text"
+              placeholder="e.g. Europe Summer 2025"
+              value={itineraryName}
+              onChange={(e) => setItineraryName(e.target.value)}
+              style={{ fontSize: "var(--font-size-sm)" }}
+            />
+          </Form.Group>
+          <Form.Label style={{ fontWeight: 600, fontSize: "var(--font-size-sm)" }}>
+            Select Trips ({checkedTripIds.size} selected)
+          </Form.Label>
+          <div style={{ maxHeight: 320, overflowY: "auto", border: "1px solid var(--color-border)", borderRadius: 8 }}>
+            {allUngrouped.map((trip) => {
+              const label = trip.title || trip.city || getCountryName(trip.country) || "Untitled";
+              const flag = trip.country ? codeToFlag(trip.country) : "📍";
+              const year = trip.startDate
+                ? new Date(trip.startDate + "T00:00:00").getFullYear()
+                : null;
+              return (
+                <label
+                  key={trip.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.75rem",
+                    padding: "0.65rem 1rem",
+                    cursor: "pointer",
+                    borderBottom: "1px solid var(--color-border)",
+                    background: checkedTripIds.has(trip.id) ? "var(--color-surface-hover)" : "transparent",
+                    transition: "background 0.1s",
+                  }}
+                >
+                  <Form.Check
+                    type="checkbox"
+                    checked={checkedTripIds.has(trip.id)}
+                    onChange={() => toggleTripCheck(trip.id)}
+                    style={{ margin: 0 }}
+                  />
+                  <span style={{ fontSize: "1.1rem" }}>{flag}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: "var(--font-size-sm)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {label}
+                    </div>
+                    <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)" }}>
+                      {trip.status}{year ? ` · ${year}` : ""}
+                    </div>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline-secondary" size="sm" onClick={() => setShowItineraryModal(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={handleCreateItinerary}
+            disabled={checkedTripIds.size < 2 || !itineraryName.trim() || itinerarySaving}
+          >
+            {itinerarySaving ? "Saving…" : `Group ${checkedTripIds.size} Trips`}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </>
   );
 }

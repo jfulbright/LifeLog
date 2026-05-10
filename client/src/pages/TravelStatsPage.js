@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import dataService from "../services/dataService";
 import { computeTravelStats } from "../services/travelStats";
 import WorldMapView from "../features/travel/components/WorldMapView";
-import { codeToFlag, CONTINENT_LABELS } from "../data/countries";
+import { codeToFlag, CONTINENT_LABELS, getCountryName } from "../data/countries";
 
 function StatCard({ label, value, sub, color }) {
   return (
@@ -87,14 +87,201 @@ function SectionHeader({ children, emoji }) {
   );
 }
 
+const RING_LABELS = { 1: "Inner Circle", 2: "Family", 3: "Friends" };
+const RING_COLORS = { 1: "#E01E5A", 2: "#ECB22E", 3: "#36C5F0" };
+
+function CircleStats({ items, contacts, entryTags }) {
+  const hasContacts = contacts.length > 0;
+
+  // Build a map: entryId → set of contactIds who are tagged on it
+  const tagsByEntry = {};
+  entryTags.forEach(({ entryId, contactId }) => {
+    if (!tagsByEntry[entryId]) tagsByEntry[entryId] = new Set();
+    tagsByEntry[entryId].add(contactId);
+  });
+
+  // Find contacts who appear on at least one travel entry
+  const contactMap = Object.fromEntries(contacts.map((c) => [c.id, c]));
+  const sharedContactIds = new Set(
+    Object.values(tagsByEntry).flatMap((set) => [...set])
+  );
+  const sharedContacts = [...sharedContactIds]
+    .map((id) => contactMap[id])
+    .filter(Boolean);
+
+  // Compute countries each shared contact has been tagged on
+  const contactCountries = {};
+  items.forEach((item) => {
+    const tags = tagsByEntry[item.id];
+    if (!tags || !item.country || item.status !== "visited") return;
+    tags.forEach((cid) => {
+      if (!contactCountries[cid]) contactCountries[cid] = new Set();
+      contactCountries[cid].add(item.country);
+    });
+  });
+
+  // Overlapping countries: countries YOU visited that at least one shared contact also visited
+  const myVisitedCountries = new Set(
+    items.filter((i) => i.status === "visited" && i.country).map((i) => i.country)
+  );
+  const sharedCountryCodes = [...myVisitedCountries].filter((code) =>
+    sharedContacts.some((c) => contactCountries[c.id]?.has(code))
+  );
+
+  const hasSocialData = sharedContacts.length > 0;
+
+  if (!hasContacts) {
+    return (
+      <div style={{
+        background: "linear-gradient(135deg, #F5EEF8 0%, #EAF8FE 100%)",
+        border: "1px solid var(--color-border)",
+        borderRadius: "var(--card-radius)",
+        padding: "1.5rem",
+        marginBottom: "1.5rem",
+        textAlign: "center",
+      }}>
+        <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>👥</div>
+        <h6 style={{ fontWeight: 700 }}>Circle Stats — Unlock with Friends</h6>
+        <p style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-sm)", maxWidth: 400, margin: "0 auto 1rem" }}>
+          Add friends to your Inner Circle to see who you've traveled with, which countries overlap, and how your travel footprints compare.
+        </p>
+        <Link to="/contacts" className="btn btn-sm btn-primary">Manage My Circle</Link>
+      </div>
+    );
+  }
+
+  if (!hasSocialData) {
+    return (
+      <div className="card p-3 mb-4">
+        <SectionHeader emoji="👥">Circle Stats</SectionHeader>
+        <p style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-sm)" }}>
+          You have {contacts.length} contact{contacts.length !== 1 ? "s" : ""} in your circle.
+          Tag them on travel entries to unlock footprint comparisons and shared-country stats.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card p-3 mb-4">
+      <SectionHeader emoji="👥">Circle Stats</SectionHeader>
+      <Row className="g-3 mb-3">
+        <Col xs={6} md={3}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: "1.75rem", fontWeight: 800, color: "#E01E5A" }}>{sharedContacts.length}</div>
+            <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)", fontWeight: 600 }}>Travel Companions</div>
+          </div>
+        </Col>
+        <Col xs={6} md={3}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: "1.75rem", fontWeight: 800, color: "#36C5F0" }}>{sharedCountryCodes.length}</div>
+            <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)", fontWeight: 600 }}>Countries in Common</div>
+          </div>
+        </Col>
+        <Col xs={6} md={3}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: "1.75rem", fontWeight: 800, color: "#ECB22E" }}>{contacts.length}</div>
+            <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)", fontWeight: 600 }}>Circle Members</div>
+          </div>
+        </Col>
+        <Col xs={6} md={3}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: "1.75rem", fontWeight: 800, color: "#2EB67D" }}>
+              {contacts.filter((c) => c.ringLevel === 1).length}
+            </div>
+            <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)", fontWeight: 600 }}>Inner Circle</div>
+          </div>
+        </Col>
+      </Row>
+
+      {sharedCountryCodes.length > 0 && (
+        <div className="mb-3">
+          <div style={{ fontWeight: 600, fontSize: "var(--font-size-sm)", marginBottom: "0.4rem" }}>Countries you've visited together</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem" }}>
+            {sharedCountryCodes.map((code) => (
+              <span key={code} style={{
+                background: "var(--color-surface-hover)",
+                border: "1px solid var(--color-border)",
+                borderRadius: 12,
+                padding: "0.15rem 0.5rem",
+                fontSize: "var(--font-size-xs)",
+                fontWeight: 600,
+              }}>
+                {codeToFlag(code)} {getCountryName(code)}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <div style={{ fontWeight: 600, fontSize: "var(--font-size-sm)", marginBottom: "0.5rem" }}>Your Circle</div>
+        {contacts.slice(0, 6).map((contact) => {
+          const ring = contact.ringLevel || 3;
+          const tripCount = items.filter((item) => tagsByEntry[item.id]?.has(contact.id)).length;
+          return (
+            <div key={contact.id} style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem",
+              padding: "0.4rem 0",
+              borderBottom: "1px solid var(--color-border)",
+            }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: "50%",
+                background: RING_COLORS[ring] || "#ccc",
+                color: ring === 2 ? "#333" : "#fff",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontWeight: 700, fontSize: "var(--font-size-sm)",
+                flexShrink: 0,
+              }}>
+                {(contact.displayName || contact.email || "?").charAt(0).toUpperCase()}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, fontSize: "var(--font-size-sm)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {contact.displayName || contact.email}
+                </div>
+                <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)" }}>
+                  {RING_LABELS[ring] || "Friend"}
+                  {contactCountries[contact.id]?.size > 0
+                    ? ` · ${contactCountries[contact.id].size} shared country${contactCountries[contact.id].size !== 1 ? "s" : ""}`
+                    : ""}
+                </div>
+              </div>
+              {tripCount > 0 && (
+                <Badge bg="light" text="dark" style={{ fontSize: "var(--font-size-xs)", fontWeight: 600 }}>
+                  {tripCount} trip{tripCount !== 1 ? "s" : ""}
+                </Badge>
+              )}
+            </div>
+          );
+        })}
+        {contacts.length > 6 && (
+          <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)", marginTop: "0.5rem", textAlign: "center" }}>
+            +{contacts.length - 6} more in your circle
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function TravelStatsPage() {
   const [items, setItems] = useState([]);
+  const [contacts, setContacts] = useState([]);
+  const [entryTags, setEntryTags] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCountry, setSelectedCountry] = useState(null);
 
   useEffect(() => {
-    dataService.getItems("travel").then((data) => {
-      setItems(data);
+    Promise.all([
+      dataService.getItems("travel"),
+      dataService.getContacts(),
+      dataService.getEntryTags(),
+    ]).then(([travelData, contactData, tagData]) => {
+      setItems(travelData);
+      setContacts(contactData);
+      setEntryTags(tagData);
       setLoading(false);
     });
   }, []);
@@ -394,6 +581,9 @@ function TravelStatsPage() {
               </div>
             </div>
           )}
+
+          {/* Circle Stats */}
+          <CircleStats items={items} contacts={contacts} entryTags={entryTags} />
         </>
       )}
     </div>

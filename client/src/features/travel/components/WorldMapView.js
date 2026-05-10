@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
+import topology from "world-atlas/countries-110m.json";
 import { getCountryName, codeToFlag } from "../../../data/countries";
-
-const GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
 // Numeric ISO → alpha-2 mapping for the topojson features
 // (react-simple-maps includes numeric codes in the geo features)
@@ -152,7 +151,7 @@ function WorldMapView({ items = [], onCountryClick }) {
             center={position.coordinates}
             onMoveEnd={({ coordinates, zoom }) => setPosition({ coordinates, zoom })}
           >
-            <Geographies geography={GEO_URL}>
+            <Geographies geography={topology}>
               {({ geographies }) =>
                 geographies.map((geo) => {
                   const numericCode = geo.id;
