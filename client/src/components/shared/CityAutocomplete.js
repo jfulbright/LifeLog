@@ -11,7 +11,7 @@ const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
  *   { city, state, country, lat, lng }
  * where country is the ISO 2-letter code.
  */
-function CityAutocomplete({ value, onChange, onLocationSelect, id, placeholder = "e.g. Tokyo", disabled }) {
+function CityAutocomplete({ value, onChange, onLocationSelect, id, placeholder = "e.g. Tokyo", disabled, countryCode }) {
   const [query, setQuery] = useState(value || "");
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -35,11 +35,12 @@ function CityAutocomplete({ value, onChange, onLocationSelect, id, placeholder =
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const fetchSuggestions = useCallback(async (q) => {
+  const fetchSuggestions = useCallback(async (q, activeCountryCode) => {
     if (!q || q.length < 2 || !MAPBOX_TOKEN) return;
     setLoading(true);
     try {
-      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?types=place&limit=6&access_token=${MAPBOX_TOKEN}`;
+      const countryParam = activeCountryCode ? `&country=${activeCountryCode.toLowerCase()}` : "";
+      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?types=place&limit=6${countryParam}&access_token=${MAPBOX_TOKEN}`;
       const res = await fetch(url);
       if (!res.ok) return;
       const data = await res.json();
@@ -59,7 +60,7 @@ function CityAutocomplete({ value, onChange, onLocationSelect, id, placeholder =
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (q.length >= 2 && MAPBOX_TOKEN) {
-      debounceRef.current = setTimeout(() => fetchSuggestions(q), 300);
+      debounceRef.current = setTimeout(() => fetchSuggestions(q, countryCode), 300);
     } else {
       setSuggestions([]);
       setShowDropdown(false);

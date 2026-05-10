@@ -1,5 +1,4 @@
 import { baseSchema } from "../../helpers/common.schema";
-import { locationSchema } from "../../helpers/location.schema";
 import { getStatusValues } from "../../helpers/statusLabels";
 import { getReflectionFields } from "../../helpers/reflection.schema";
 
@@ -279,14 +278,47 @@ const eventSchema = [
     order: 21,
   },
 
-  // ── Location ────────────────────────────────────────────────────────────────
-  ...locationSchema
-    .filter((field) => !["street", "zip"].includes(field.name))
-    .map((field, i) => ({
-      ...field,
-      section: "Location",
-      order: 25 + i,
-    })),
+  // ── Location: country → city (autocomplete) → state ─────────────────────────
+  {
+    name: "country",
+    label: "Country",
+    type: "select",
+    optional: true,
+    defaultValue: "US",
+    section: "Location",
+    order: 25,
+  },
+  {
+    name: "city",
+    label: "City",
+    type: "city-autocomplete",
+    optional: true,
+    placeholder: "e.g. Austin",
+    section: "Location",
+    order: 26,
+  },
+  {
+    name: "state",
+    label: "State / Region",
+    type: "state-or-region",
+    optional: true,
+    section: "Location",
+    order: 27,
+  },
+  { name: "lat", label: "Lat", type: "text", hidden: true },
+  { name: "lng", label: "Lng", type: "text", hidden: true },
+  { name: "continent", label: "Continent", type: "text", hidden: true },
+
+  // ── Trip link ────────────────────────────────────────────────────────────────
+  { name: "linkedTripId", label: "Linked Trip ID", type: "text", hidden: true },
+  {
+    name: "linkedTrip",
+    label: "Part of a Trip?",
+    type: "linked-trip",
+    optional: true,
+    section: "Details",
+    order: 49,
+  },
 
   // ── Reflection (Snapshots, rating, companions) ──────────────────────────────
   ...getReflectionFields("attended"),

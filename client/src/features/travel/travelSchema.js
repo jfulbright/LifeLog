@@ -22,7 +22,16 @@ const travelFields = [
     order: 1,
   },
 
-  // ── Location: city uses autocomplete, country uses flag picker ────────────────
+  // ── Location: country first so city search can be filtered by it ─────────────
+  {
+    name: "country",
+    label: "Country",
+    type: "select",
+    optional: true,
+    defaultValue: "US",
+    section: "Location",
+    order: 10,
+  },
   {
     name: "city",
     label: "City",
@@ -30,7 +39,7 @@ const travelFields = [
     optional: true,
     placeholder: "e.g. Tokyo",
     section: "Location",
-    order: 10,
+    order: 11,
   },
   {
     // Context-aware: US/CA → state dropdown, elsewhere → free text region
@@ -38,15 +47,6 @@ const travelFields = [
     label: "State / Region",
     type: "state-or-region",
     optional: true,
-    section: "Location",
-    order: 11,
-  },
-  {
-    name: "country",
-    label: "Country",
-    type: "select",
-    optional: true,
-    defaultValue: "US",
     section: "Location",
     order: 12,
   },

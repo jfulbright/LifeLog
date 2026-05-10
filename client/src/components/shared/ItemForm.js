@@ -12,6 +12,7 @@ import ContactPicker from "./ContactPicker";
 import RecommendSection from "./RecommendSection";
 import ShareWithSection from "./ShareWithSection";
 import ShareWithCompanionsToggle from "./ShareWithCompanionsToggle";
+import LinkedTripPicker from "./LinkedTripPicker";
 import { getCountryContinent } from "../../data/countries";
 
 function ListFieldRenderer({ field, value, onChange, readOnly }) {
@@ -282,6 +283,7 @@ function ItemForm({
                   setFormData((prev) => ({
                     ...prev,
                     continent: selected.continent || getCountryContinent(selected.code),
+                    state: "", // clear stale state/region when country changes
                   }));
                 }
               }}
@@ -381,15 +383,16 @@ function ItemForm({
           <CityAutocomplete
             id={fieldId}
             value={value}
+            countryCode={formData.country || ""}
             onChange={(e) => handleInputChange(e, setFormData)}
             onLocationSelect={(location) => {
               setFormData((prev) => {
                 const updates = { ...prev, city: location.city };
                 if (location.lat) updates.lat = location.lat;
                 if (location.lng) updates.lng = location.lng;
-                // Only auto-fill country/state if user hasn't already set them
-                if (location.country && !prev.country) updates.country = location.country;
-                if (location.state && !prev.state) updates.state = location.state;
+                // Always apply country + state from Mapbox result
+                if (location.country) updates.country = location.country;
+                if (location.state) updates.state = location.state;
                 if (location.country) {
                   updates.continent = getCountryContinent(location.country);
                 }
@@ -430,6 +433,20 @@ function ItemForm({
         break;
       }
 
+      case "linked-trip":
+        inputElement = (
+          <LinkedTripPicker
+            linkedTripId={formData.linkedTripId || ""}
+            linkedTripTitle={formData.linkedTripTitle || ""}
+            formDate={formData.startDate || ""}
+            formCity={formData.city || ""}
+            formCountry={formData.country || ""}
+            onChange={(patch) => setFormData((prev) => ({ ...prev, ...patch }))}
+            readOnly={isReadOnly}
+          />
+        );
+        break;
+
       case "recommend":
         inputElement = (
           <RecommendSection formData={formData} setFormData={setFormData} />
@@ -463,7 +480,7 @@ function ItemForm({
         key={field.name}
         className={`mb-3${field.isSnapshot ? " snapshot-field-group" : ""}`}
       >
-        {field.type !== "recommend" && field.type !== "visible-to" && (
+        {field.type !== "recommend" && field.type !== "visible-to" && field.type !== "linked-trip" && (
           <Form.Label htmlFor={fieldId}>
             {field.label}
             {field.required && (
