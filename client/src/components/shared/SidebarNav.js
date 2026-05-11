@@ -10,6 +10,7 @@ const navigateItems = [
 
 const socialItems = [
   { path: "/people", label: "My People", icon: "👥" },
+  { path: "/milestones", label: "My Milestones", icon: "🌟" },
   { path: "/shared", label: "Shared Experiences", icon: "🤝", badge: "notifications" },
   { path: "/recommendations", label: "Recommendations", icon: "⭐" },
 ];
@@ -18,6 +19,7 @@ const categoryItems = [
   { path: "/events", key: "events", label: "Events" },
   { path: "/travel", key: "travel", label: "Travel" },
   { path: "/activities", key: "activities", label: "Activities" },
+  { path: "/kids", key: "kids", label: "Kids" },
   { path: "/cellar", key: "cellar", label: "Cellar" },
   { path: "/cars", key: "cars", label: "Cars" },
   { path: "/homes", key: "homes", label: "Homes" },

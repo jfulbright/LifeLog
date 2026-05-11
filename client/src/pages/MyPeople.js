@@ -44,7 +44,9 @@ function ContactForm({ initial = {}, onSave, onDelete, onCancel, isEditing }) {
   const [lastName, setLastName] = useState(initial.lastName || "");
   const [displayName, setDisplayName] = useState(initial.displayName || "");
   const [phone, setPhone] = useState(initial.phone || "");
-  const [ringLevel, setRingLevel] = useState(initial.ringLevel || 3);
+  const [ringLevel, setRingLevel] = useState(initial.ringLevel || 4);
+  const [isChild, setIsChild] = useState(initial.isChild || false);
+  const [birthday, setBirthday] = useState(initial.birthday || "");
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [showRingWarning, setShowRingWarning] = useState(false);
@@ -76,6 +78,8 @@ function ContactForm({ initial = {}, onSave, onDelete, onCancel, isEditing }) {
         displayName: resolvedDisplay,
         phone: phone.trim(),
         ringLevel,
+        isChild,
+        birthday: birthday || null,
       });
     } catch (err) {
       setError(err.message || "Could not save contact.");
@@ -200,6 +204,34 @@ function ContactForm({ initial = {}, onSave, onDelete, onCancel, isEditing }) {
         </Alert>
       )}
 
+      <Form.Group className="mb-3">
+        <Form.Check
+          type="switch"
+          id="contact-is-child"
+          label="This is my child"
+          checked={isChild}
+          onChange={(e) => setIsChild(e.target.checked)}
+        />
+        <Form.Text className="text-muted">
+          Enables milestone timeline and age-at-event tracking.
+        </Form.Text>
+      </Form.Group>
+
+      {isChild && (
+        <Form.Group className="mb-3">
+          <Form.Label htmlFor="contact-birthday">Birthday</Form.Label>
+          <Form.Control
+            id="contact-birthday"
+            type="date"
+            value={birthday}
+            onChange={(e) => setBirthday(e.target.value)}
+          />
+          <Form.Text className="text-muted">
+            Used to auto-calculate age at the time of milestone events.
+          </Form.Text>
+        </Form.Group>
+      )}
+
       <div className="d-flex gap-2 mt-4">
         <Button variant="primary" type="submit" className="flex-grow-1" disabled={saving}>
           {saving ? "Saving\u2026" : isEditing ? "Update Contact" : "Add to My People"}
@@ -258,8 +290,13 @@ function ContactCard({ contact, onEdit, onInvite }) {
       >
         <ContactAvatar displayName={contact.displayName} ringLevel={contact.ringLevel} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 600, fontSize: "var(--font-size-base)", color: "var(--color-text-primary)" }}>
+          <div style={{ fontWeight: 600, fontSize: "var(--font-size-base)", color: "var(--color-text-primary)", display: "flex", alignItems: "center", gap: "0.375rem" }}>
             {contact.displayName}
+            {contact.isChild && (
+              <span style={{ fontSize: "0.6rem", fontWeight: 700, color: "#FF6B35", background: "#FFF3ED", border: "1px solid #FFD0B5", borderRadius: 8, padding: "0.05rem 0.4rem" }}>
+                child
+              </span>
+            )}
           </div>
           <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {contact.email}

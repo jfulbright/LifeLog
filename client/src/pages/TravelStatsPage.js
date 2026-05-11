@@ -87,8 +87,8 @@ function SectionHeader({ children, emoji }) {
   );
 }
 
-const RING_LABELS = { 1: "Inner Circle", 2: "Family", 3: "Friends" };
-const RING_COLORS = { 1: "#E01E5A", 2: "#ECB22E", 3: "#36C5F0" };
+const RING_LABELS = { 1: "Partner", 2: "Immediate Family", 3: "Extended Family", 4: "Friends" };
+const RING_COLORS = { 1: "#4A154B", 2: "#2EB67D", 3: "#8B6914", 4: "#36C5F0" };
 
 function CircleStats({ items, contacts, entryTags }) {
   const hasContacts = contacts.length > 0;

@@ -29,7 +29,7 @@ export async function migrateSocialDataToSupabase() {
           owner_id: userId,
           email: (c.email || "").toLowerCase(),
           display_name: c.displayName || "",
-          ring_level: c.ringLevel || 3,
+          ring_level: c.ringLevel || 4,
           invite_status: c.inviteStatus || "local_only",
           linked_user_id: c.linkedUserId || null,
           phone: c.phone || null,

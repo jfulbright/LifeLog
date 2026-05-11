@@ -6,11 +6,17 @@ import LabelScanButton from "../../../components/shared/LabelScanButton";
 import cellarSchema from "../cellarSchema";
 
 const CELLAR_COLOR = "var(--color-cellar, #8B3A8F)";
+const WINE_COLOR = "#722F37";
+const WHISKEY_COLOR = "#B5651D";
 
 function CellarForm({ formData, setFormData, onSubmit, onCancel }) {
   const [scanError, setScanError] = useState(null);
   const isReadOnly = !setFormData;
-  const subType = formData.subType || "wine";
+  const subType = formData.subType || "";
+
+  const handleSubTypeSelect = (type) => {
+    setFormData((prev) => ({ ...prev, subType: type }));
+  };
 
   const handleSelect = (fields) => {
     setFormData((prev) => ({ ...prev, ...fields }));
@@ -34,59 +40,133 @@ function CellarForm({ formData, setFormData, onSubmit, onCancel }) {
   return (
     <div>
       {!isReadOnly && (
-        <div
-          style={{
-            display: "flex",
-            gap: "0.75rem",
-            alignItems: "flex-start",
-            marginBottom: "1.25rem",
-            padding: "0.75rem 1rem",
-            background: "linear-gradient(135deg, #FAF0FB 0%, #F5EAF8 100%)",
-            borderRadius: "10px",
-            border: "1px solid rgba(139,58,143,0.15)",
-          }}
-        >
-          <div style={{ flex: 1, minWidth: 0 }}>
+        <>
+          {/* ── Sub-type toggle buttons ── */}
+          <div style={{ marginBottom: "1rem" }}>
             <div style={{
               fontSize: "var(--font-size-xs)",
-              fontWeight: 600,
+              fontWeight: 700,
               color: "var(--color-text-secondary)",
-              marginBottom: "0.35rem",
+              marginBottom: "0.5rem",
               textTransform: "uppercase",
-              letterSpacing: "0.04em",
+              letterSpacing: "0.05em",
             }}>
-              Search by name
+              What are you logging?
             </div>
-            {subType === "whiskey" ? (
-              <WhiskeySearch
-                value={formData.whiskyName || ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, whiskyName: e.target.value }))
-                }
-                onWhiskeySelect={handleSelect}
-                placeholder="Search whiskeys, distilleries…"
-              />
-            ) : (
-              <WineSearch
-                value={formData.wineName || ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, wineName: e.target.value }))
-                }
-                onWineSelect={handleSelect}
-                placeholder="Search wines, wineries, varietals…"
-              />
-            )}
+            <div style={{ display: "flex", gap: "0.75rem" }}>
+              <button
+                type="button"
+                onClick={() => handleSubTypeSelect("wine")}
+                style={{
+                  flex: 1,
+                  padding: "0.7rem 1rem",
+                  borderRadius: "10px",
+                  border: subType === "wine" ? `2.5px solid ${WINE_COLOR}` : "2px solid var(--color-border)",
+                  background: subType === "wine" ? "linear-gradient(135deg, #FAF0FB 0%, #F5EAF8 100%)" : "var(--color-surface)",
+                  color: subType === "wine" ? WINE_COLOR : "var(--color-text-secondary)",
+                  fontWeight: 700,
+                  fontSize: "1rem",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                  boxShadow: subType === "wine" ? `0 2px 8px rgba(114, 47, 55, 0.15)` : "none",
+                }}
+              >
+                <span style={{ fontSize: "1.3rem" }}>🍷</span> Wine
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSubTypeSelect("whiskey")}
+                style={{
+                  flex: 1,
+                  padding: "0.7rem 1rem",
+                  borderRadius: "10px",
+                  border: subType === "whiskey" ? `2.5px solid ${WHISKEY_COLOR}` : "2px solid var(--color-border)",
+                  background: subType === "whiskey" ? "linear-gradient(135deg, #FFF8F0 0%, #FDF3E7 100%)" : "var(--color-surface)",
+                  color: subType === "whiskey" ? WHISKEY_COLOR : "var(--color-text-secondary)",
+                  fontWeight: 700,
+                  fontSize: "1rem",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                  boxShadow: subType === "whiskey" ? `0 2px 8px rgba(181, 101, 29, 0.15)` : "none",
+                }}
+              >
+                <span style={{ fontSize: "1.3rem" }}>🥃</span> Whiskey
+              </button>
+            </div>
           </div>
 
-          <div style={{ flexShrink: 0, paddingTop: "1.55rem" }}>
-            <LabelScanButton
-              onResult={handleScanResult}
-              onError={(msg) => setScanError(msg)}
-              itemId={formData.id}
-              subType={subType}
-            />
+          {/* ── Search + Scan section ── */}
+          <div
+            style={{
+              display: "flex",
+              gap: "0.75rem",
+              alignItems: "flex-start",
+              marginBottom: "1.25rem",
+              padding: "0.75rem 1rem",
+              background: subType
+                ? "linear-gradient(135deg, #FAF0FB 0%, #F5EAF8 100%)"
+                : "var(--color-surface)",
+              borderRadius: "10px",
+              border: subType
+                ? "1px solid rgba(139,58,143,0.15)"
+                : "1px solid var(--color-border)",
+              opacity: subType ? 1 : 0.5,
+              pointerEvents: subType ? "auto" : "none",
+              transition: "opacity 0.2s, background 0.2s",
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{
+                fontSize: "var(--font-size-xs)",
+                fontWeight: 600,
+                color: "var(--color-text-secondary)",
+                marginBottom: "0.35rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.04em",
+              }}>
+                {subType ? "Search by name" : "Select wine or whiskey first"}
+              </div>
+              {subType === "whiskey" ? (
+                <WhiskeySearch
+                  value={formData.whiskyName || ""}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, whiskyName: e.target.value }))
+                  }
+                  onWhiskeySelect={handleSelect}
+                  placeholder="Search whiskeys, distilleries…"
+                  disabled={!subType}
+                />
+              ) : (
+                <WineSearch
+                  value={formData.wineName || ""}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, wineName: e.target.value }))
+                  }
+                  onWineSelect={handleSelect}
+                  placeholder="Search wines, wineries, varietals…"
+                  disabled={!subType}
+                />
+              )}
+            </div>
+
+            <div style={{ flexShrink: 0, paddingTop: "1.55rem" }}>
+              <LabelScanButton
+                onResult={handleScanResult}
+                onError={(msg) => setScanError(msg)}
+                itemId={formData.id}
+                subType={subType}
+              />
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {scanError && (

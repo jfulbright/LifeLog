@@ -35,6 +35,10 @@ const statusLabels = {
     cellar: "In Cellar",
     wishlist: "Wishlist",
   },
+  kids: {
+    logged: "Logged",
+    upcoming: "Upcoming",
+  },
 };
 
 export default statusLabels;

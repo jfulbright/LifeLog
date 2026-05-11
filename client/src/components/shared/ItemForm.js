@@ -15,6 +15,7 @@ import ShareWithCompanionsToggle from "./ShareWithCompanionsToggle";
 import LinkedTripPicker from "./LinkedTripPicker";
 import PhotoUploadField from "./PhotoUploadField";
 import { getCountryContinent } from "../../data/countries";
+import { useAppData } from "../../contexts/AppDataContext";
 
 function ListFieldRenderer({ field, value, onChange, readOnly }) {
   const [inputValue, setInputValue] = useState("");
@@ -106,6 +107,132 @@ function ContactListRenderer({ field, value, onChange, readOnly }) {
       placeholder={field.placeholder || "Add from your people or type a name"}
       readOnly={readOnly}
     />
+  );
+}
+
+function ChildPickerField({ value, onChange, readOnly }) {
+  const { contacts } = useAppData();
+  const children = contacts.filter((c) => c.isChild);
+
+  if (readOnly) {
+    const child = children.find((c) => c.id === value);
+    return <span>{child?.displayName || "—"}</span>;
+  }
+
+  if (children.length === 0) {
+    return (
+      <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-tertiary)", fontStyle: "italic" }}>
+        No children added yet. Go to My People and mark a contact as "This is my child."
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+      {children.map((child) => (
+        <button
+          key={child.id}
+          type="button"
+          onClick={() => onChange(child.id)}
+          style={{
+            padding: "0.375rem 1rem",
+            borderRadius: 20,
+            border: `2px solid ${value === child.id ? "var(--color-kids, #FF6B35)" : "var(--color-border)"}`,
+            background: value === child.id ? "var(--color-kids, #FF6B35)" : "var(--color-surface)",
+            color: value === child.id ? "#fff" : "var(--color-text-secondary)",
+            fontWeight: value === child.id ? 700 : 500,
+            fontSize: "var(--font-size-sm)",
+            cursor: "pointer",
+            transition: "all 150ms ease",
+          }}
+        >
+          {child.displayName}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function LinkedEntryPicker({ linkedEntryId, linkedEntryTitle, onChange, readOnly }) {
+  const [searching, setSearching] = useState(false);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+
+  if (readOnly) {
+    return linkedEntryTitle ? <span>{linkedEntryTitle}</span> : null;
+  }
+
+  if (linkedEntryId && linkedEntryTitle) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <span style={{ fontSize: "var(--font-size-sm)", fontWeight: 600 }}>{linkedEntryTitle}</span>
+        <button
+          type="button"
+          onClick={() => onChange({ linkedEntryId: "", linkedEntryTitle: "" })}
+          style={{ background: "none", border: "none", color: "var(--color-danger)", cursor: "pointer", fontSize: "0.8rem" }}
+        >
+          Remove
+        </button>
+      </div>
+    );
+  }
+
+  const handleSearch = async () => {
+    if (!query.trim()) return;
+    setSearching(true);
+    try {
+      const dataService = (await import("../../services/dataService")).default;
+      const allItems = await dataService.getAllItems();
+      const matches = allItems
+        .filter((item) => {
+          const title = item.title || item.make || item.type || item.artist || "";
+          return title.toLowerCase().includes(query.toLowerCase());
+        })
+        .slice(0, 10);
+      setResults(matches);
+    } catch { /* ignore */ }
+    setSearching(false);
+  };
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
+        <Form.Control
+          type="text"
+          size="sm"
+          placeholder="Search your entries..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleSearch(); } }}
+        />
+        <Button variant="outline-secondary" size="sm" onClick={handleSearch} disabled={searching}>
+          {searching ? "..." : "Search"}
+        </Button>
+      </div>
+      {results.length > 0 && (
+        <div style={{ maxHeight: 200, overflow: "auto", border: "1px solid var(--color-border)", borderRadius: 6 }}>
+          {results.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => {
+                onChange({ linkedEntryId: item.id, linkedEntryTitle: item.title || item.make || item.type || item.artist || "Entry" });
+                setResults([]);
+                setQuery("");
+              }}
+              style={{
+                display: "block", width: "100%", textAlign: "left", padding: "0.5rem 0.75rem",
+                border: "none", borderBottom: "1px solid var(--color-border)", background: "var(--color-surface)",
+                cursor: "pointer", fontSize: "var(--font-size-sm)",
+              }}
+            >
+              <span style={{ fontWeight: 600 }}>{item.title || item.make || item.type || item.artist || "Entry"}</span>
+              <span style={{ color: "var(--color-text-tertiary)", marginLeft: "0.5rem" }}>({item._category})</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -446,6 +573,27 @@ function ItemForm({
             formDate={formData.startDate || ""}
             formCity={formData.city || ""}
             formCountry={formData.country || ""}
+            onChange={(patch) => setFormData((prev) => ({ ...prev, ...patch }))}
+            readOnly={isReadOnly}
+          />
+        );
+        break;
+
+      case "child-picker":
+        inputElement = (
+          <ChildPickerField
+            value={formData.childContactId || ""}
+            onChange={(childId) => setFormData((prev) => ({ ...prev, childContactId: childId }))}
+            readOnly={isReadOnly}
+          />
+        );
+        break;
+
+      case "linked-entry":
+        inputElement = (
+          <LinkedEntryPicker
+            linkedEntryId={formData.linkedEntryId || ""}
+            linkedEntryTitle={formData.linkedEntryTitle || ""}
             onChange={(patch) => setFormData((prev) => ({ ...prev, ...patch }))}
             readOnly={isReadOnly}
           />

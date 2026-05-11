@@ -97,6 +97,29 @@ const categoryMeta = {
       return parts.join(" · ");
     },
   },
+  kids: {
+    icon: "🌟",
+    color: "var(--color-kids, #FF6B35)",
+    primaryField: "title",
+    secondaryFields: ["milestoneType", "locationName"],
+    dateField: "startDate",
+    getPrimaryDisplay: (item) => {
+      switch (item.milestoneType) {
+        case "school": return item.schoolEvent ? `${item.schoolEvent}${item.schoolName ? ` — ${item.schoolName}` : ""}` : item.schoolName || "School";
+        case "sports": return item.sport ? `${item.sport}${item.sportsEvent ? ` — ${item.sportsEvent}` : ""}` : "Sports";
+        case "firsts": return item.firstWhat || "First";
+        case "performance": return item.performanceName || item.performanceType || "Performance";
+        case "achievement": return item.achievementName || "Achievement";
+        case "life": return item.lifeMilestone || "Life Milestone";
+        case "other": return item.otherTitle || "Milestone";
+        default: return item.title || "Milestone";
+      }
+    },
+    getSecondaryDisplay: (item) => {
+      const parts = [item.locationName].filter(Boolean);
+      return parts.join(" · ");
+    },
+  },
 };
 
 export default categoryMeta;

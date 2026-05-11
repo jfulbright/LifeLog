@@ -25,6 +25,7 @@ const cellarSchema = [
     required: true,
     section: "Main",
     order: -1,
+    hidden: true,
   },
 
   // ── Main ────────────────────────────────────────────────────────────────────

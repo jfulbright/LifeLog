@@ -7,7 +7,7 @@ import { getSnapshotTeaser } from "../helpers/operator";
 import dataService from "../services/dataService";
 import PrivacyIndicator, { isEntryShared } from "../components/shared/PrivacyIndicator";
 
-const CATEGORY_KEYS = ["events", "travel", "cars", "homes", "activities", "cellar"];
+const CATEGORY_KEYS = ["events", "travel", "cars", "homes", "activities", "cellar", "kids"];
 
 const categories = CATEGORY_KEYS.map((key) => ({
   key,

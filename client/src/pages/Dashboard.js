@@ -10,7 +10,7 @@ import dataService from "../services/dataService";
 import { computeTravelStats } from "../services/travelStats";
 import { codeToFlag } from "../data/countries";
 
-const CATEGORY_KEYS = ["events", "travel", "cars", "homes", "activities"];
+const CATEGORY_KEYS = ["events", "travel", "cars", "homes", "activities", "kids"];
 
 const categories = CATEGORY_KEYS.map((key) => ({
   key,

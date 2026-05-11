@@ -1,26 +1,33 @@
 /**
  * Centralized metadata for the predefined sharing rings.
  * Ring 0 (Only Me) is a privacy state, not a membership ring — not included here.
- * Ring 4 (Public) is deferred to a future discovery phase — not included here.
  */
 export const RING_META = {
   1: {
-    label: "Inner Circle",
+    label: "Partner",
     emoji: "💎",
-    description: "Your closest person or people",
+    description: "Your partner or spouse",
     color: "#4A154B",
     bgColor: "#F5EEF8",
     borderColor: "#DDD0E2",
   },
   2: {
-    label: "Family",
+    label: "Immediate Family",
     emoji: "🏠",
-    description: "Immediate and extended family",
+    description: "Your children, parents you live with",
     color: "#2EB67D",
     bgColor: "#EAFAF4",
     borderColor: "#B7E8D5",
   },
   3: {
+    label: "Extended Family",
+    emoji: "🌳",
+    description: "Parents, siblings, in-laws",
+    color: "#8B6914",
+    bgColor: "#FDF8EC",
+    borderColor: "#E8D5A0",
+  },
+  4: {
     label: "Friends",
     emoji: "👥",
     description: "Close friends",
@@ -30,7 +37,7 @@ export const RING_META = {
   },
 };
 
-export const RING_LEVELS = [1, 2, 3];
+export const RING_LEVELS = [1, 2, 3, 4];
 
 export function getRingMeta(ringLevel) {
   return RING_META[ringLevel] || null;

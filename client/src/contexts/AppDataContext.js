@@ -12,7 +12,7 @@ import { migrateSocialDataToSupabase } from "../utils/migrateSocialData";
 
 const AppDataContext = createContext({
   contacts: [],
-  counts: { events: 0, concerts: 0, travel: 0, cars: 0, homes: 0, activities: 0, cellar: 0 },
+  counts: { events: 0, concerts: 0, travel: 0, cars: 0, homes: 0, activities: 0, cellar: 0, kids: 0 },
   notifications: [],
   pendingCollaborations: 0,
   refreshContacts: () => {},
@@ -30,6 +30,7 @@ export function AppDataProvider({ children }) {
     homes: 0,
     activities: 0,
     cellar: 0,
+    kids: 0,
   });
   const [notifications, setNotifications] = useState([]);
   const [pendingCollaborations, setPendingCollaborations] = useState(0);

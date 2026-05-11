@@ -31,6 +31,8 @@ const contactsService = {
         inviteStatus: c.invite_status,
         linkedUserId: c.linked_user_id,
         phone: c.phone,
+        isChild: c.is_child || false,
+        birthday: c.birthday || null,
         createdAt: c.created_at,
       }));
     } catch (err) {
@@ -49,9 +51,11 @@ const contactsService = {
         owner_id: userId,
         email: emailLower,
         display_name: contact.displayName || "",
-        ring_level: contact.ringLevel || 3,
+        ring_level: contact.ringLevel || 4,
         invite_status: "local_only",
         phone: contact.phone || null,
+        is_child: contact.isChild || false,
+        birthday: contact.birthday || null,
       })
       .select()
       .single();
@@ -72,6 +76,8 @@ const contactsService = {
       inviteStatus: data.invite_status,
       linkedUserId: data.linked_user_id,
       phone: data.phone,
+      isChild: data.is_child || false,
+      birthday: data.birthday || null,
       createdAt: data.created_at,
     };
   },
@@ -84,6 +90,8 @@ const contactsService = {
     if (patch.linkedUserId !== undefined) dbPatch.linked_user_id = patch.linkedUserId;
     if (patch.phone !== undefined) dbPatch.phone = patch.phone;
     if (patch.email !== undefined) dbPatch.email = patch.email.trim().toLowerCase();
+    if (patch.isChild !== undefined) dbPatch.is_child = patch.isChild;
+    if (patch.birthday !== undefined) dbPatch.birthday = patch.birthday || null;
 
     const { error } = await supabase
       .from("contacts")
