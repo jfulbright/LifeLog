@@ -8,6 +8,7 @@ import {
   searchWines,
   fetchWineDetail,
 } from "../../features/wines/api/wineApi";
+import { usePhotoUpload } from "../../hooks/usePhotoUpload";
 
 const WINE_COLOR = "var(--color-wines, #8B3A8F)";
 
@@ -16,16 +17,18 @@ const WINE_COLOR = "var(--color-wines, #8B3A8F)";
  *
  *   Path 1 — Barcode  : @zxing/browser reads UPC → Open Food Facts lookup
  *   Path 2 — OCR      : Google Cloud Vision (via server proxy) → VinoFYI fuzzy match
- *   Path 3 — Photo    : captured image always stored as photoLink (object URL,
- *                        valid for the duration of the form session)
+ *   Path 3 — Photo    : captured image uploaded to Supabase Storage; signed URL
+ *                        stored in photoLink field
  *
  * Props:
  *   onResult(fields)  — called with a partial formData object to merge
  *   onError(message)  — called with a user-readable string when scan partially fails
+ *   itemId            — item ID for building the Supabase Storage path
  */
-function LabelScanButton({ onResult, onError }) {
+function LabelScanButton({ onResult, onError, itemId }) {
   const fileInputRef = useRef(null);
   const [phase, setPhase] = useState(null); // null | "barcode" | "ocr" | "search"
+  const { uploadPhoto } = usePhotoUpload();
 
   const handleClick = () => fileInputRef.current?.click();
 
@@ -51,10 +54,19 @@ function LabelScanButton({ onResult, onError }) {
     const fields = {};
 
     try {
-      // Read the file once as a data URL (used for both photo storage and OCR)
+      // Read the file once as a data URL (used for OCR processing only)
       dataUrl = await fileToDataUrl(file);
-      fields.photoLink = dataUrl;
       console.log("[LabelScan] Image loaded — size:", Math.round(dataUrl.length / 1024), "KB");
+
+      // Upload to Supabase Storage — store signed URL instead of base64
+      const signedUrl = await uploadPhoto(file, itemId, "label");
+      if (signedUrl) {
+        fields.photoLink = signedUrl;
+        console.log("[LabelScan] Photo uploaded to Supabase Storage");
+      } else {
+        fields.photoLink = dataUrl;
+        console.warn("[LabelScan] Storage upload failed — falling back to data URL");
+      }
 
       // ── Path 1: Barcode ──────────────────────────────────────────────────────
       setPhase("barcode");

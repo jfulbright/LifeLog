@@ -1,8 +1,10 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Button, Form, Alert } from "react-bootstrap";
 import { useAppData } from "../contexts/AppDataContext";
 import { useAuth } from "../contexts/AuthContext";
-import dataService from "../services/dataService";
+import contactsService from "../services/contactsService";
+import inviteService from "../services/inviteService";
+import profileService from "../services/profileService";
 import FormPanel from "../components/shared/FormPanel";
 import { RING_META, RING_LEVELS, INVITE_STATUS_META } from "../helpers/ringMeta";
 
@@ -45,6 +47,7 @@ function ContactAvatar({ displayName, ringLevel, size = 44 }) {
 function ContactForm({ initial = {}, onSave, onDelete, onCancel, isEditing }) {
   const [email, setEmail] = useState(initial.email || "");
   const [displayName, setDisplayName] = useState(initial.displayName || "");
+  const [phone, setPhone] = useState(initial.phone || "");
   const [ringLevel, setRingLevel] = useState(initial.ringLevel || 3);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -69,7 +72,7 @@ function ContactForm({ initial = {}, onSave, onDelete, onCancel, isEditing }) {
     }
     setSaving(true);
     try {
-      await onSave({ email: email.trim(), displayName: displayName.trim(), ringLevel });
+      await onSave({ email: email.trim(), displayName: displayName.trim(), phone: phone.trim(), ringLevel });
     } catch (err) {
       setError(err.message || "Could not save contact.");
     } finally {
@@ -112,6 +115,17 @@ function ContactForm({ initial = {}, onSave, onDelete, onCancel, isEditing }) {
           placeholder="How you refer to them"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
+        />
+      </Form.Group>
+
+      <Form.Group className="mb-3">
+        <Form.Label htmlFor="contact-phone">Phone</Form.Label>
+        <Form.Control
+          id="contact-phone"
+          type="tel"
+          placeholder="(555) 123-4567"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
         />
       </Form.Group>
 
@@ -191,15 +205,13 @@ function ContactForm({ initial = {}, onSave, onDelete, onCancel, isEditing }) {
 
 // ── Contact Card ──────────────────────────────────────────────────────────────
 
-function ContactCard({ contact, onEdit }) {
+function ContactCard({ contact, onEdit, onInvite }) {
   const ring = RING_META[contact.ringLevel];
   const statusMeta = INVITE_STATUS_META[contact.inviteStatus] || INVITE_STATUS_META.local_only;
 
   return (
-    <button
-      type="button"
+    <div
       className="contact-card"
-      onClick={() => onEdit(contact)}
       style={{
         display: "flex",
         alignItems: "center",
@@ -209,30 +221,36 @@ function ContactCard({ contact, onEdit }) {
         border: "1px solid var(--color-border)",
         borderRadius: "var(--card-radius)",
         width: "100%",
-        cursor: "pointer",
-        textAlign: "left",
-        transition: "background 150ms ease, box-shadow 150ms ease",
         marginBottom: "0.5rem",
       }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = "var(--color-surface-hover)";
-        e.currentTarget.style.boxShadow = "var(--card-shadow)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = "var(--color-surface)";
-        e.currentTarget.style.boxShadow = "none";
-      }}
     >
-      <ContactAvatar displayName={contact.displayName} ringLevel={contact.ringLevel} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 600, fontSize: "var(--font-size-base)", color: "var(--color-text-primary)" }}>
-          {contact.displayName}
+      <button
+        type="button"
+        onClick={() => onEdit(contact)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.75rem",
+          flex: 1,
+          minWidth: 0,
+          background: "none",
+          border: "none",
+          padding: 0,
+          cursor: "pointer",
+          textAlign: "left",
+        }}
+      >
+        <ContactAvatar displayName={contact.displayName} ringLevel={contact.ringLevel} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 600, fontSize: "var(--font-size-base)", color: "var(--color-text-primary)" }}>
+            {contact.displayName}
+          </div>
+          <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {contact.email}
+          </div>
         </div>
-        <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {contact.email}
-        </div>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.25rem", flexShrink: 0 }}>
+      </button>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.375rem", flexShrink: 0 }}>
         {ring && (
           <span
             style={{
@@ -249,17 +267,38 @@ function ContactCard({ contact, onEdit }) {
             {ring.emoji} {ring.label}
           </span>
         )}
-        <span style={{ fontSize: "0.65rem", color: statusMeta.color, fontWeight: 600 }}>
-          {statusMeta.dot} {statusMeta.label}
-        </span>
+        {contact.inviteStatus === "local_only" && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onInvite(contact); }}
+            style={{
+              fontSize: "0.65rem",
+              fontWeight: 700,
+              color: "#fff",
+              background: "var(--color-primary)",
+              border: "none",
+              borderRadius: 10,
+              padding: "0.2rem 0.6rem",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Send Invite
+          </button>
+        )}
+        {contact.inviteStatus !== "local_only" && (
+          <span style={{ fontSize: "0.65rem", color: statusMeta.color, fontWeight: 600 }}>
+            {statusMeta.dot} {statusMeta.label}
+          </span>
+        )}
       </div>
-    </button>
+    </div>
   );
 }
 
 // ── Ring Section ──────────────────────────────────────────────────────────────
 
-function RingSection({ ringLevel, contacts, onEdit }) {
+function RingSection({ ringLevel, contacts, onEdit, onInvite }) {
   const meta = RING_META[ringLevel];
   const ringContacts = contacts.filter((c) => c.ringLevel === ringLevel);
 
@@ -294,20 +333,8 @@ function RingSection({ ringLevel, contacts, onEdit }) {
             fontWeight: 500,
           }}
         >
-          {ringContacts.length > 0 ? `(${ringContacts.length})` : "— empty"}
+          {ringContacts.length > 0 ? `(${ringContacts.length})` : "\u2014 empty"}
         </span>
-        {ringLevel === 1 && ringContacts.length > 5 && (
-          <span
-            style={{
-              marginLeft: "auto",
-              fontSize: "var(--font-size-xs)",
-              color: "var(--color-warning)",
-              fontWeight: 600,
-            }}
-          >
-            ✨ Inner Circle works best kept small
-          </span>
-        )}
       </div>
 
       {ringContacts.length === 0 ? (
@@ -323,7 +350,7 @@ function RingSection({ ringLevel, contacts, onEdit }) {
         </div>
       ) : (
         ringContacts.map((c) => (
-          <ContactCard key={c.id} contact={c} onEdit={onEdit} />
+          <ContactCard key={c.id} contact={c} onEdit={onEdit} onInvite={onInvite} />
         ))
       )}
     </div>
@@ -336,6 +363,7 @@ function MyPeopleTab() {
   const { contacts, refreshContacts } = useAppData();
   const [showPanel, setShowPanel] = useState(false);
   const [editContact, setEditContact] = useState(null);
+  const [inviteToast, setInviteToast] = useState(null);
 
   const handleAdd = () => {
     setEditContact(null);
@@ -355,9 +383,9 @@ function MyPeopleTab() {
   const handleSave = useCallback(
     async (data) => {
       if (editContact) {
-        await dataService.updateContact(editContact.id, data);
+        await contactsService.updateContact(editContact.id, data);
       } else {
-        await dataService.addContact(data);
+        await contactsService.addContact(data);
       }
       await refreshContacts();
       window.dispatchEvent(new Event("data-changed"));
@@ -373,12 +401,33 @@ function MyPeopleTab() {
         `Remove ${editContact.displayName} from your people?\n\nEntries they were tagged on will remain unchanged.`
       )
     ) {
-      await dataService.deleteContact(editContact.id);
+      await contactsService.deleteContact(editContact.id);
       await refreshContacts();
       window.dispatchEvent(new Event("data-changed"));
       handleClose();
     }
   }, [editContact, refreshContacts]);
+
+  const handleInvite = useCallback(async (contact) => {
+    try {
+      const invite = await inviteService.createInvite({
+        inviteeEmail: contact.email,
+        inviteeName: contact.displayName,
+      });
+      const url = inviteService.getInviteUrl(invite.token);
+      await contactsService.updateContact(contact.id, { inviteStatus: "invited" });
+      await refreshContacts();
+
+      // Copy URL to clipboard
+      await navigator.clipboard.writeText(url);
+      setInviteToast(`Invite link copied! Share it with ${contact.displayName}.`);
+      setTimeout(() => setInviteToast(null), 4000);
+    } catch (err) {
+      console.error("[MyPeopleTab] invite failed:", err);
+      setInviteToast("Failed to create invite. Try again.");
+      setTimeout(() => setInviteToast(null), 4000);
+    }
+  }, [refreshContacts]);
 
   const hasAnyContacts = contacts.length > 0;
 
@@ -441,8 +490,29 @@ function MyPeopleTab() {
             ringLevel={level}
             contacts={contacts}
             onEdit={handleEdit}
+            onInvite={handleInvite}
           />
         ))
+      )}
+
+      {inviteToast && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "1.5rem",
+            right: "1.5rem",
+            background: "var(--color-primary)",
+            color: "#fff",
+            padding: "0.75rem 1.25rem",
+            borderRadius: 8,
+            fontWeight: 600,
+            fontSize: "var(--font-size-sm)",
+            zIndex: 9999,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          }}
+        >
+          {inviteToast}
+        </div>
       )}
 
       <FormPanel
@@ -483,9 +553,21 @@ function AccountTab() {
   const { user, signOut, linkGoogleAccount } = useAuth();
   const [linkError, setLinkError] = useState(null);
   const [linkLoading, setLinkLoading] = useState(false);
+  const [profile, setProfile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState(null);
+  const fileInputRef = useRef(null);
 
   const isGoogleLinked = user?.identities?.some((id) => id.provider === "google");
   const hasPasswordLogin = user?.identities?.some((id) => id.provider === "email");
+
+  useEffect(() => {
+    profileService.getMyProfile().then((p) => {
+      setProfile(p);
+      setProfileLoading(false);
+    }).catch(() => setProfileLoading(false));
+  }, []);
 
   const handleLinkGoogle = async () => {
     setLinkError(null);
@@ -493,10 +575,43 @@ function AccountTab() {
     try {
       const { error } = await linkGoogleAccount();
       if (error) throw error;
-      // Supabase redirects to Google — page will leave
     } catch (err) {
       setLinkError(err.message || "Failed to link Google account.");
       setLinkLoading(false);
+    }
+  };
+
+  const handleProfileSave = async () => {
+    setSaving(true);
+    setSaveMsg(null);
+    try {
+      const updated = await profileService.updateProfile({
+        display_name: profile.display_name,
+        bio: profile.bio,
+        phone: profile.phone,
+        first_name: profile.first_name,
+        last_name: profile.last_name,
+      });
+      setProfile(updated);
+      setSaveMsg("Profile saved");
+      setTimeout(() => setSaveMsg(null), 3000);
+    } catch (err) {
+      setSaveMsg("Failed to save: " + (err.message || "Unknown error"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const url = await profileService.uploadAvatar(file);
+      setProfile((p) => ({ ...p, avatar_url: url }));
+      setSaveMsg("Avatar updated");
+      setTimeout(() => setSaveMsg(null), 3000);
+    } catch (err) {
+      setSaveMsg("Avatar upload failed: " + (err.message || ""));
     }
   };
 
@@ -519,51 +634,131 @@ function AccountTab() {
 
   return (
     <div style={{ maxWidth: 480 }}>
-      {/* Account info */}
+      {/* Profile */}
       <div style={sectionStyle}>
-        <div style={labelStyle}>Signed in as</div>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: "50%",
-              backgroundColor: "var(--color-primary, #4A154B)",
-              color: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: 700,
-              fontSize: "1rem",
-              flexShrink: 0,
-            }}
-          >
-            {(user?.email?.[0] || "?").toUpperCase()}
-          </div>
+        <div style={labelStyle}>Your Profile</div>
+        {profileLoading ? (
+          <div style={{ color: "var(--color-text-tertiary)" }}>Loading...</div>
+        ) : profile ? (
           <div>
-            <div
-              style={{
-                fontWeight: 600,
-                color: "var(--color-text-primary, #1D1C1D)",
-                fontSize: "0.9375rem",
-              }}
-            >
-              {user?.email}
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1rem" }}>
+              <div style={{ position: "relative" }}>
+                {profile.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt="Avatar"
+                    style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover" }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: 56, height: 56, borderRadius: "50%",
+                      backgroundColor: "var(--color-primary)", color: "#fff",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontWeight: 700, fontSize: "1.25rem",
+                    }}
+                  >
+                    {(profile.display_name || "?")[0].toUpperCase()}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    position: "absolute", bottom: -2, right: -2,
+                    width: 22, height: 22, borderRadius: "50%",
+                    background: "var(--color-surface)", border: "1px solid var(--color-border)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    cursor: "pointer", fontSize: "0.65rem",
+                  }}
+                >
+                  &#9998;
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={handleAvatarUpload}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600, color: "var(--color-text-primary)" }}>
+                  {profile.display_name || user?.email}
+                </div>
+                <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)" }}>
+                  {user?.email}
+                </div>
+              </div>
             </div>
-            <div
-              style={{
-                fontSize: "var(--font-size-sm, 0.875rem)",
-                color: "var(--color-text-secondary, #696969)",
-              }}
-            >
-              {isGoogleLinked && hasPasswordLogin
-                ? "Email + Google"
-                : isGoogleLinked
-                ? "Google"
-                : "Email / Password"}
+
+            <Form.Group className="mb-2">
+              <Form.Label style={{ fontSize: "var(--font-size-sm)", fontWeight: 600 }}>Display Name</Form.Label>
+              <Form.Control
+                type="text"
+                value={profile.display_name || ""}
+                onChange={(e) => setProfile((p) => ({ ...p, display_name: e.target.value }))}
+                placeholder="How others see you"
+              />
+            </Form.Group>
+
+            <div className="row g-2 mb-2">
+              <div className="col-6">
+                <Form.Label style={{ fontSize: "var(--font-size-sm)", fontWeight: 600 }}>First Name</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={profile.first_name || ""}
+                  onChange={(e) => setProfile((p) => ({ ...p, first_name: e.target.value }))}
+                />
+              </div>
+              <div className="col-6">
+                <Form.Label style={{ fontSize: "var(--font-size-sm)", fontWeight: 600 }}>Last Name</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={profile.last_name || ""}
+                  onChange={(e) => setProfile((p) => ({ ...p, last_name: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <Form.Group className="mb-2">
+              <Form.Label style={{ fontSize: "var(--font-size-sm)", fontWeight: 600 }}>Phone</Form.Label>
+              <Form.Control
+                type="tel"
+                value={profile.phone || ""}
+                onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
+                placeholder="(555) 123-4567"
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label style={{ fontSize: "var(--font-size-sm)", fontWeight: 600 }}>
+                Bio <span style={{ fontWeight: 400, color: "var(--color-text-tertiary)" }}>({(profile.bio || "").length}/140)</span>
+              </Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={2}
+                maxLength={140}
+                value={profile.bio || ""}
+                onChange={(e) => setProfile((p) => ({ ...p, bio: e.target.value }))}
+                placeholder="A snapshot of you in 140 chars"
+              />
+            </Form.Group>
+
+            <div className="d-flex align-items-center gap-2">
+              <Button variant="primary" size="sm" onClick={handleProfileSave} disabled={saving}>
+                {saving ? "Saving..." : "Save Profile"}
+              </Button>
+              {saveMsg && (
+                <span style={{ fontSize: "var(--font-size-sm)", color: "var(--color-success)", fontWeight: 600 }}>
+                  {saveMsg}
+                </span>
+              )}
             </div>
           </div>
-        </div>
+        ) : (
+          <div style={{ color: "var(--color-text-tertiary)" }}>Could not load profile.</div>
+        )}
       </div>
 
       {/* Connected accounts */}
@@ -581,14 +776,7 @@ function AccountTab() {
           </Alert>
         )}
 
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "1rem",
-          }}
-        >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
             <svg width="20" height="20" viewBox="0 0 18 18" aria-hidden="true" style={{ flexShrink: 0 }}>
               <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
@@ -596,46 +784,31 @@ function AccountTab() {
               <path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z"/>
               <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z"/>
             </svg>
-            <span style={{ fontWeight: 500, color: "var(--color-text-primary, #1D1C1D)" }}>
-              Google
-            </span>
+            <span style={{ fontWeight: 500, color: "var(--color-text-primary)" }}>Google</span>
           </div>
-
           {isGoogleLinked ? (
-            <span
-              style={{
-                fontSize: "var(--font-size-sm, 0.875rem)",
-                color: "var(--color-success, #2EB67D)",
-                fontWeight: 600,
-                display: "flex",
-                alignItems: "center",
-                gap: "0.25rem",
-              }}
-            >
+            <span style={{ fontSize: "var(--font-size-sm)", color: "var(--color-success)", fontWeight: 600 }}>
               ✓ Connected
             </span>
           ) : (
-            <Button
-              size="sm"
-              variant="outline-secondary"
-              onClick={handleLinkGoogle}
-              disabled={linkLoading}
-              style={{ borderRadius: 6, fontWeight: 600, fontSize: "var(--font-size-sm)" }}
-            >
-              {linkLoading ? "Redirecting…" : "Link account"}
+            <Button size="sm" variant="outline-secondary" onClick={handleLinkGoogle} disabled={linkLoading}>
+              {linkLoading ? "Redirecting\u2026" : "Link account"}
             </Button>
           )}
         </div>
       </div>
 
-      {/* Sign out */}
+      {/* Auth info */}
       <div style={sectionStyle}>
-        <div style={labelStyle}>Session</div>
-        <Button
-          variant="outline-danger"
-          onClick={signOut}
-          style={{ borderRadius: 6, fontWeight: 600 }}
-        >
+        <div style={labelStyle}>Authentication</div>
+        <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", marginBottom: "0.75rem" }}>
+          {isGoogleLinked && hasPasswordLogin
+            ? "Email + Google"
+            : isGoogleLinked
+            ? "Google"
+            : "Email / Password"}
+        </div>
+        <Button variant="outline-danger" size="sm" onClick={signOut} style={{ borderRadius: 6, fontWeight: 600 }}>
           Sign out
         </Button>
       </div>

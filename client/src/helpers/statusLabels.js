@@ -31,7 +31,7 @@ const statusLabels = {
     wishlist: "Wishlist",
   },
   wines: {
-    tried: "Tried",
+    tried: "Enjoyed",
     cellar: "In Cellar",
     wishlist: "Wishlist",
   },

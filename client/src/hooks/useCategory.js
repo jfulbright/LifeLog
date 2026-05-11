@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import dataService from "../services/dataService";
+import collaboratorService from "../services/collaboratorService";
+import contactsService from "../services/contactsService";
+import recommendationService from "../services/recommendationService";
 import { hasAnySnapshot } from "../helpers/operator";
 
 const EXPERIENCED_STATUSES = new Set([
@@ -86,13 +89,18 @@ export default function useCategory(category, { migrate, normalize, schema } = {
     async (e) => {
       if (e?.preventDefault) e.preventDefault();
 
-      // Strip transient sharing field — it becomes entryTag records, not persisted item data
-      const { shareWithCompanionIds, ...rawFormData } = formData;
+      // Strip transient sharing/recommendation fields
+      const {
+        shareWithCompanionIds,
+        recommendedToRings,
+        recommendedToContacts,
+        _recommendedCompanions,
+        ...rawFormData
+      } = formData;
       const data = normalize ? normalize(rawFormData) : rawFormData;
       let savedId;
 
       if (editIndex !== null) {
-        // editIndex holds the UUID of the item being edited
         savedId = editIndex;
         setItems((prev) =>
           prev.map((item) =>
@@ -101,7 +109,6 @@ export default function useCategory(category, { migrate, normalize, schema } = {
         );
         setEditIndex(null);
       } else {
-        // New item: assign a stable UUID
         const newId = crypto.randomUUID();
         const newItem = { ...data, id: newId };
         savedId = newId;
@@ -110,14 +117,32 @@ export default function useCategory(category, { migrate, normalize, schema } = {
       setFormData({});
       setShowForm(false);
 
-      // Create pending entryTag records for each companion the user chose to share with
+      // Create collaborator records for shared companions (Supabase)
       if (shareWithCompanionIds?.length > 0) {
-        for (const contactId of shareWithCompanionIds) {
-          try {
-            await dataService.addEntryTag({ entryId: savedId, contactId });
-          } catch (err) {
-            console.error("[useCategory] addEntryTag failed:", err);
+        try {
+          const userIds = await contactsService.resolveContactUserIds(shareWithCompanionIds);
+          if (userIds.length > 0) {
+            await collaboratorService.shareEntry(savedId, category, userIds);
           }
+        } catch (err) {
+          console.error("[useCategory] collaborator share failed:", err);
+        }
+      }
+
+      // Create recommendation records if user targeted rings or individuals
+      if (
+        (recommendedToRings?.length > 0 || recommendedToContacts?.length > 0)
+      ) {
+        try {
+          const toUserIds = recommendedToContacts?.length
+            ? await contactsService.resolveContactUserIds(recommendedToContacts)
+            : [];
+          await recommendationService.createRecommendations(savedId, category, {
+            toUserIds,
+            toRingLevels: recommendedToRings || [],
+          });
+        } catch (err) {
+          console.error("[useCategory] recommendation create failed:", err);
         }
       }
 
@@ -132,7 +157,7 @@ export default function useCategory(category, { migrate, normalize, schema } = {
         setShowToast(true);
       }
     },
-    [formData, editIndex, normalize]
+    [formData, editIndex, normalize, category]
   );
 
   const handleSnapSave = useCallback(

@@ -73,6 +73,7 @@ function WineForm({ formData, setFormData, onSubmit, onCancel }) {
             <LabelScanButton
               onResult={handleScanResult}
               onError={(msg) => setScanError(msg)}
+              itemId={formData.id}
             />
           </div>
         </div>

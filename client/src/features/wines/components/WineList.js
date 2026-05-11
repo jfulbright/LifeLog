@@ -100,7 +100,7 @@ function WineStats({ items }) {
         <div>
           <span style={{ fontWeight: 800, fontSize: "1.1rem", color: WINE_COLOR }}>{stats.tried}</span>
           <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-sm)", marginLeft: "0.3rem" }}>
-            tried
+            enjoyed
           </span>
         </div>
       )}

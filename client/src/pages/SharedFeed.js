@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Button, Badge } from "react-bootstrap";
 import dataService from "../services/dataService";
+import collaboratorService from "../services/collaboratorService";
+import overlayService from "../services/overlayService";
 import { useAppData } from "../contexts/AppDataContext";
 import { RING_META, RING_LEVELS } from "../helpers/ringMeta";
 import categoryMeta from "../helpers/categoryMeta";
@@ -349,6 +351,35 @@ function SharedFeed() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    try {
+      // Try real multi-user collaborator queries first
+      const collabs = await collaboratorService.getIncomingCollaborations();
+      if (collabs.length > 0 || true) {
+        // Fetch entry data for each collaboration
+        const enriched = await Promise.all(
+          collabs.map(async (collab) => {
+            const { data: row } = await (await import("../services/supabaseClient")).supabase
+              .from("items")
+              .select("data, category")
+              .eq("id", collab.entry_id)
+              .single();
+            return {
+              ...collab,
+              entry: row?.data || null,
+              _category: row?.category || collab.entry_category,
+            };
+          })
+        );
+        setAllItems(enriched.filter((e) => e.entry));
+        setEntryTags([]);
+        setOverlays([]);
+        setLoading(false);
+        return;
+      }
+    } catch {
+      // Fall back to localStorage-based approach if collaborators table isn't ready
+    }
+
     const [items, tags, personalOverlays] = await Promise.all([
       dataService.getAllItems(),
       dataService.getEntryTags(),
@@ -364,13 +395,29 @@ function SharedFeed() {
     load();
   }, [load]);
 
-  const sharedEntries = allItems.filter(
-    (item) =>
-      (item.visibilityRings && item.visibilityRings.length > 0) ||
-      (item.taggedContactIds && item.taggedContactIds.length > 0)
-  );
+  // Determine if we're in new (collaborator) mode or legacy mode
+  const isCollaboratorMode = allItems.length > 0 && allItems[0]?.entry_id;
+
+  const sharedEntries = isCollaboratorMode
+    ? allItems.map((collab) => ({
+        ...collab.entry,
+        _category: collab._category,
+        _collabId: collab.id,
+        _collabStatus: collab.status,
+        _ownerId: collab.owner_id,
+        id: collab.entry_id,
+      }))
+    : allItems.filter(
+        (item) =>
+          (item.visibilityRings && item.visibilityRings.length > 0) ||
+          (item.taggedContactIds && item.taggedContactIds.length > 0)
+      );
 
   const filteredEntries = sharedEntries.filter((item) => {
+    if (isCollaboratorMode) {
+      if (filterStatus !== "all" && item._collabStatus !== filterStatus) return false;
+      return true;
+    }
     if (filterRing !== "all") {
       const ringNum = parseInt(filterRing);
       if (!(item.visibilityRings || []).includes(ringNum)) return false;
@@ -382,15 +429,25 @@ function SharedFeed() {
     return true;
   });
 
-  const handleAccept = async (tag) => {
-    await dataService.updateEntryTag(tag.id, { status: "accepted" });
+  const handleAccept = async (item) => {
+    if (isCollaboratorMode) {
+      await collaboratorService.acceptCollaboration(item._collabId);
+    } else {
+      const tag = entryTags.find((t) => t.entryId === item.id);
+      if (tag) await dataService.updateEntryTag(tag.id, { status: "accepted" });
+    }
     await load();
     refreshNotifications();
     window.dispatchEvent(new Event("data-changed"));
   };
 
-  const handleDecline = async (tag) => {
-    await dataService.updateEntryTag(tag.id, { status: "declined" });
+  const handleDecline = async (item) => {
+    if (isCollaboratorMode) {
+      await collaboratorService.declineCollaboration(item._collabId);
+    } else {
+      const tag = entryTags.find((t) => t.entryId === item.id);
+      if (tag) await dataService.updateEntryTag(tag.id, { status: "declined" });
+    }
     await load();
     refreshNotifications();
     window.dispatchEvent(new Event("data-changed"));
@@ -401,13 +458,19 @@ function SharedFeed() {
   };
 
   const handleSaveOverlay = async (overlayData) => {
-    await dataService.savePersonalOverlay(overlayData);
+    try {
+      await overlayService.saveOverlay(overlayData.entryId, overlayData);
+    } catch {
+      await dataService.savePersonalOverlay(overlayData);
+    }
     await load();
     setOverlayTarget(null);
     window.dispatchEvent(new Event("data-changed"));
   };
 
-  const pendingCount = entryTags.filter((t) => t.status === "pending").length;
+  const pendingCount = isCollaboratorMode
+    ? allItems.filter((c) => c.status === "pending").length
+    : entryTags.filter((t) => t.status === "pending").length;
 
   return (
     <div>
@@ -429,7 +492,7 @@ function SharedFeed() {
         </div>
       </div>
 
-      {/* Phase 6 notice */}
+      {/* Info */}
       <div
         style={{
           background: "linear-gradient(135deg, #EAF8FE 0%, #F5EEF8 100%)",
@@ -441,7 +504,7 @@ function SharedFeed() {
           color: "var(--color-text-secondary)",
         }}
       >
-        <strong style={{ color: "var(--color-text-primary)" }}>Phase 7b preview:</strong> This feed shows your outgoing shared entries. Full multi-user sharing (seeing entries tagged to you from others) activates in Phase 6 once authentication is added.
+        Entries shared with you by others appear here. Accept to add them to your timeline and contribute your own Snapshots.
       </div>
 
       {/* Filters */}
