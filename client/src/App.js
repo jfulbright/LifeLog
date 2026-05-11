@@ -13,6 +13,8 @@ import Timeline from "./pages/Timeline";
 import Snaps from "./pages/Snaps";
 import Settings from "./pages/Settings";
 import SharedFeed from "./pages/SharedFeed";
+import Recommendations from "./pages/Recommendations";
+import InviteWelcome from "./pages/InviteWelcome";
 import TravelStatsPage from "./pages/TravelStatsPage";
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
@@ -119,6 +121,8 @@ function AppShell() {
             <Route path="/wines" element={<WineList />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/shared" element={<SharedFeed />} />
+            <Route path="/recommendations" element={<Recommendations />} />
+            <Route path="/invite/:token" element={<InviteWelcome />} />
           </Routes>
         </Container>
       </main>

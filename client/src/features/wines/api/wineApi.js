@@ -53,7 +53,9 @@ export async function fetchWineDetail(slug) {
       winery: d.winery?.name || "",
       wineType: normalizeWineType(d.wine_type),
       region: d.region || "",
+      country: d.country || "",
       varietal: primaryGrape?.name || "",
+      foodPairings: (d.food_pairings || []).map((p) => p.name).join(", "),
     };
   } catch {
     return null;
@@ -62,12 +64,24 @@ export async function fetchWineDetail(slug) {
 
 /**
  * Fetch winery detail from VinoFYI by slug.
+ * Returns winery metadata plus a top-wines list for the sub-picker.
  */
 export async function fetchWineryDetail(slug) {
   try {
     const res = await fetch(`${SERVER_URL}/api/wine/winery/${encodeURIComponent(slug)}`);
     if (!res.ok) return null;
-    return await res.json();
+    const d = await res.json();
+    return {
+      winery: d.name || "",
+      region: d.region || "",
+      country: d.country || "",
+      topWines: (d.top_wines || []).map((w) => ({
+        name: w.name,
+        slug: w.slug,
+        wineType: w.wine_type,
+        rating: w.avg_rating,
+      })),
+    };
   } catch {
     return null;
   }
@@ -179,19 +193,36 @@ const VARIETAL_TYPE_MAP = {
 };
 
 /**
+ * Well-known wine regions commonly found on bottle labels.
+ * Used for OCR text matching — if any of these appear in the label, we can
+ * pre-fill the region field without needing VinoFYI.
+ */
+const KNOWN_REGIONS = [
+  "Napa Valley", "Sonoma", "Willamette Valley", "Paso Robles", "Central Coast",
+  "Walla Walla", "Columbia Valley", "Finger Lakes", "Russian River Valley",
+  "Bordeaux", "Burgundy", "Champagne", "Rhône", "Loire", "Alsace", "Provence",
+  "Rioja", "Ribera del Duero", "Priorat",
+  "Tuscany", "Piedmont", "Veneto", "Sicily", "Chianti",
+  "Marlborough", "Hawke's Bay",
+  "Barossa Valley", "McLaren Vale", "Margaret River",
+  "Mendoza", "Stellenbosch", "Mosel", "Douro",
+];
+
+/**
  * Extract wine-relevant tokens from a raw OCR text blob.
- * Returns { vintageGuess, searchQuery, varietal, wineType, wineName }.
+ * Returns { vintageGuess, searchQuery, varietal, wineType, wineName, region }.
  *
  * Strategy:
  *   1. Find a vintage year (4-digit, reasonable range).
  *   2. Match the full text against VARIETAL_TYPE_MAP (case-insensitive) to get
  *      varietal and wineType without needing VinoFYI.
- *   3. Build a clean wineName by removing the year, varietal component words,
+ *   3. Match against KNOWN_REGIONS for region extraction.
+ *   4. Build a clean wineName by removing the year, varietal component words,
  *      and very long lines — what remains is most likely the winery / wine name.
- *   4. Build a searchQuery (used by the VinoFYI path when available).
+ *   5. Build a smart searchQuery (wineName + varietal for better VinoFYI hits).
  */
 export function parseOcrText(text) {
-  if (!text) return { vintageGuess: null, searchQuery: "", varietal: null, wineType: null, wineName: null };
+  if (!text) return { vintageGuess: null, searchQuery: "", varietal: null, wineType: null, wineName: null, region: null };
 
   const lines = text
     .split(/\n/)
@@ -214,16 +245,26 @@ export function parseOcrText(text) {
     }
   }
 
-  // 3. Clean wineName — strip lines that are just varietal component words or the year
-  //    e.g. for "Pinot Noir", strip lines "PINOT", "NOIR", "PINOT NOIR"
+  // 3. Region — match against known wine regions
+  let region = null;
+  for (const r of KNOWN_REGIONS) {
+    if (textLower.includes(r.toLowerCase())) {
+      region = r;
+      break;
+    }
+  }
+
+  // 4. Clean wineName — strip lines that are just varietal component words, year, or region
   const varietalWords = varietal
     ? new Set(varietal.toLowerCase().split(/[\s/]+/).filter(Boolean))
     : new Set();
+  const regionLower = region ? region.toLowerCase() : "";
 
   const nameLines = lines.filter((l) => {
     const lower = l.toLowerCase().replace(/[^a-z\s]/g, "");
     if (/^\d+$/.test(l)) return false;                            // pure number
     if (vintageGuess && l.includes(vintageGuess)) return false;   // year line
+    if (regionLower && lower.includes(regionLower)) return false; // region line
     // Skip if the line is entirely made up of varietal component words
     if (varietalWords.size > 0) {
       const lineWords = new Set(lower.split(/\s+/).filter(Boolean));
@@ -239,12 +280,19 @@ export function parseOcrText(text) {
   const nameCandidates = shortLines.length > 0 ? shortLines : nameLines;
   const wineName = nameCandidates.slice(0, 2).join(" ").trim() || null;
 
-  // 4. searchQuery for VinoFYI (unchanged from original strategy)
-  const queryCandidates = lines
-    .filter((l) => !/^\d+$/.test(l))
-    .filter((l) => l.length >= 3 && l.length <= 60)
-    .slice(0, 4);
-  const searchQuery = queryCandidates.join(" ").replace(/\s+/g, " ").trim().slice(0, 80);
+  // 5. Smart searchQuery — "wineName varietal" matches VinoFYI's index better
+  //    than dumping the full OCR text
+  const targetedQuery = [wineName, varietal].filter(Boolean).join(" ");
+  const searchQuery = targetedQuery.length >= 4
+    ? targetedQuery.slice(0, 60)
+    : lines
+        .filter((l) => !/^\d+$/.test(l))
+        .filter((l) => l.length >= 3 && l.length <= 60)
+        .slice(0, 4)
+        .join(" ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 80);
 
-  return { vintageGuess, searchQuery, varietal, wineType, wineName };
+  return { vintageGuess, searchQuery, varietal, wineType, wineName, region };
 }

@@ -7,6 +7,7 @@ const navItems = [
   { path: "/timeline", label: "Timeline", icon: "📅" },
   { path: "/snaps", label: "Memories", icon: "📸" },
   { path: "/shared", label: "Shared with Me", icon: "🤝" },
+  { path: "/recommendations", label: "For You", icon: "⭐" },
 ];
 
 const categoryItems = [

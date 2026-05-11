@@ -108,11 +108,12 @@ function LabelScanButton({ onResult, onError }) {
       console.log("[LabelScan] OCR result:", ocrText ? `"${ocrText.slice(0, 120)}…"` : "null / empty");
 
       if (ocrText) {
-        const { vintageGuess, searchQuery, varietal, wineType, wineName: ocrName } = parseOcrText(ocrText);
-        console.log("[LabelScan] Parsed OCR →", { vintageGuess, searchQuery, varietal, wineType, ocrName });
+        const { vintageGuess, searchQuery, varietal, wineType, wineName: ocrName, region } = parseOcrText(ocrText);
+        console.log("[LabelScan] Parsed OCR →", { vintageGuess, searchQuery, varietal, wineType, ocrName, region });
         if (vintageGuess) fields.vintage  = vintageGuess;
         if (varietal)     fields.varietal  = varietal;
         if (wineType)     fields.wineType  = wineType;
+        if (region)       fields.region    = region;
 
         if (searchQuery) {
           setPhase("search");
