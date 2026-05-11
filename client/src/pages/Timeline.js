@@ -249,8 +249,8 @@ function Timeline() {
       <div className="d-flex gap-2 mb-3" style={{ fontSize: "var(--font-size-xs)" }}>
         {[
           { id: "all", label: "All" },
-          { id: "mine", label: "Mine" },
-          { id: "shared", label: "Shared" },
+          { id: "mine", label: "\uD83D\uDD12 Mine" },
+          { id: "shared", label: "\uD83D\uDC65 Shared" },
         ].map((opt) => (
           <button
             key={opt.id}
