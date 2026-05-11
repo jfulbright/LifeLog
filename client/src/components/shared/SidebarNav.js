@@ -1,6 +1,7 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
 import categoryMeta from "../../helpers/categoryMeta";
+import { useAppData } from "../../contexts/AppDataContext";
 
 const socialItems = [
   { path: "/people", label: "My People", icon: "👥" },
@@ -19,7 +20,9 @@ const categoryItems = [
 ];
 
 function SidebarNav({ counts = {}, notificationCount = 0, user, onSignOut, onItemClick }) {
-  const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "My Profile";
+  const { profile } = useAppData();
+  const displayName = profile?.display_name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "My Profile";
+  const avatarUrl = profile?.avatar_url;
 
   return (
     <nav style={{ paddingBottom: "1rem", display: "flex", flexDirection: "column", height: "calc(100% - 60px)" }}>
@@ -37,7 +40,7 @@ function SidebarNav({ counts = {}, notificationCount = 0, user, onSignOut, onIte
               width: 22,
               height: 22,
               borderRadius: "50%",
-              backgroundColor: "var(--color-primary)",
+              backgroundColor: avatarUrl ? "transparent" : "var(--color-primary)",
               color: "#fff",
               display: "inline-flex",
               alignItems: "center",
@@ -45,9 +48,14 @@ function SidebarNav({ counts = {}, notificationCount = 0, user, onSignOut, onIte
               fontSize: "0.6rem",
               fontWeight: 700,
               flexShrink: 0,
+              overflow: "hidden",
             }}
           >
-            {displayName[0]?.toUpperCase()}
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" style={{ width: 22, height: 22, objectFit: "cover" }} />
+            ) : (
+              displayName[0]?.toUpperCase()
+            )}
           </span>
           <span style={{ marginLeft: "0.4rem" }}>{displayName}</span>
         </NavLink>

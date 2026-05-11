@@ -707,6 +707,7 @@ function AccountTab() {
         last_name: profile.last_name,
       });
       setProfile(updated);
+      window.dispatchEvent(new Event("data-changed"));
       setSaveMsg("Profile saved");
       setTimeout(() => setSaveMsg(null), 3000);
     } catch (err) {
@@ -939,7 +940,8 @@ const TABS = [
 ];
 
 function Settings() {
-  const [activeTab, setActiveTab] = useState("people");
+  const params = new URLSearchParams(window.location.search);
+  const [activeTab, setActiveTab] = useState(params.get("tab") || "people");
 
   return (
     <div>

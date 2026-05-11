@@ -178,7 +178,7 @@ function Dashboard() {
           </div>
         </div>
         <Link
-          to="/settings"
+          to="/settings?tab=account"
           style={{ marginLeft: "auto", fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)", textDecoration: "none" }}
         >
           Edit Profile
