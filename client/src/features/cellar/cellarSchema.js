@@ -1,6 +1,6 @@
 import { baseSchema } from "../../helpers/common.schema";
 import { getStatusValues } from "../../helpers/statusLabels";
-import { getReflectionFields } from "../../helpers/reflection.schema";
+import { getReflectionFields, getCompanionsField } from "../../helpers/reflection.schema";
 
 export const WINE_TYPES = ["Red", "White", "Rosé", "Sparkling", "Dessert", "Fortified", "Orange"];
 
@@ -416,13 +416,14 @@ const cellarSchema = [
   // ── Reflection (tried only) ───────────────────────────────────────────────
   ...getReflectionFields("tried"),
 
-  // ── Social ────────────────────────────────────────────────────────────────
+  // ── Social (Companions + Visibility + Recommend) ─────────────────────────
+  getCompanionsField("tried"),
   {
     name: "visibilityControl",
     type: "visible-to",
     optional: true,
     section: "Social",
-    order: 50,
+    order: 62,
     fullWidth: true,
   },
   {
@@ -432,16 +433,15 @@ const cellarSchema = [
     optional: true,
     visibleWhen: { status: "tried" },
     section: "Social",
-    order: 51,
+    order: 64,
   },
 
   // ── Label Photo ───────────────────────────────────────────────────────────
   {
     name: "photoLink",
-    label: "Label Photo URL",
-    type: "url",
+    label: "Label Photo",
+    type: "photo",
     optional: true,
-    placeholder: "https://…",
     section: "Details",
     order: 52,
   },

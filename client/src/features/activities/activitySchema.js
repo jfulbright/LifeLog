@@ -1,6 +1,6 @@
 import { baseSchema } from "../../helpers/common.schema";
 import { getStatusValues } from "../../helpers/statusLabels";
-import { getReflectionFields } from "../../helpers/reflection.schema";
+import { getReflectionFields, getCompanionsField } from "../../helpers/reflection.schema";
 
 export const ACTIVITY_TYPES = {
   snow: {
@@ -56,7 +56,7 @@ const activityFields = [
     type: "text",
     optional: true,
     placeholder: "e.g. Whistler Blackcomb",
-    section: "Location",
+    section: "Where",
     order: 10,
   },
   {
@@ -65,7 +65,7 @@ const activityFields = [
     type: "select",
     optional: true,
     defaultValue: "US",
-    section: "Location",
+    section: "Where",
     order: 11,
   },
   {
@@ -74,7 +74,7 @@ const activityFields = [
     type: "city-autocomplete",
     optional: true,
     placeholder: "e.g. Whistler",
-    section: "Location",
+    section: "Where",
     order: 12,
   },
   {
@@ -82,7 +82,7 @@ const activityFields = [
     label: "State / Region",
     type: "state-or-region",
     optional: true,
-    section: "Location",
+    section: "Where",
     order: 13,
   },
   { name: "lat", label: "Lat", type: "text", hidden: true },
@@ -106,21 +106,23 @@ const activityFields = [
   },
   {
     name: "linkedTrip",
-    label: "Part of a Trip?",
+    label: "Part of a Trip",
     type: "linked-trip",
     optional: true,
-    section: "Details",
-    order: 21,
+    helperText: "Link this to a trip in your Travel log",
+    section: "Trip",
+    order: 22,
+    visibleWhen: { status: "done" },
   },
 
-  // Dates
+  // Dates → When
   ...baseSchema
     .filter((f) => ["startDate", "endDate"].includes(f.name))
     .map((f) => ({
       ...f,
       label: f.name === "startDate" ? "Date" : "End Date",
-      section: "Dates",
-      order: 20 + (f.name === "endDate" ? 1 : 0),
+      section: "When",
+      order: 25 + (f.name === "endDate" ? 1 : 0),
     })),
 
   // Reflection fields (visible when status = "done")
@@ -139,13 +141,14 @@ const activityFields = [
     fullWidth: true,
   },
 
-  // Social
+  // Social (Companions + Visibility + Recommend)
+  getCompanionsField("done"),
   {
     name: "visibilityControl",
     type: "visible-to",
     optional: true,
     section: "Social",
-    order: 43,
+    order: 62,
     fullWidth: true,
   },
   {
@@ -155,7 +158,7 @@ const activityFields = [
     optional: true,
     visibleWhen: { status: ["done", "wishlist"] },
     section: "Social",
-    order: 45,
+    order: 64,
   },
 
   // Details

@@ -32,15 +32,15 @@ function ShareWithCompanionsToggle({ companions, value, onChange }) {
     <div className="share-companions-toggle-wrapper">
       <div className="share-companions-header">
         <span className="share-companions-icon" aria-hidden="true">
-          {sharedCount > 0 ? "🤝" : "🔒"}
+          {sharedCount > 0 ? "🤝" : "👤"}
         </span>
         <span className="share-companions-heading">
-          Share this experience
+          Share & Collaborate
         </span>
       </div>
 
       <div className="share-companions-hint">
-        Toggle on to send this memory to their LifeLog. They can accept, decline, and add their own rating and snaps.
+        Sharing invites them to collaborate — they'll see this in their timeline and can add their own memories and photos. Without sharing, you're just noting they were there.
       </div>
 
       <div className="share-companions-list">

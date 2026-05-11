@@ -1,6 +1,6 @@
 import { baseSchema } from "../../helpers/common.schema";
 import { getStatusValues } from "../../helpers/statusLabels";
-import { getReflectionFields } from "../../helpers/reflection.schema";
+import { getReflectionFields, getCompanionsField } from "../../helpers/reflection.schema";
 
 const travelFields = [
   {
@@ -22,14 +22,14 @@ const travelFields = [
     order: 1,
   },
 
-  // ── Location: country first so city search can be filtered by it ─────────────
+  // ── Where ───────────────────────────────────────────────────────────────────
   {
     name: "country",
     label: "Country",
     type: "select",
     optional: true,
     defaultValue: "US",
-    section: "Location",
+    section: "Where",
     order: 10,
   },
   {
@@ -38,7 +38,7 @@ const travelFields = [
     type: "city-autocomplete",
     optional: true,
     placeholder: "e.g. Tokyo",
-    section: "Location",
+    section: "Where",
     order: 11,
   },
   {
@@ -47,7 +47,7 @@ const travelFields = [
     label: "State / Region",
     type: "state-or-region",
     optional: true,
-    section: "Location",
+    section: "Where",
     order: 12,
   },
   // Hidden fields auto-populated by city autocomplete / country picker
@@ -72,12 +72,12 @@ const travelFields = [
     hidden: true,
   },
 
-  // ── Dates ─────────────────────────────────────────────────────────────────────
+  // ── When ─────────────────────────────────────────────────────────────────────
   ...baseSchema
     .filter((f) => ["startDate", "endDate"].includes(f.name))
     .map((f) => ({
       ...f,
-      section: "Dates",
+      section: "When",
       order: 20 + (f.name === "endDate" ? 1 : 0),
     })),
 
@@ -128,13 +128,14 @@ const travelFields = [
     fullWidth: true,
   },
 
-  // ── Social ────────────────────────────────────────────────────────────────────
+  // ── Social (Companions + Visibility + Recommend) ───────────────────────────
+  getCompanionsField("visited"),
   {
     name: "visibilityControl",
     type: "visible-to",
     optional: true,
     section: "Social",
-    order: 43,
+    order: 62,
     fullWidth: true,
   },
   {
@@ -144,7 +145,7 @@ const travelFields = [
     optional: true,
     visibleWhen: { status: ["visited", "wishlist"] },
     section: "Social",
-    order: 45,
+    order: 64,
   },
 
   // ── Details ───────────────────────────────────────────────────────────────────

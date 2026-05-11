@@ -54,19 +54,26 @@ export function getReflectionFields(experiencedStatus) {
       fullWidth: true,
       isSnapshot: true,
     },
-    {
-      name: "companions",
-      label: "Who I was with",
-      type: "contact-list",
-      placeholder: "Add from your people or type a name",
-      optional: true,
-      visibleWhen: { status: experiencedStatus },
-      section: "Reflection",
-      order: 29,
-      fullWidth: true,
-    },
     ...getPhotoFields(experiencedStatus),
   ];
+}
+
+/**
+ * Companions field for the Social section. Separated from getReflectionFields
+ * so it can be grouped with visibility and recommendation controls.
+ */
+export function getCompanionsField(experiencedStatus) {
+  return {
+    name: "companions",
+    label: "Who was there?",
+    type: "contact-list",
+    placeholder: "Add from your people or type a name",
+    optional: true,
+    visibleWhen: { status: experiencedStatus },
+    section: "Social",
+    order: 60,
+    fullWidth: true,
+  };
 }
 
 /**

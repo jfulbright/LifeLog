@@ -517,7 +517,7 @@ function ItemForm({
       {Object.entries(groupedFields).map(([section, fields], sIdx) => {
         const isSnapSection = section === "Snapshots";
         const isSocialSection = section === "Social";
-
+        const isTripSection = section === "Trip";
         const isPhotoSection = section === "Photos";
 
         return (
@@ -542,7 +542,24 @@ function ItemForm({
                   </div>
                 </div>
               </div>
-            ) : isSocialSection ? null : (
+            ) : isSocialSection ? (
+              <div className="snap-section-banner" style={{ background: "linear-gradient(135deg, #F5EEF8 0%, #EAF8FE 100%)", borderColor: "var(--color-border)" }}>
+                <span className="snap-section-icon" aria-hidden="true">&#129309;</span>
+                <div>
+                  <div className="snap-section-title">People & Sharing</div>
+                  <div className="snap-section-subtitle">
+                    Who was there, and who should see this
+                  </div>
+                </div>
+              </div>
+            ) : isTripSection ? (
+              <h6 className="form-section-heading">
+                Part of a Trip
+                <span style={{ display: "block", fontSize: "var(--font-size-xs)", fontWeight: 400, color: "var(--color-text-tertiary)", marginTop: "0.25rem" }}>
+                  Link this to a trip in your Travel log
+                </span>
+              </h6>
+            ) : (
               <h6
                 className="form-section-heading"
                 style={

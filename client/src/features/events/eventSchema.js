@@ -1,6 +1,6 @@
 import { baseSchema } from "../../helpers/common.schema";
 import { getStatusValues } from "../../helpers/statusLabels";
-import { getReflectionFields } from "../../helpers/reflection.schema";
+import { getReflectionFields, getCompanionsField } from "../../helpers/reflection.schema";
 
 export const EVENT_TYPES = [
   { value: "concert", label: "Concert" },
@@ -261,12 +261,12 @@ const eventSchema = [
     order: 50,
   },
 
-  // ── Shared: Dates ───────────────────────────────────────────────────────────
+  // ── When ───────────────────────────────────────────────────────────────────
   {
     name: "startDate",
     label: "Date",
     type: "date",
-    section: "Dates",
+    section: "When",
     order: 20,
   },
   {
@@ -274,18 +274,18 @@ const eventSchema = [
     label: "End Date",
     type: "date",
     optional: true,
-    section: "Dates",
+    section: "When",
     order: 21,
   },
 
-  // ── Location: country → city (autocomplete) → state ─────────────────────────
+  // ── Where ─────────────────────────────────────────────────────────────────
   {
     name: "country",
     label: "Country",
     type: "select",
     optional: true,
     defaultValue: "US",
-    section: "Location",
+    section: "Where",
     order: 25,
   },
   {
@@ -294,7 +294,7 @@ const eventSchema = [
     type: "city-autocomplete",
     optional: true,
     placeholder: "e.g. Austin",
-    section: "Location",
+    section: "Where",
     order: 26,
   },
   {
@@ -302,34 +302,37 @@ const eventSchema = [
     label: "State / Region",
     type: "state-or-region",
     optional: true,
-    section: "Location",
+    section: "Where",
     order: 27,
   },
   { name: "lat", label: "Lat", type: "text", hidden: true },
   { name: "lng", label: "Lng", type: "text", hidden: true },
   { name: "continent", label: "Continent", type: "text", hidden: true },
 
-  // ── Trip link ────────────────────────────────────────────────────────────────
+  // ── Trip ──────────────────────────────────────────────────────────────────
   { name: "linkedTripId", label: "Linked Trip ID", type: "text", hidden: true },
   {
     name: "linkedTrip",
-    label: "Part of a Trip?",
+    label: "Part of a Trip",
     type: "linked-trip",
     optional: true,
-    section: "Details",
+    helperText: "Link this to a trip in your Travel log",
+    section: "Trip",
     order: 49,
+    visibleWhen: { status: "attended" },
   },
 
-  // ── Reflection (Snapshots, rating, companions) ──────────────────────────────
+  // ── Reflection (Rating, Snapshots, Photos) ────────────────────────────────
   ...getReflectionFields("attended"),
 
-  // ── Social (Visible To + Recommend) ─────────────────────────────────────────
+  // ── Social (Companions + Visibility + Recommend) ──────────────────────────
+  getCompanionsField("attended"),
   {
     name: "visibilityControl",
     type: "visible-to",
     optional: true,
     section: "Social",
-    order: 38,
+    order: 62,
     fullWidth: true,
   },
   {
@@ -337,9 +340,9 @@ const eventSchema = [
     label: "Recommend this",
     type: "recommend",
     optional: true,
-    visibleWhen: { status: "wishlist" },
+    visibleWhen: { status: "attended" },
     section: "Social",
-    order: 40,
+    order: 64,
   },
 
   // ── Base fields (tags, hidden metadata) ─────────────────────────────────────

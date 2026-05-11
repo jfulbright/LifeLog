@@ -7,6 +7,8 @@ import {
   parseOcrText,
   searchWines,
   fetchWineDetail,
+  searchWhiskeys,
+  fetchWhiskeyDetail,
 } from "../../features/cellar/api/cellarApi";
 import { usePhotoUpload } from "../../hooks/usePhotoUpload";
 
@@ -24,8 +26,9 @@ const WINE_COLOR = "var(--color-cellar, #8B3A8F)";
  *   onResult(fields)  — called with a partial formData object to merge
  *   onError(message)  — called with a user-readable string when scan partially fails
  *   itemId            — item ID for building the Supabase Storage path
+ *   subType           — "wine" or "whiskey" — determines which search API to use
  */
-function LabelScanButton({ onResult, onError, itemId }) {
+function LabelScanButton({ onResult, onError, itemId, subType }) {
   const fileInputRef = useRef(null);
   const [phase, setPhase] = useState(null); // null | "barcode" | "ocr" | "search"
   const { uploadPhoto } = usePhotoUpload();
@@ -122,50 +125,70 @@ function LabelScanButton({ onResult, onError, itemId }) {
       if (ocrText) {
         const { vintageGuess, searchQuery, varietal, wineType, wineName: ocrName, region } = parseOcrText(ocrText);
         console.log("[LabelScan] Parsed OCR →", { vintageGuess, searchQuery, varietal, wineType, ocrName, region });
-        if (vintageGuess) fields.vintage  = vintageGuess;
-        if (varietal)     fields.varietal  = varietal;
-        if (wineType)     fields.wineType  = wineType;
-        if (region)       fields.region    = region;
+
+        const isWhiskey = subType === "whiskey";
+
+        if (!isWhiskey) {
+          if (vintageGuess) fields.vintage  = vintageGuess;
+          if (varietal)     fields.varietal  = varietal;
+          if (wineType)     fields.wineType  = wineType;
+        }
+        if (region) fields.region = region;
 
         if (searchQuery) {
           setPhase("search");
           let results = [];
           try {
-            results = await searchWines(searchQuery);
+            results = isWhiskey
+              ? await searchWhiskeys(searchQuery)
+              : await searchWines(searchQuery);
           } catch {
             // search unavailable — fall through to name pre-fill
           }
-          console.log("[LabelScan] VinoFYI search returned", results.length, "results:", results);
-          const wineResult = results.find((r) => r.type === "wine");
-          if (wineResult) {
-            const detail = await fetchWineDetail(wineResult.slug);
-            console.log("[LabelScan] Wine detail:", detail);
+          console.log(`[LabelScan] ${isWhiskey ? "WhiskeyFYI" : "VinoFYI"} search returned`, results.length, "results:", results);
+
+          const matchType = isWhiskey ? "expression" : "wine";
+          const matchResult = results.find((r) => r.type === matchType);
+          if (matchResult) {
+            const detail = isWhiskey
+              ? await fetchWhiskeyDetail(matchResult.slug)
+              : await fetchWineDetail(matchResult.slug);
+            console.log("[LabelScan] Detail:", detail);
             if (detail) {
               const merged = {
                 ...fields,
                 ...detail,
-                vintage: fields.vintage || detail.vintage || "",
+                ...(isWhiskey ? {} : { vintage: fields.vintage || detail.vintage || "" }),
               };
-              console.log("[LabelScan] ✅ Full match — delivering:", Object.keys(merged));
+              console.log("[LabelScan] Full match — delivering:", Object.keys(merged));
               onResult(merged);
               setPhase(null);
               return;
             }
           }
 
-          // OCR worked but VinoFYI had no confident match — use the clean
-          // OCR-extracted name, falling back to the first words of the search query.
+          // OCR worked but no confident match — pre-fill name from label text
           const nameCandidate = ocrName || searchQuery.split(" ").slice(0, 4).join(" ");
-          fields.wineName = nameCandidate;
-          console.log("[LabelScan] ⚠️ No VinoFYI match — pre-filling wineName:", nameCandidate);
+          if (isWhiskey) {
+            fields.whiskyName = nameCandidate;
+          } else {
+            fields.wineName = nameCandidate;
+          }
+          console.log("[LabelScan] No match — pre-filling name:", nameCandidate);
           onError?.(
-            `Label read — no exact match found. Wine name pre-filled from label text. Please review and adjust.`
+            `Label read — no exact match found. Name pre-filled from label text. Please review and adjust.`
           );
         } else {
           // No search query but we may still have a clean name from OCR
-          if (ocrName) fields.wineName = ocrName;
-          console.log("[LabelScan] ⚠️ OCR text found but no usable search query extracted.");
-          onError?.("Label photo saved. Couldn't extract text — enter the wine name manually.");
+          if (ocrName) {
+            if (isWhiskey) {
+              fields.whiskyName = ocrName;
+            } else {
+              fields.wineName = ocrName;
+            }
+          }
+          console.log("[LabelScan] OCR text found but no usable search query extracted.");
+          onError?.("Label photo saved. Couldn't extract text — enter the name manually.");
         }
       } else {
         // OCR returned nothing (server not configured, API error, or unreadable label)
@@ -174,8 +197,8 @@ function LabelScanButton({ onResult, onError, itemId }) {
         );
         onError?.(
           barcodeResult
-            ? "Barcode scanned but wine not found in database. Label photo saved — enter details manually."
-            : "Label photo saved. OCR unavailable or label unreadable — enter the wine name manually."
+            ? "Barcode scanned but not found in database. Label photo saved — enter details manually."
+            : "Label photo saved. OCR unavailable or label unreadable — enter the name manually."
         );
       }
 
