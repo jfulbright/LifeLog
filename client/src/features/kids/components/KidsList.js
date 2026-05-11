@@ -116,7 +116,7 @@ function ChildFilter({ contacts, value, onChange }) {
 
 function KidsStats({ items, contacts }) {
   const stats = useMemo(() => {
-    const logged = items.filter((i) => i.status === "logged");
+    const logged = items.filter((i) => i.status === "happened");
     const byType = {};
     logged.forEach((i) => {
       const t = i.milestoneType || "other";

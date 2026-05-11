@@ -118,11 +118,15 @@ export default function useCategory(category, { migrate, normalize, schema } = {
       setShowForm(false);
 
       // Create collaborator records for shared companions (Supabase)
+      // Works for both linked and unlinked contacts (deferred sharing)
       if (shareWithCompanionIds?.length > 0) {
         try {
-          const userIds = await contactsService.resolveContactUserIds(shareWithCompanionIds);
-          if (userIds.length > 0) {
-            await collaboratorService.shareEntry(savedId, category, userIds);
+          const allContacts = await contactsService.getContacts();
+          const sharedContacts = allContacts.filter((c) =>
+            shareWithCompanionIds.includes(c.id)
+          );
+          if (sharedContacts.length > 0) {
+            await collaboratorService.shareEntryWithContacts(savedId, category, sharedContacts);
           }
         } catch (err) {
           console.error("[useCategory] collaborator share failed:", err);

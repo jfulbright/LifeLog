@@ -35,6 +35,33 @@ const collaboratorService = {
   },
 
   /**
+   * Share an entry with contacts by contact_id (works for unlinked contacts).
+   * If the contact is already linked, also sets collaborator_user_id.
+   * For unlinked contacts, creates a deferred row that resolves on signup.
+   */
+  async shareEntryWithContacts(entryId, category, contacts) {
+    const ownerId = await getCurrentUserId();
+
+    const rows = contacts.map((contact) => ({
+      entry_id: entryId,
+      entry_category: category,
+      owner_id: ownerId,
+      collaborator_user_id: contact.linkedUserId || null,
+      collaborator_contact_id: contact.id,
+      status: "pending",
+      can_edit: true,
+    }));
+
+    const { data, error } = await supabase
+      .from("collaborators")
+      .upsert(rows, { ignoreDuplicates: true })
+      .select();
+
+    if (error) throw error;
+    return data;
+  },
+
+  /**
    * Get all collaboration requests directed at the current user.
    */
   async getIncomingCollaborations() {

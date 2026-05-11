@@ -36,7 +36,7 @@ const statusLabels = {
     wishlist: "Wishlist",
   },
   kids: {
-    logged: "Logged",
+    happened: "Happened",
     upcoming: "Upcoming",
   },
 };

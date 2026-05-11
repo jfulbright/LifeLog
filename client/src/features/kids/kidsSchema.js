@@ -309,11 +309,11 @@ const kidsSchema = [
     order: 25,
   },
 
-  // Reflection fields (visible when status = "logged")
-  ...getReflectionFields("logged"),
+  // Reflection fields (visible when status = "happened")
+  ...getReflectionFields("happened"),
 
   // Social
-  getCompanionsField("logged"),
+  getCompanionsField("happened"),
   {
     name: "visibilityControl",
     type: "visible-to",

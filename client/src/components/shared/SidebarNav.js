@@ -10,7 +10,6 @@ const navigateItems = [
 
 const socialItems = [
   { path: "/people", label: "My People", icon: "👥" },
-  { path: "/milestones", label: "My Milestones", icon: "🌟" },
   { path: "/shared", label: "Shared Experiences", icon: "🤝", badge: "notifications" },
   { path: "/recommendations", label: "Recommendations", icon: "⭐" },
 ];

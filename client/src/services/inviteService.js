@@ -8,12 +8,23 @@ const inviteService = {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) throw new Error("Not authenticated");
 
-    // Count shared entries for this contact
-    const { count } = await supabase
-      .from("collaborators")
-      .select("id", { count: "exact", head: true })
+    // Find the contact record for this email to count shared entries
+    let sharedCount = 0;
+    const { data: contact } = await supabase
+      .from("contacts")
+      .select("id")
       .eq("owner_id", session.user.id)
-      .ilike("collaborator_contact_id", inviteeEmail);
+      .eq("email", inviteeEmail.toLowerCase())
+      .single();
+
+    if (contact) {
+      const { count } = await supabase
+        .from("collaborators")
+        .select("id", { count: "exact", head: true })
+        .eq("owner_id", session.user.id)
+        .eq("collaborator_contact_id", contact.id);
+      sharedCount = count || 0;
+    }
 
     const { data, error } = await supabase
       .from("invites")
@@ -22,7 +33,7 @@ const inviteService = {
         invitee_email: inviteeEmail.toLowerCase(),
         invitee_name: inviteeName,
         message,
-        shared_entry_count: count || 0,
+        shared_entry_count: sharedCount,
       })
       .select()
       .single();

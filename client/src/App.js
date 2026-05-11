@@ -17,7 +17,6 @@ import SharedFeed from "./pages/SharedFeed";
 import Recommendations from "./pages/Recommendations";
 import InviteWelcome from "./pages/InviteWelcome";
 import MyPeople from "./pages/MyPeople";
-import MyMilestones from "./pages/MyMilestones";
 import TravelStatsPage from "./pages/TravelStatsPage";
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
@@ -126,7 +125,6 @@ function AppShell() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/shared" element={<SharedFeed />} />
             <Route path="/people" element={<MyPeople />} />
-            <Route path="/milestones" element={<MyMilestones />} />
             <Route path="/recommendations" element={<Recommendations />} />
             <Route path="/invite/:token" element={<InviteWelcome />} />
           </Routes>
@@ -141,6 +139,17 @@ function App() {
 
   // While Supabase resolves the session, render nothing to avoid flash
   if (loading) return null;
+
+  // Invite pages are accessible without auth (public welcome screen)
+  if (!user && window.location.pathname.startsWith("/invite/")) {
+    return (
+      <Router>
+        <Routes>
+          <Route path="/invite/:token" element={<InviteWelcome />} />
+        </Routes>
+      </Router>
+    );
+  }
 
   // Unauthenticated users see only the login page
   if (!user) return <Login />;
