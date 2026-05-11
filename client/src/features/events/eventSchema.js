@@ -340,7 +340,6 @@ const eventSchema = [
     label: "Recommend this",
     type: "recommend",
     optional: true,
-    visibleWhen: { status: "attended" },
     section: "Social",
     order: 64,
   },

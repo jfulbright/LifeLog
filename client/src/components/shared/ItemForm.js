@@ -175,9 +175,13 @@ function ItemForm({
   };
 
   const renderField = (field) => {
-    const value = formData[field.name] ?? "";
-    const hasError = !!validationErrors[field.name];
-    const fieldId = `field-${field.name}`;
+    // Dynamic label for companions based on status
+    const effectiveField = field.name === "companions"
+      ? { ...field, label: formData.status === "wishlist" ? "Plan with" : "Who was there?" }
+      : field;
+    const value = formData[effectiveField.name] ?? "";
+    const hasError = !!validationErrors[effectiveField.name];
+    const fieldId = `field-${effectiveField.name}`;
 
     if (isReadOnly && field.isLink && value) {
       return (
@@ -496,7 +500,7 @@ function ItemForm({
       >
         {field.type !== "recommend" && field.type !== "visible-to" && field.type !== "linked-trip" && field.type !== "photo" && (
           <Form.Label htmlFor={fieldId}>
-            {field.label}
+            {effectiveField.label}
             {field.required && (
               <span className="text-danger ms-1">*</span>
             )}
@@ -577,14 +581,14 @@ function ItemForm({
                   {isSocialSection && field.name === "companions" && (
                     <Col md={12}>
                       <div className="share-with-sublabel" style={{ marginTop: "0.25rem", marginBottom: "0.5rem" }}>
-                        Shared Experiences
+                        🤝 Shared Experiences
                       </div>
                     </Col>
                   )}
                   {isSocialSection && field.type === "recommend" && (
                     <Col md={12}>
                       <div className="share-with-sublabel" style={{ marginTop: "0.75rem", marginBottom: "0.5rem" }}>
-                        Recommendations
+                        ⭐ Recommendations
                       </div>
                     </Col>
                   )}

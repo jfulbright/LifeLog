@@ -156,7 +156,6 @@ const activityFields = [
     label: "Recommend this activity",
     type: "recommend",
     optional: true,
-    visibleWhen: { status: ["done", "wishlist"] },
     section: "Social",
     order: 64,
   },

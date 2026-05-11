@@ -143,7 +143,6 @@ const travelFields = [
     label: "Recommend this place",
     type: "recommend",
     optional: true,
-    visibleWhen: { status: ["visited", "wishlist"] },
     section: "Social",
     order: 64,
   },

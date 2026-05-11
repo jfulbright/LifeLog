@@ -431,7 +431,6 @@ const cellarSchema = [
     label: "Recommend this",
     type: "recommend",
     optional: true,
-    visibleWhen: { status: "tried" },
     section: "Social",
     order: 64,
   },
