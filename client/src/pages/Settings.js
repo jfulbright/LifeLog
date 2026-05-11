@@ -537,11 +537,8 @@ function MyPeopleTab() {
 
 function NotificationsTab() {
   const [prefs, setPrefs] = useState({
-    collab_request_email: false,
     collab_snaps_inapp: true,
-    collab_snaps_email: false,
-    recommendation_email: false,
-    invite_accepted_email: false,
+    invite_accepted_inapp: true,
   });
   const [loading, setLoading] = useState(true);
   const [saveMsg, setSaveMsg] = useState(null);
@@ -556,17 +553,11 @@ function NotificationsTab() {
   }, []);
 
   const handleToggle = (key) => {
-    setPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const handleSave = async () => {
-    try {
-      await profileService.updateProfile({ notification_preferences: prefs });
-      setSaveMsg("Saved");
-      setTimeout(() => setSaveMsg(null), 3000);
-    } catch {
-      setSaveMsg("Failed to save");
-    }
+    const updated = { ...prefs, [key]: !prefs[key] };
+    setPrefs(updated);
+    profileService.updateProfile({ notification_preferences: updated })
+      .then(() => { setSaveMsg("Saved"); setTimeout(() => setSaveMsg(null), 2000); })
+      .catch(() => {});
   };
 
   const sectionStyle = {
@@ -590,7 +581,7 @@ function NotificationsTab() {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "0.5rem 0",
+    padding: "0.625rem 0",
     borderBottom: "1px solid var(--color-border, #EBEAEB)",
   };
 
@@ -598,51 +589,41 @@ function NotificationsTab() {
 
   return (
     <div style={{ maxWidth: 480 }}>
+      <p style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", marginBottom: "1.25rem" }}>
+        Control how you're notified about activity from your people.
+      </p>
+
       <div style={sectionStyle}>
         <div style={labelStyle}>Collaboration</div>
         <div style={rowStyle}>
           <div>
             <div style={{ fontWeight: 600, fontSize: "var(--font-size-sm)" }}>Someone shares an entry with you</div>
-            <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)" }}>In-app badge is always on</div>
+            <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)" }}>Badge on Shared Experiences</div>
           </div>
-          <div className="form-check form-switch mb-0">
-            <input className="form-check-input" type="checkbox" role="switch"
-              checked={prefs.collab_request_email} onChange={() => handleToggle("collab_request_email")} />
-            <label style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)" }}>Email</label>
-          </div>
+          <span style={{ fontSize: "var(--font-size-xs)", color: "var(--color-success)", fontWeight: 700 }}>Always on</span>
         </div>
-        <div style={rowStyle}>
+        <div style={{ ...rowStyle, borderBottom: "none" }}>
           <div>
             <div style={{ fontWeight: 600, fontSize: "var(--font-size-sm)" }}>Someone adds memories to a shared entry</div>
             <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)" }}>When a collaborator adds Snaps or photos</div>
           </div>
-          <div className="d-flex gap-3">
-            <div className="form-check form-switch mb-0">
-              <input className="form-check-input" type="checkbox" role="switch"
-                checked={prefs.collab_snaps_inapp} onChange={() => handleToggle("collab_snaps_inapp")} />
-              <label style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)" }}>In-app</label>
-            </div>
-            <div className="form-check form-switch mb-0">
-              <input className="form-check-input" type="checkbox" role="switch"
-                checked={prefs.collab_snaps_email} onChange={() => handleToggle("collab_snaps_email")} />
-              <label style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)" }}>Email</label>
-            </div>
+          <div className="form-check form-switch mb-0">
+            <input className="form-check-input" type="checkbox" role="switch"
+              id="notif-collab-snaps"
+              checked={prefs.collab_snaps_inapp} onChange={() => handleToggle("collab_snaps_inapp")} />
+            <label htmlFor="notif-collab-snaps" style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)" }}>In-app</label>
           </div>
         </div>
       </div>
 
       <div style={sectionStyle}>
         <div style={labelStyle}>Recommendations</div>
-        <div style={rowStyle}>
+        <div style={{ ...rowStyle, borderBottom: "none" }}>
           <div>
             <div style={{ fontWeight: 600, fontSize: "var(--font-size-sm)" }}>Someone recommends something to you</div>
-            <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)" }}>In-app badge is always on</div>
+            <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)" }}>Badge on Recommendations</div>
           </div>
-          <div className="form-check form-switch mb-0">
-            <input className="form-check-input" type="checkbox" role="switch"
-              checked={prefs.recommendation_email} onChange={() => handleToggle("recommendation_email")} />
-            <label style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)" }}>Email</label>
-          </div>
+          <span style={{ fontSize: "var(--font-size-xs)", color: "var(--color-success)", fontWeight: 700 }}>Always on</span>
         </div>
       </div>
 
@@ -651,23 +632,32 @@ function NotificationsTab() {
         <div style={{ ...rowStyle, borderBottom: "none" }}>
           <div>
             <div style={{ fontWeight: 600, fontSize: "var(--font-size-sm)" }}>Someone you invited joins LifeSnaps</div>
-            <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)" }}>Get notified when your invite is accepted</div>
+            <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)" }}>Know when your people are connected</div>
           </div>
           <div className="form-check form-switch mb-0">
             <input className="form-check-input" type="checkbox" role="switch"
-              checked={prefs.invite_accepted_email} onChange={() => handleToggle("invite_accepted_email")} />
-            <label style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)" }}>Email</label>
+              id="notif-invite-accepted"
+              checked={prefs.invite_accepted_inapp} onChange={() => handleToggle("invite_accepted_inapp")} />
+            <label htmlFor="notif-invite-accepted" style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)" }}>In-app</label>
           </div>
         </div>
       </div>
 
-      <Button variant="primary" size="sm" onClick={handleSave}>
-        Save Preferences
-      </Button>
+      <div style={{
+        background: "var(--color-bg)",
+        border: "1px solid var(--color-border)",
+        borderRadius: 8,
+        padding: "0.75rem 1rem",
+        fontSize: "var(--font-size-xs)",
+        color: "var(--color-text-tertiary)",
+      }}>
+        <strong style={{ color: "var(--color-text-secondary)" }}>Coming soon:</strong> Email notifications for collaboration requests, recommendations, and weekly digests.
+      </div>
+
       {saveMsg && (
-        <span style={{ marginLeft: "0.75rem", fontSize: "var(--font-size-sm)", color: "var(--color-success)", fontWeight: 600 }}>
+        <div style={{ marginTop: "0.75rem", fontSize: "var(--font-size-sm)", color: "var(--color-success)", fontWeight: 600 }}>
           {saveMsg}
-        </span>
+        </div>
       )}
     </div>
   );
