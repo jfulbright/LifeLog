@@ -7,11 +7,15 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5050;
-const CORS_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:3000";
+const RAW_CORS = process.env.CORS_ORIGIN || "http://localhost:3000";
+const CORS_ORIGINS = Array.from(new Set([
+  ...RAW_CORS.split(",").map(o => o.trim()),
+  "http://localhost:3000",
+]));
 const REQUEST_TIMEOUT_MS = 10_000;
 
 // Only allow requests from the React frontend
-app.use(cors({ origin: CORS_ORIGIN }));
+app.use(cors({ origin: CORS_ORIGINS }));
 app.options("*", cors());
 
 const SETLISTFM_BASE = "https://api.setlist.fm/rest/1.0/search/setlists";
