@@ -13,7 +13,11 @@ function WineForm({ formData, setFormData, onSubmit, onCancel }) {
   };
 
   const handleScanResult = (fields) => {
-    setScanError(null);
+    // Only clear the error banner when we actually got wine metadata — not
+    // when the result is photo-only (which happens when OCR/Vision fails).
+    const hasWineData = fields.wineName || fields.winery || fields.wineType;
+    if (hasWineData) setScanError(null);
+
     setFormData((prev) => {
       const merged = { ...prev };
       Object.entries(fields).forEach(([key, val]) => {

@@ -7,7 +7,6 @@
  *   3. Google Cloud Vision — label OCR via server proxy (key stays server-side)
  */
 
-const VINOFYI_BASE = "https://vinofyi.com/api";
 const OFF_BASE = "https://world.openfoodfacts.org/api/v0/product";
 const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:5050";
 
@@ -17,19 +16,24 @@ const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:5050";
  * Search VinoFYI across wines, wineries, grapes, and regions.
  * Returns an array of result objects: { name, slug, type, url }
  */
+/**
+ * Search VinoFYI via the server proxy.
+ * Throws an Error with `code: "unavailable"` when the server can't reach VinoFYI
+ * so callers can show a helpful offline message.
+ * Returns [] when the query is too short or no results exist.
+ */
 export async function searchWines(query) {
   if (!query || query.trim().length < 2) return [];
-  try {
-    const res = await fetch(
-      `${VINOFYI_BASE}/search/?q=${encodeURIComponent(query.trim())}`,
-      { headers: { "User-Agent": "LifeSnaps/1.0" } }
-    );
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.results || [];
-  } catch {
-    return [];
+  const res = await fetch(
+    `${SERVER_URL}/api/wine/search?q=${encodeURIComponent(query.trim())}`
+  );
+  if (!res.ok) {
+    const err = new Error("Wine search unavailable");
+    err.code = "unavailable";
+    throw err;
   }
+  const data = await res.json();
+  return data.results || [];
 }
 
 /**
@@ -38,10 +42,7 @@ export async function searchWines(query) {
  */
 export async function fetchWineDetail(slug) {
   try {
-    const res = await fetch(
-      `${VINOFYI_BASE}/wine/${slug}/`,
-      { headers: { "User-Agent": "LifeSnaps/1.0" } }
-    );
+    const res = await fetch(`${SERVER_URL}/api/wine/detail/${encodeURIComponent(slug)}`);
     if (!res.ok) return null;
     const d = await res.json();
 
@@ -64,10 +65,7 @@ export async function fetchWineDetail(slug) {
  */
 export async function fetchWineryDetail(slug) {
   try {
-    const res = await fetch(
-      `${VINOFYI_BASE}/winery/${slug}/`,
-      { headers: { "User-Agent": "LifeSnaps/1.0" } }
-    );
+    const res = await fetch(`${SERVER_URL}/api/wine/winery/${encodeURIComponent(slug)}`);
     if (!res.ok) return null;
     return await res.json();
   } catch {
@@ -134,10 +132,15 @@ export async function scanLabelOcr(base64Image) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ image: base64Image }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error(`[wineApi] OCR server error ${res.status}:`, body);
+      return null;
+    }
     const data = await res.json();
     return data.text || null;
-  } catch {
+  } catch (err) {
+    console.error("[wineApi] OCR fetch failed (server down or CORS?):", err.message);
     return null;
   }
 }
@@ -145,31 +148,103 @@ export async function scanLabelOcr(base64Image) {
 // ── OCR text parsing ───────────────────────────────────────────────────────────
 
 /**
+ * Maps every recognised varietal to its wine type.
+ * Kept here (not imported from wineSchema) so this module stays side-effect-free.
+ */
+const VARIETAL_TYPE_MAP = {
+  "Cabernet Sauvignon": "Red",
+  "Pinot Noir": "Red",
+  "Merlot": "Red",
+  "Syrah / Shiraz": "Red",
+  "Zinfandel": "Red",
+  "Malbec": "Red",
+  "Tempranillo": "Red",
+  "Sangiovese": "Red",
+  "Grenache": "Red",
+  "Nebbiolo": "Red",
+  "Chardonnay": "White",
+  "Sauvignon Blanc": "White",
+  "Pinot Grigio": "White",
+  "Riesling": "White",
+  "Albariño": "White",
+  "Viognier": "White",
+  "Gewürztraminer": "White",
+  "Moscato": "White",
+  "Chenin Blanc": "White",
+  "Grüner Veltliner": "White",
+  "Rosé": "Rosé",
+  "Prosecco": "Sparkling",
+  "Champagne": "Sparkling",
+  "Cava": "Sparkling",
+};
+
+/**
  * Extract wine-relevant tokens from a raw OCR text blob.
- * Returns { vintageGuess, searchQuery } — vintageGuess may be null.
+ * Returns { vintageGuess, searchQuery, varietal, wineType, wineName }.
  *
- * Strategy: find a 4-digit year in range 1900-2035, use the rest of the
- * text as a condensed search query for VinoFYI.
+ * Strategy:
+ *   1. Find a vintage year (4-digit, reasonable range).
+ *   2. Match the full text against VARIETAL_TYPE_MAP (case-insensitive) to get
+ *      varietal and wineType without needing VinoFYI.
+ *   3. Build a clean wineName by removing the year, varietal component words,
+ *      and very long lines — what remains is most likely the winery / wine name.
+ *   4. Build a searchQuery (used by the VinoFYI path when available).
  */
 export function parseOcrText(text) {
-  if (!text) return { vintageGuess: null, searchQuery: "" };
+  if (!text) return { vintageGuess: null, searchQuery: "", varietal: null, wineType: null, wineName: null };
 
   const lines = text
     .split(/\n/)
     .map((l) => l.trim())
     .filter((l) => l.length > 1);
 
-  // Find the most prominent 4-digit year
+  // 1. Vintage year
   const yearMatch = text.match(/\b(19[5-9]\d|20[0-2]\d|2030|2031|2032|2033|2034|2035)\b/);
   const vintageGuess = yearMatch ? yearMatch[1] : null;
 
-  // Build a search query from the longest non-numeric lines (wine name candidates)
-  const candidates = lines
+  // 2. Varietal + wineType — scan full text case-insensitively
+  let varietal = null;
+  let wineType = null;
+  const textLower = text.toLowerCase();
+  for (const [v, t] of Object.entries(VARIETAL_TYPE_MAP)) {
+    if (textLower.includes(v.toLowerCase())) {
+      varietal = v;
+      wineType = t;
+      break;
+    }
+  }
+
+  // 3. Clean wineName — strip lines that are just varietal component words or the year
+  //    e.g. for "Pinot Noir", strip lines "PINOT", "NOIR", "PINOT NOIR"
+  const varietalWords = varietal
+    ? new Set(varietal.toLowerCase().split(/[\s/]+/).filter(Boolean))
+    : new Set();
+
+  const nameLines = lines.filter((l) => {
+    const lower = l.toLowerCase().replace(/[^a-z\s]/g, "");
+    if (/^\d+$/.test(l)) return false;                            // pure number
+    if (vintageGuess && l.includes(vintageGuess)) return false;   // year line
+    // Skip if the line is entirely made up of varietal component words
+    if (varietalWords.size > 0) {
+      const lineWords = new Set(lower.split(/\s+/).filter(Boolean));
+      const allVarietal = [...lineWords].every((w) => varietalWords.has(w));
+      if (allVarietal) return false;
+    }
+    return true;
+  });
+
+  // Prefer shorter lines (≤ 20 chars) as they're more likely to be a name than a
+  // description or region — fall back to the first available line if none are short.
+  const shortLines = nameLines.filter((l) => l.length <= 20);
+  const nameCandidates = shortLines.length > 0 ? shortLines : nameLines;
+  const wineName = nameCandidates.slice(0, 2).join(" ").trim() || null;
+
+  // 4. searchQuery for VinoFYI (unchanged from original strategy)
+  const queryCandidates = lines
     .filter((l) => !/^\d+$/.test(l))
     .filter((l) => l.length >= 3 && l.length <= 60)
     .slice(0, 4);
+  const searchQuery = queryCandidates.join(" ").replace(/\s+/g, " ").trim().slice(0, 80);
 
-  const searchQuery = candidates.join(" ").replace(/\s+/g, " ").trim().slice(0, 80);
-
-  return { vintageGuess, searchQuery };
+  return { vintageGuess, searchQuery, varietal, wineType, wineName };
 }

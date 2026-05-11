@@ -17,6 +17,7 @@ function WineSearch({ value, onChange, onWineSelect, id, placeholder = "e.g. Opu
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [searchOffline, setSearchOffline] = useState(false);
   const debounceRef = useRef(null);
   const wrapperRef = useRef(null);
 
@@ -38,9 +39,14 @@ function WineSearch({ value, onChange, onWineSelect, id, placeholder = "e.g. Opu
     setLoading(true);
     try {
       const results = await searchWines(q);
+      setSearchOffline(false);
       const filtered = results.filter((r) => SHOW_TYPES.includes(r.type)).slice(0, 8);
       setSuggestions(filtered);
       setShowDropdown(filtered.length > 0);
+    } catch (err) {
+      if (err.code === "unavailable") setSearchOffline(true);
+      setSuggestions([]);
+      setShowDropdown(false);
     } finally {
       setLoading(false);
     }
@@ -88,6 +94,15 @@ function WineSearch({ value, onChange, onWineSelect, id, placeholder = "e.g. Opu
 
   return (
     <div ref={wrapperRef} style={{ position: "relative" }}>
+      {searchOffline && (
+        <div style={{
+          fontSize: "0.7rem",
+          color: "var(--color-text-tertiary)",
+          marginBottom: "0.25rem",
+        }}>
+          Search unavailable on this network — type the name below
+        </div>
+      )}
       <Form.Control
         id={id}
         type="text"

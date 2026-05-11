@@ -3,24 +3,38 @@ import fetch from "node-fetch";
 import dotenv from "dotenv";
 import cors from "cors";
 import dns from "dns";
-import https from "https";
 
 dotenv.config();
 
-// vinofyi.com may not resolve via the system DNS on some machines.
-// This custom agent forces hostname resolution through Google's 8.8.8.8 for
-// all VinoFYI outbound requests, without touching the system DNS config.
+// vinofyi.com fails to resolve via the system DNS on some machines.
+// Patch dns.lookup so only vinofyi.com is resolved through Google's 8.8.8.8;
+// all other hostnames fall through to the system default unchanged.
+const _origLookup = dns.lookup.bind(dns);
 const _vinoResolver = new dns.Resolver();
 _vinoResolver.setServers(["8.8.8.8"]);
-const vinoAgent = new https.Agent({
-  lookup(hostname, _opts, cb) {
-    _vinoResolver.resolve4(hostname, (err, addrs) => {
-      if (err) return cb(err);
-      cb(null, addrs[0], 4);
-    });
-  },
-  keepAlive: true,
-});
+
+dns.lookup = function patchedLookup(hostname, options, cb) {
+  if (hostname !== "vinofyi.com") {
+    return _origLookup(hostname, options, cb);
+  }
+  // Handle both dns.lookup(host, cb) and dns.lookup(host, opts, cb) arities
+  const callback = typeof options === "function" ? options : cb;
+  const opts = typeof options === "object" ? options : {};
+
+  _vinoResolver.resolve4(hostname, (err, addrs) => {
+    if (err || !addrs?.length) {
+      // Fall back to system resolver if Google DNS also fails
+      return _origLookup(hostname, typeof options === "function" ? callback : options, callback);
+    }
+    // node-fetch passes { all: true } which expects [{address, family}] array format.
+    // Without that flag the standard (address, family) pair is expected.
+    if (opts.all) {
+      callback(null, addrs.map((a) => ({ address: a, family: 4 })));
+    } else {
+      callback(null, addrs[0], 4);
+    }
+  });
+};
 
 const app = express();
 const PORT = process.env.PORT || 5050;
@@ -110,14 +124,14 @@ app.get("/api/wine/search", async (req, res) => {
   }
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  // Use a shorter timeout for search (UX: fail fast is better than hanging)
+  const timer = setTimeout(() => controller.abort(), 5_000);
 
   try {
     const response = await fetch(
       `https://vinofyi.com/api/search/?q=${encodeURIComponent(String(q).trim())}`,
       {
         signal: controller.signal,
-        agent: vinoAgent,
         headers: { Accept: "application/json" },
       }
     );
@@ -154,7 +168,6 @@ app.get("/api/wine/detail/:slug", async (req, res) => {
       `https://vinofyi.com/api/wine/${encodeURIComponent(slug)}/`,
       {
         signal: controller.signal,
-        agent: vinoAgent,
         headers: { Accept: "application/json" },
       }
     );
@@ -172,6 +185,42 @@ app.get("/api/wine/detail/:slug", async (req, res) => {
       return res.status(504).json({ error: "VinoFYI detail timed out" });
     }
     console.error("VinoFYI detail error:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+/**
+ * GET /api/wine/winery/:slug
+ * Proxies winery detail lookup to VinoFYI.
+ */
+app.get("/api/wine/winery/:slug", async (req, res) => {
+  const { slug } = req.params;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(
+      `https://vinofyi.com/api/winery/${encodeURIComponent(slug)}/`,
+      {
+        signal: controller.signal,
+        headers: { Accept: "application/json" },
+      }
+    );
+    clearTimeout(timer);
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: `VinoFYI error: ${response.statusText}` });
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    clearTimeout(timer);
+    if (err.name === "AbortError") {
+      return res.status(504).json({ error: "VinoFYI winery detail timed out" });
+    }
+    console.error("VinoFYI winery error:", err.message);
     res.status(500).json({ error: "Server error" });
   }
 });
