@@ -7,6 +7,7 @@ import { useAppData } from "../../contexts/AppDataContext";
 import { RING_META } from "../../helpers/ringMeta";
 import dataService from "../../services/dataService";
 import PhotoGrid from "./PhotoGrid";
+import PrivacyIndicator from "./PrivacyIndicator";
 
 /**
  * Returns the Bootstrap badge variant for a status value.
@@ -353,6 +354,7 @@ function ItemCardList({
                     <div className="d-flex align-items-start justify-content-between gap-2">
                       <h6 className="item-card-title">
                         {getPrimaryLabel(item)}
+                        <PrivacyIndicator item={item} style={{ marginLeft: "0.4rem" }} />
                       </h6>
                       {item.status && (
                         <Badge

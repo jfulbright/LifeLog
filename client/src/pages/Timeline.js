@@ -5,6 +5,7 @@ import categoryMeta from "../helpers/categoryMeta";
 import { getStatusLabel } from "../helpers/statusLabels";
 import { getSnapshotTeaser } from "../helpers/operator";
 import dataService from "../services/dataService";
+import PrivacyIndicator, { isEntryShared } from "../components/shared/PrivacyIndicator";
 
 const CATEGORY_KEYS = ["events", "travel", "cars", "homes", "activities", "cellar"];
 
@@ -113,7 +114,8 @@ function Timeline() {
               country: item.country,
               date,
               isWishlist: item.status === "wishlist",
-              isShared: !!(item._sharedBy || item.sharedByUserId),
+              isShared: isEntryShared(item),
+              rawItem: item,
               snapshot: getSnapshotTeaser(item),
             };
           });
@@ -310,11 +312,7 @@ function Timeline() {
                     <div>
                       <div className="timeline-entry-title">
                         {entry.title}
-                        {entry.isShared && (
-                          <span style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)", marginLeft: "0.5rem" }}>
-                            (shared)
-                          </span>
-                        )}
+                        <PrivacyIndicator item={entry.rawItem || entry} style={{ marginLeft: "0.4rem" }} />
                       </div>
                       <div className="timeline-entry-meta">
                         {formatDate(entry.date)}

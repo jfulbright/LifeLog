@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Row, Col, Badge, Button } from "react-bootstrap";
 import categoryMeta from "../helpers/categoryMeta";
 import statusLabels from "../helpers/statusLabels";
+import PrivacyIndicator from "../components/shared/PrivacyIndicator";
 import { getStatusLabel } from "../helpers/statusLabels";
 import { getSnapshotTeaser } from "../helpers/operator";
 import dataService from "../services/dataService";
@@ -117,6 +118,7 @@ function Dashboard() {
           "Untitled",
         status: item.status,
         date: item.startDate || item.createdAt || "",
+        rawItem: item,
       }))
     )
     .filter((a) => a.date)
@@ -293,6 +295,7 @@ function Dashboard() {
                       </div>
                       <div style={{ flex: 1 }}>
                         <strong>{entry.title}</strong>
+                        <PrivacyIndicator item={entry.rawItem} style={{ marginLeft: "0.4rem" }} />
                         <span className="text-muted"> &middot; {entry.label}</span>
                       </div>
                       {entry.status && (
