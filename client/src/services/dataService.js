@@ -164,10 +164,44 @@ const dataService = {
   },
 
   async deleteItem(category, id) {
+    // Best-effort photo cleanup before removing the DB row.
+    // Only runs for Supabase-backed categories (not localStorage ones).
+    if (SUPABASE_CATEGORIES.has(category)) {
+      try {
+        const userId = await getCurrentUserId();
+        await dataService.deleteItemPhotos(userId, id);
+      } catch (err) {
+        console.warn("[dataService] photo cleanup skipped:", err);
+      }
+    }
     const items = await dataService.getItems(category);
     const filtered = items.filter((i) => i.id !== id);
     await dataService.saveItems(category, filtered);
     return filtered;
+  },
+
+  /**
+   * Removes all photo files for an item from Supabase Storage.
+   * Uses list() so it catches any extension or slot variation — future-proof
+   * and cleans up any pre-existing mixed-extension orphans.
+   * Non-throwing: logs failures but never blocks the caller.
+   */
+  async deleteItemPhotos(userId, itemId) {
+    try {
+      const { data: files, error } = await supabase.storage
+        .from("photos")
+        .list(`${userId}/${itemId}`);
+      if (error || !files || files.length === 0) return;
+      const paths = files.map((f) => `${userId}/${itemId}/${f.name}`);
+      const { error: removeError } = await supabase.storage
+        .from("photos")
+        .remove(paths);
+      if (removeError) {
+        console.warn("[dataService] deleteItemPhotos remove failed:", removeError);
+      }
+    } catch (err) {
+      console.warn("[dataService] deleteItemPhotos failed:", err);
+    }
   },
 
   async getAllItems() {
