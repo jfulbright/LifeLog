@@ -65,7 +65,7 @@ function RecommendSection({ formData, setFormData }) {
         <span className="share-with-toggle-label">
           {hasRecommendation
             ? `Recommending to ${summaryParts.join(", ")}`
-            : "Recommend this"}
+            : "Recommend to my People"}
         </span>
         <span className="share-with-toggle-chevron" style={{ marginLeft: "auto" }}>
           {expanded ? "\u25B2" : "\u25BC"}

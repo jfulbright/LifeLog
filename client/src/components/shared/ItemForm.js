@@ -585,6 +585,13 @@ function ItemForm({
                       </div>
                     </Col>
                   )}
+                  {isSocialSection && field.type === "visible-to" && (
+                    <Col md={12}>
+                      <div className="share-with-sublabel" style={{ marginTop: "0.75rem", marginBottom: "0.5rem" }}>
+                        👥 Visible to
+                      </div>
+                    </Col>
+                  )}
                   {isSocialSection && field.type === "recommend" && (
                     <Col md={12}>
                       <div className="share-with-sublabel" style={{ marginTop: "0.75rem", marginBottom: "0.5rem" }}>

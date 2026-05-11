@@ -130,6 +130,27 @@ const activityFields = [
 
   // Planning (wishlist only)
   {
+    name: "targetMonth",
+    label: "Target Month",
+    type: "text",
+    optional: true,
+    placeholder: "e.g. June",
+    visibleWhen: { status: "wishlist" },
+    section: "Planning",
+    order: 35,
+  },
+  {
+    name: "targetYear",
+    label: "Target Year",
+    type: "number",
+    optional: true,
+    placeholder: "e.g. 2026",
+    inputMode: "numeric",
+    visibleWhen: { status: "wishlist" },
+    section: "Planning",
+    order: 36,
+  },
+  {
     name: "wishlistReason",
     label: "Why this activity?",
     type: "textarea",
@@ -164,15 +185,6 @@ const activityFields = [
   ...baseSchema
     .filter((f) => f.name === "tags")
     .map((f) => ({ ...f, section: "Details", order: 50 })),
-  {
-    name: "photoLink",
-    label: "Cover Photo URL",
-    type: "url",
-    optional: true,
-    placeholder: "https://...",
-    section: "Details",
-    order: 51,
-  },
 
   ...baseSchema
     .filter((f) => ["createdAt", "section"].includes(f.name))

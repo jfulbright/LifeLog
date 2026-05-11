@@ -151,15 +151,6 @@ const travelFields = [
   ...baseSchema
     .filter((f) => f.name === "tags")
     .map((f) => ({ ...f, section: "Details", order: 50 })),
-  {
-    name: "photoLink",
-    label: "Cover Photo URL",
-    type: "url",
-    optional: true,
-    placeholder: "https://...",
-    section: "Details",
-    order: 51,
-  },
 
   ...baseSchema
     .filter((f) => ["createdAt", "section"].includes(f.name))
