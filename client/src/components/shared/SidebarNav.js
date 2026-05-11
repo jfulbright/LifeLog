@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 import categoryMeta from "../../helpers/categoryMeta";
 
 const navigateItems = [
-  { path: "/", label: "Home", icon: "🏠" },
+  { path: "/", label: "My LifeSnaps", icon: "📸" },
   { path: "/timeline", label: "My Timeline", icon: "📅" },
   { path: "/snaps", label: "My Memories", icon: "📸" },
 ];

@@ -17,6 +17,7 @@ import SharedFeed from "./pages/SharedFeed";
 import Recommendations from "./pages/Recommendations";
 import InviteWelcome from "./pages/InviteWelcome";
 import MyPeople from "./pages/MyPeople";
+import ContactProfile from "./pages/ContactProfile";
 import TravelStatsPage from "./pages/TravelStatsPage";
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
@@ -125,6 +126,7 @@ function AppShell() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/shared" element={<SharedFeed />} />
             <Route path="/people" element={<MyPeople />} />
+            <Route path="/people/:contactId" element={<ContactProfile />} />
             <Route path="/recommendations" element={<Recommendations />} />
             <Route path="/invite/:token" element={<InviteWelcome />} />
           </Routes>

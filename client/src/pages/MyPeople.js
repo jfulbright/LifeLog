@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { Button, Form, Alert } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 import { useAppData } from "../contexts/AppDataContext";
 import contactsService from "../services/contactsService";
 import inviteService from "../services/inviteService";
@@ -254,7 +255,7 @@ function ContactForm({ initial = {}, onSave, onDelete, onCancel, isEditing }) {
   );
 }
 
-function ContactCard({ contact, onEdit, onInvite }) {
+function ContactCard({ contact, onEdit, onInvite, onViewProfile }) {
   const ring = RING_META[contact.ringLevel];
 
   return (
@@ -273,7 +274,7 @@ function ContactCard({ contact, onEdit, onInvite }) {
     >
       <button
         type="button"
-        onClick={() => onEdit(contact)}
+        onClick={() => contact.linkedUserId ? onViewProfile(contact) : onEdit(contact)}
         style={{
           display: "flex",
           alignItems: "center",
@@ -360,7 +361,7 @@ function ContactCard({ contact, onEdit, onInvite }) {
   );
 }
 
-function RingSection({ ringLevel, contacts, onEdit, onInvite }) {
+function RingSection({ ringLevel, contacts, onEdit, onInvite, onViewProfile }) {
   const meta = RING_META[ringLevel];
   const ringContacts = contacts.filter((c) => c.ringLevel === ringLevel);
 
@@ -399,15 +400,16 @@ function RingSection({ ringLevel, contacts, onEdit, onInvite }) {
         </div>
       ) : (
         ringContacts.map((c) => (
-          <ContactCard key={c.id} contact={c} onEdit={onEdit} onInvite={onInvite} />
+          <ContactCard key={c.id} contact={c} onEdit={onEdit} onInvite={onInvite} onViewProfile={onViewProfile} />
         ))
-      )}
+      )}}
     </div>
   );
 }
 
 function MyPeople() {
   const { contacts, refreshContacts } = useAppData();
+  const navigate = useNavigate();
   const [showPanel, setShowPanel] = useState(false);
   const [editContact, setEditContact] = useState(null);
   const [inviteToast, setInviteToast] = useState(null);
@@ -415,6 +417,7 @@ function MyPeople() {
   const handleAdd = () => { setEditContact(null); setShowPanel(true); };
   const handleEdit = (contact) => { setEditContact(contact); setShowPanel(true); };
   const handleClose = () => { setShowPanel(false); setEditContact(null); };
+  const handleViewProfile = (contact) => { navigate(`/people/${contact.id}`); };
 
   const handleSave = useCallback(async (data) => {
     if (editContact) {
@@ -505,6 +508,7 @@ function MyPeople() {
             contacts={contacts}
             onEdit={handleEdit}
             onInvite={handleInvite}
+            onViewProfile={handleViewProfile}
           />
         ))
       )}
