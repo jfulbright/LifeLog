@@ -4,7 +4,7 @@ import categoryMeta from "../../helpers/categoryMeta";
 
 const navigateItems = [
   { path: "/", label: "Home", icon: "🏠" },
-  { path: "/timeline", label: "Timeline", icon: "📅" },
+  { path: "/timeline", label: "My Story", icon: "📖" },
   { path: "/snaps", label: "My Memories", icon: "📸" },
 ];
 

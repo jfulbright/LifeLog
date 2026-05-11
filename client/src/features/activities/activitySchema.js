@@ -132,9 +132,9 @@ const activityFields = [
   {
     name: "targetMonth",
     label: "Target Month",
-    type: "text",
+    type: "select",
+    options: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
     optional: true,
-    placeholder: "e.g. June",
     visibleWhen: { status: "wishlist" },
     section: "Planning",
     order: 35,

@@ -24,25 +24,38 @@ function Timeline() {
         categories.map(async (cat) => {
           const meta = categoryMeta[cat.key] || {};
           const items = await dataService.getItems(cat.key);
-          return items.map((item) => ({
-            category: cat.key,
-            label: cat.label,
-            meta,
-            title:
-              item[meta.primaryField] ||
-              item.artist ||
-              item.title ||
-              item.type ||
-              item.make ||
-              "Untitled",
-            subtitle: (meta.secondaryFields || [])
-              .map((f) => item[f])
-              .filter(Boolean)
-              .join(", "),
-            status: item.status,
-            date: item.startDate || item.createdAt || "",
-            snapshot: getSnapshotTeaser(item),
-          }));
+          return items.map((item) => {
+            // For wishlist items without startDate, derive from target month/year
+            let date = item.startDate || item.createdAt || "";
+            if (!item.startDate && item.status === "wishlist" && item.targetYear) {
+              const monthIndex = item.targetMonth
+                ? new Date(`${item.targetMonth} 1, 2000`).getMonth() + 1
+                : 1;
+              const mm = String(monthIndex).padStart(2, "0");
+              date = `${item.targetYear}-${mm}-01`;
+            }
+            return {
+              category: cat.key,
+              label: cat.label,
+              meta,
+              title:
+                (meta.getPrimaryDisplay ? meta.getPrimaryDisplay(item) : null) ||
+                item[meta.primaryField] ||
+                item.artist ||
+                item.title ||
+                item.type ||
+                item.make ||
+                "Untitled",
+              subtitle: (meta.secondaryFields || [])
+                .map((f) => item[f])
+                .filter(Boolean)
+                .join(", "),
+              status: item.status,
+              date,
+              isWishlist: item.status === "wishlist",
+              snapshot: getSnapshotTeaser(item),
+            };
+          });
         })
       );
       const sorted = rows
@@ -92,7 +105,7 @@ function Timeline() {
 
   return (
     <div>
-      <h4 className="mb-3" style={{ fontWeight: 700 }}>Timeline</h4>
+      <h4 className="mb-3" style={{ fontWeight: 700 }}>My Story</h4>
 
       {years.length > 0 && (
         <div className="status-toggle mb-4">
@@ -150,9 +163,11 @@ function Timeline() {
                       width: "12px",
                       height: "12px",
                       borderRadius: "50%",
-                      backgroundColor: entry.meta.color,
-                      border: "2px solid var(--color-surface)",
-                      boxShadow: `0 0 0 2px ${entry.meta.color}40`,
+                      backgroundColor: entry.isWishlist ? "var(--color-surface)" : entry.meta.color,
+                      border: entry.isWishlist
+                        ? `2px dashed ${entry.meta.color}`
+                        : "2px solid var(--color-surface)",
+                      boxShadow: entry.isWishlist ? "none" : `0 0 0 2px ${entry.meta.color}40`,
                     }}
                   />
                   <div className="d-flex justify-content-between align-items-start">
