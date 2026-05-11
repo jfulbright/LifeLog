@@ -30,6 +30,7 @@ import "App.css";
 function AppShell() {
   const [showMobileNav, setShowMobileNav] = useState(false);
   const { counts, notifications } = useAppData();
+  const { user, signOut } = useAuth();
 
   return (
     <Router>
@@ -39,7 +40,7 @@ function AppShell() {
           <span className="sidebar-brand-emoji">📸</span>
           <span className="sidebar-brand-name">LifeSnaps</span>
         </Link>
-        <SidebarNav counts={counts} notificationCount={notifications.length} />
+        <SidebarNav counts={counts} notificationCount={notifications.length} user={user} onSignOut={signOut} />
       </aside>
 
       {/* Mobile navbar (below lg) */}
@@ -101,6 +102,8 @@ function AppShell() {
           <SidebarNav
             counts={counts}
             notificationCount={notifications.length}
+            user={user}
+            onSignOut={signOut}
             onItemClick={() => setShowMobileNav(false)}
           />
         </Offcanvas.Body>
