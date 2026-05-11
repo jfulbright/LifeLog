@@ -44,6 +44,7 @@ const collaboratorService = {
       .from("collaborators")
       .select("*")
       .eq("collaborator_user_id", userId)
+      .neq("owner_id", userId)
       .order("invited_at", { ascending: false });
 
     if (error) throw error;
@@ -60,6 +61,7 @@ const collaboratorService = {
       .from("collaborators")
       .select("id", { count: "exact", head: true })
       .eq("collaborator_user_id", userId)
+      .neq("owner_id", userId)
       .eq("status", "pending");
 
     if (error) return 0;

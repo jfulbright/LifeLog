@@ -4,7 +4,7 @@ import { useAppData } from "../contexts/AppDataContext";
 import contactsService from "../services/contactsService";
 import inviteService from "../services/inviteService";
 import FormPanel from "../components/shared/FormPanel";
-import { RING_META, RING_LEVELS, INVITE_STATUS_META } from "../helpers/ringMeta";
+import { RING_META, RING_LEVELS } from "../helpers/ringMeta";
 
 function ContactAvatar({ displayName, ringLevel, size = 44 }) {
   const ring = RING_META[ringLevel];
@@ -256,7 +256,6 @@ function ContactForm({ initial = {}, onSave, onDelete, onCancel, isEditing }) {
 
 function ContactCard({ contact, onEdit, onInvite }) {
   const ring = RING_META[contact.ringLevel];
-  const statusMeta = INVITE_STATUS_META[contact.inviteStatus] || INVITE_STATUS_META.local_only;
 
   return (
     <div
@@ -320,7 +319,24 @@ function ContactCard({ contact, onEdit, onInvite }) {
             {ring.emoji} {ring.label}
           </span>
         )}
-        {contact.inviteStatus === "local_only" && (
+        {contact.linkedUserId ? (
+          <span style={{
+            fontSize: "0.65rem",
+            fontWeight: 700,
+            color: "var(--color-success, #2EB67D)",
+            background: "#EAFAF4",
+            border: "1px solid #B7E8D5",
+            borderRadius: 10,
+            padding: "0.2rem 0.6rem",
+            whiteSpace: "nowrap",
+          }}>
+            ✓ On LifeSnaps
+          </span>
+        ) : contact.inviteStatus === "invited" ? (
+          <span style={{ fontSize: "0.65rem", color: "#ECB22E", fontWeight: 600 }}>
+            ◐ Invited
+          </span>
+        ) : (
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onInvite(contact); }}
@@ -338,11 +354,6 @@ function ContactCard({ contact, onEdit, onInvite }) {
           >
             Send Invite
           </button>
-        )}
-        {contact.inviteStatus !== "local_only" && (
-          <span style={{ fontSize: "0.65rem", color: statusMeta.color, fontWeight: 600 }}>
-            {statusMeta.dot} {statusMeta.label}
-          </span>
         )}
       </div>
     </div>

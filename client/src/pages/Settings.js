@@ -536,15 +536,139 @@ function MyPeopleTab() {
 // ── Placeholder Tabs ──────────────────────────────────────────────────────────
 
 function NotificationsTab() {
+  const [prefs, setPrefs] = useState({
+    collab_request_email: false,
+    collab_snaps_inapp: true,
+    collab_snaps_email: false,
+    recommendation_email: false,
+    invite_accepted_email: false,
+  });
+  const [loading, setLoading] = useState(true);
+  const [saveMsg, setSaveMsg] = useState(null);
+
+  useEffect(() => {
+    profileService.getMyProfile().then((profile) => {
+      if (profile?.notification_preferences) {
+        setPrefs((prev) => ({ ...prev, ...profile.notification_preferences }));
+      }
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+
+  const handleToggle = (key) => {
+    setPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleSave = async () => {
+    try {
+      await profileService.updateProfile({ notification_preferences: prefs });
+      setSaveMsg("Saved");
+      setTimeout(() => setSaveMsg(null), 3000);
+    } catch {
+      setSaveMsg("Failed to save");
+    }
+  };
+
+  const sectionStyle = {
+    backgroundColor: "#fff",
+    border: "1px solid var(--color-border, #EBEAEB)",
+    borderRadius: 10,
+    padding: "1.25rem 1.5rem",
+    marginBottom: "1rem",
+  };
+
+  const labelStyle = {
+    fontSize: "var(--font-size-sm, 0.875rem)",
+    fontWeight: 600,
+    color: "var(--color-text-secondary, #696969)",
+    textTransform: "uppercase",
+    letterSpacing: "0.05em",
+    marginBottom: "0.75rem",
+  };
+
+  const rowStyle = {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "0.5rem 0",
+    borderBottom: "1px solid var(--color-border, #EBEAEB)",
+  };
+
+  if (loading) return <div style={{ color: "var(--color-text-tertiary)" }}>Loading...</div>;
+
   return (
-    <div className="empty-state">
-      <div className="empty-state-icon" style={{ backgroundColor: "var(--color-warning)", color: "#fff" }}>
-        🔔
+    <div style={{ maxWidth: 480 }}>
+      <div style={sectionStyle}>
+        <div style={labelStyle}>Collaboration</div>
+        <div style={rowStyle}>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: "var(--font-size-sm)" }}>Someone shares an entry with you</div>
+            <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)" }}>In-app badge is always on</div>
+          </div>
+          <div className="form-check form-switch mb-0">
+            <input className="form-check-input" type="checkbox" role="switch"
+              checked={prefs.collab_request_email} onChange={() => handleToggle("collab_request_email")} />
+            <label style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)" }}>Email</label>
+          </div>
+        </div>
+        <div style={rowStyle}>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: "var(--font-size-sm)" }}>Someone adds memories to a shared entry</div>
+            <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)" }}>When a collaborator adds Snaps or photos</div>
+          </div>
+          <div className="d-flex gap-3">
+            <div className="form-check form-switch mb-0">
+              <input className="form-check-input" type="checkbox" role="switch"
+                checked={prefs.collab_snaps_inapp} onChange={() => handleToggle("collab_snaps_inapp")} />
+              <label style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)" }}>In-app</label>
+            </div>
+            <div className="form-check form-switch mb-0">
+              <input className="form-check-input" type="checkbox" role="switch"
+                checked={prefs.collab_snaps_email} onChange={() => handleToggle("collab_snaps_email")} />
+              <label style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)" }}>Email</label>
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="empty-state-title">Notifications</div>
-      <div className="empty-state-text">
-        In-app alerts for tags and new co-participant snaps will live here. Coming in Phase 7c.
+
+      <div style={sectionStyle}>
+        <div style={labelStyle}>Recommendations</div>
+        <div style={rowStyle}>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: "var(--font-size-sm)" }}>Someone recommends something to you</div>
+            <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)" }}>In-app badge is always on</div>
+          </div>
+          <div className="form-check form-switch mb-0">
+            <input className="form-check-input" type="checkbox" role="switch"
+              checked={prefs.recommendation_email} onChange={() => handleToggle("recommendation_email")} />
+            <label style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)" }}>Email</label>
+          </div>
+        </div>
       </div>
+
+      <div style={sectionStyle}>
+        <div style={labelStyle}>People</div>
+        <div style={{ ...rowStyle, borderBottom: "none" }}>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: "var(--font-size-sm)" }}>Someone you invited joins LifeSnaps</div>
+            <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)" }}>Get notified when your invite is accepted</div>
+          </div>
+          <div className="form-check form-switch mb-0">
+            <input className="form-check-input" type="checkbox" role="switch"
+              checked={prefs.invite_accepted_email} onChange={() => handleToggle("invite_accepted_email")} />
+            <label style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)" }}>Email</label>
+          </div>
+        </div>
+      </div>
+
+      <Button variant="primary" size="sm" onClick={handleSave}>
+        Save Preferences
+      </Button>
+      {saveMsg && (
+        <span style={{ marginLeft: "0.75rem", fontSize: "var(--font-size-sm)", color: "var(--color-success)", fontWeight: 600 }}>
+          {saveMsg}
+        </span>
+      )}
     </div>
   );
 }
