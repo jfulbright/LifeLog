@@ -546,9 +546,9 @@ function ItemForm({
               <div className="snap-section-banner" style={{ background: "linear-gradient(135deg, #F5EEF8 0%, #EAF8FE 100%)", borderColor: "var(--color-border)" }}>
                 <span className="snap-section-icon" aria-hidden="true">&#129309;</span>
                 <div>
-                  <div className="snap-section-title">People & Sharing</div>
+                  <div className="snap-section-title">Social</div>
                   <div className="snap-section-subtitle">
-                    Who was there, and who should see this
+                    Share experiences, control visibility, and recommend to others
                   </div>
                 </div>
               </div>
@@ -574,6 +574,20 @@ function ItemForm({
             <Row>
               {fields.map((field) => (
                 <React.Fragment key={field.name}>
+                  {isSocialSection && field.name === "companions" && (
+                    <Col md={12}>
+                      <div className="share-with-sublabel" style={{ marginTop: "0.25rem", marginBottom: "0.5rem" }}>
+                        Shared Experiences
+                      </div>
+                    </Col>
+                  )}
+                  {isSocialSection && field.type === "recommend" && (
+                    <Col md={12}>
+                      <div className="share-with-sublabel" style={{ marginTop: "0.75rem", marginBottom: "0.5rem" }}>
+                        Recommendations
+                      </div>
+                    </Col>
+                  )}
                   <Col md={field.fullWidth ? 12 : (field.col || 6)}>
                     {renderField(field)}
                   </Col>

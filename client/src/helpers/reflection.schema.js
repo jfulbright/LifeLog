@@ -69,7 +69,6 @@ export function getCompanionsField(experiencedStatus) {
     type: "contact-list",
     placeholder: "Add from your people or type a name",
     optional: true,
-    visibleWhen: { status: experiencedStatus },
     section: "Social",
     order: 60,
     fullWidth: true,
