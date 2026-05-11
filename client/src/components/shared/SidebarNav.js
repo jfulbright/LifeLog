@@ -5,13 +5,15 @@ import categoryMeta from "../../helpers/categoryMeta";
 const navItems = [
   { path: "/", label: "Home", icon: "🏠" },
   { path: "/timeline", label: "Timeline", icon: "📅" },
-  { path: "/snaps", label: "Snapshots", icon: "📸" },
+  { path: "/snaps", label: "Memories", icon: "📸" },
   { path: "/shared", label: "Shared with Me", icon: "🤝" },
 ];
 
 const categoryItems = [
-  { path: "/concerts", key: "concerts", label: "Concerts" },
+  { path: "/events", key: "events", label: "Events" },
   { path: "/travel", key: "travel", label: "Travel" },
+  { path: "/activities", key: "activities", label: "Activities" },
+  { path: "/wines", key: "wines", label: "Wines" },
   { path: "/cars", key: "cars", label: "Cars" },
   { path: "/homes", key: "homes", label: "Homes" },
 ];
@@ -47,7 +49,7 @@ function SidebarNav({ counts = {}, notificationCount = 0, onItemClick }) {
           </NavLink>
         ))}
 
-        <div className="sidebar-section-label" style={{ marginTop: "0.5rem" }}>Snap Categories</div>
+        <div className="sidebar-section-label" style={{ marginTop: "0.5rem" }}>Categories</div>
 
         {categoryItems.map((item) => {
           const meta = categoryMeta[item.key] || {};

@@ -83,9 +83,12 @@ export default function useCategory(category, { migrate, normalize, schema } = {
   }, [category, items]);
 
   const handleSubmit = useCallback(
-    (e) => {
+    async (e) => {
       if (e?.preventDefault) e.preventDefault();
-      const data = normalize ? normalize(formData) : formData;
+
+      // Strip transient sharing field — it becomes entryTag records, not persisted item data
+      const { shareWithCompanionIds, ...rawFormData } = formData;
+      const data = normalize ? normalize(rawFormData) : rawFormData;
       let savedId;
 
       if (editIndex !== null) {
@@ -106,6 +109,17 @@ export default function useCategory(category, { migrate, normalize, schema } = {
       }
       setFormData({});
       setShowForm(false);
+
+      // Create pending entryTag records for each companion the user chose to share with
+      if (shareWithCompanionIds?.length > 0) {
+        for (const contactId of shareWithCompanionIds) {
+          try {
+            await dataService.addEntryTag({ entryId: savedId, contactId });
+          } catch (err) {
+            console.error("[useCategory] addEntryTag failed:", err);
+          }
+        }
+      }
 
       const isExperienced = EXPERIENCED_STATUSES.has(data.status);
       if (isExperienced && !hasAnySnapshot(data)) {
@@ -168,6 +182,14 @@ export default function useCategory(category, { migrate, normalize, schema } = {
     [editIndex]
   );
 
+  /**
+   * Apply a patch object to every item that matches the predicate.
+   * Used by batch operations like "Create Itinerary" to assign a shared tripId.
+   */
+  const batchPatch = useCallback((predicate, patch) => {
+    setItems((prev) => prev.map((item) => predicate(item) ? { ...item, ...patch } : item));
+  }, []);
+
   const closeForm = useCallback(() => {
     setFormData({});
     setEditIndex(null);
@@ -203,6 +225,7 @@ export default function useCategory(category, { migrate, normalize, schema } = {
     handleSubmit,
     startEditing,
     deleteItem,
+    batchPatch,
     closeForm,
     openForm,
     showSnapPrompt,

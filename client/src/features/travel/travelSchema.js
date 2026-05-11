@@ -1,5 +1,4 @@
 import { baseSchema } from "../../helpers/common.schema";
-import { locationSchema } from "../../helpers/location.schema";
 import { getStatusValues } from "../../helpers/statusLabels";
 import { getReflectionFields } from "../../helpers/reflection.schema";
 
@@ -23,14 +22,57 @@ const travelFields = [
     order: 1,
   },
 
-  ...locationSchema
-    .filter((f) => !["street", "zip"].includes(f.name))
-    .map((field, i) => ({
-      ...field,
-      section: "Location",
-      order: 10 + i,
-    })),
+  // ── Location: country first so city search can be filtered by it ─────────────
+  {
+    name: "country",
+    label: "Country",
+    type: "select",
+    optional: true,
+    defaultValue: "US",
+    section: "Location",
+    order: 10,
+  },
+  {
+    name: "city",
+    label: "City",
+    type: "city-autocomplete",
+    optional: true,
+    placeholder: "e.g. Tokyo",
+    section: "Location",
+    order: 11,
+  },
+  {
+    // Context-aware: US/CA → state dropdown, elsewhere → free text region
+    name: "state",
+    label: "State / Region",
+    type: "state-or-region",
+    optional: true,
+    section: "Location",
+    order: 12,
+  },
+  // Hidden fields auto-populated by city autocomplete / country picker
+  { name: "lat", label: "Lat", type: "text", hidden: true },
+  { name: "lng", label: "Lng", type: "text", hidden: true },
+  {
+    name: "continent",
+    label: "Continent",
+    type: "text",
+    hidden: true,
+  },
+  {
+    name: "tripId",
+    label: "Itinerary ID",
+    type: "text",
+    hidden: true,
+  },
+  {
+    name: "tripName",
+    label: "Itinerary Name",
+    type: "text",
+    hidden: true,
+  },
 
+  // ── Dates ─────────────────────────────────────────────────────────────────────
   ...baseSchema
     .filter((f) => ["startDate", "endDate"].includes(f.name))
     .map((f) => ({
@@ -41,6 +83,7 @@ const travelFields = [
 
   ...getReflectionFields("visited"),
 
+  // ── Planning (wishlist only) ──────────────────────────────────────────────────
   {
     name: "targetMonth",
     label: "Target Month",
@@ -73,10 +116,41 @@ const travelFields = [
     order: 37,
     fullWidth: true,
   },
+  {
+    name: "travelTips",
+    label: "Tips for Friends",
+    type: "textarea",
+    placeholder: "What should friends know before visiting?",
+    optional: true,
+    visibleWhen: { status: "visited" },
+    section: "Planning",
+    order: 38,
+    fullWidth: true,
+  },
 
+  // ── Social ────────────────────────────────────────────────────────────────────
+  {
+    name: "visibilityControl",
+    type: "visible-to",
+    optional: true,
+    section: "Social",
+    order: 43,
+    fullWidth: true,
+  },
+  {
+    name: "recommendation",
+    label: "Recommend this place",
+    type: "recommend",
+    optional: true,
+    visibleWhen: { status: ["visited", "wishlist"] },
+    section: "Social",
+    order: 45,
+  },
+
+  // ── Details ───────────────────────────────────────────────────────────────────
   ...baseSchema
     .filter((f) => f.name === "tags")
-    .map((f) => ({ ...f, section: "Details", order: 40 })),
+    .map((f) => ({ ...f, section: "Details", order: 50 })),
   {
     name: "photoLink",
     label: "Cover Photo URL",
@@ -84,7 +158,7 @@ const travelFields = [
     optional: true,
     placeholder: "https://...",
     section: "Details",
-    order: 41,
+    order: 51,
   },
 
   ...baseSchema

@@ -85,6 +85,16 @@ const concertSchema = [
 
   ...getReflectionFields("attended"),
 
+  // ── Social (Visible To) ──────────────────────────────────────────────────────
+  {
+    name: "visibilityControl",
+    type: "visible-to",
+    optional: true,
+    section: "Social",
+    order: 38,
+    fullWidth: true,
+  },
+
   ...baseSchema.filter(
     (field) =>
       !["status", "startDate", "endDate", "notes"].includes(field.name)

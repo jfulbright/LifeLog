@@ -11,6 +11,7 @@ import { supabase } from "../services/supabaseClient";
 // ── localStorage keys (contacts + Phase 7 social data) ────────────────────────
 
 export const STORAGE_KEYS = {
+  events: "events",
   concerts: "concerts",
   travel: "travels",
   cars: "cars",
@@ -21,7 +22,7 @@ export const STORAGE_KEYS = {
 };
 
 // Category keys that are stored in Supabase (not localStorage)
-const SUPABASE_CATEGORIES = new Set(["concerts", "travel", "cars", "homes"]);
+const SUPABASE_CATEGORIES = new Set(["events", "concerts", "travel", "cars", "homes", "activities", "wines"]);
 
 // ── Auth helper ────────────────────────────────────────────────────────────────
 
@@ -41,14 +42,17 @@ async function getCurrentUserId() {
  * all other fields live in the `data` JSONB column.
  */
 function itemToRow(item, category, userId) {
+  // Strip transient UI-only form fields that must not be persisted to Supabase
+  // eslint-disable-next-line no-unused-vars
+  const { shareWithCompanionIds, visibilityControl, _taggedCompanions, _recommendedCompanions, ...cleanItem } = item;
   return {
-    id: item.id,
+    id: cleanItem.id,
     user_id: userId,
     category,
-    status: item.status || null,
-    start_date: item.startDate || null,
+    status: cleanItem.status || null,
+    start_date: cleanItem.startDate || null,
     updated_at: new Date().toISOString(),
-    data: item,
+    data: cleanItem,
   };
 }
 
@@ -160,14 +164,48 @@ const dataService = {
   },
 
   async deleteItem(category, id) {
+    // Best-effort photo cleanup before removing the DB row.
+    // Only runs for Supabase-backed categories (not localStorage ones).
+    if (SUPABASE_CATEGORIES.has(category)) {
+      try {
+        const userId = await getCurrentUserId();
+        await dataService.deleteItemPhotos(userId, id);
+      } catch (err) {
+        console.warn("[dataService] photo cleanup skipped:", err);
+      }
+    }
     const items = await dataService.getItems(category);
     const filtered = items.filter((i) => i.id !== id);
     await dataService.saveItems(category, filtered);
     return filtered;
   },
 
+  /**
+   * Removes all photo files for an item from Supabase Storage.
+   * Uses list() so it catches any extension or slot variation — future-proof
+   * and cleans up any pre-existing mixed-extension orphans.
+   * Non-throwing: logs failures but never blocks the caller.
+   */
+  async deleteItemPhotos(userId, itemId) {
+    try {
+      const { data: files, error } = await supabase.storage
+        .from("photos")
+        .list(`${userId}/${itemId}`);
+      if (error || !files || files.length === 0) return;
+      const paths = files.map((f) => `${userId}/${itemId}/${f.name}`);
+      const { error: removeError } = await supabase.storage
+        .from("photos")
+        .remove(paths);
+      if (removeError) {
+        console.warn("[dataService] deleteItemPhotos remove failed:", removeError);
+      }
+    } catch (err) {
+      console.warn("[dataService] deleteItemPhotos failed:", err);
+    }
+  },
+
   async getAllItems() {
-    const categoryKeys = ["concerts", "travel", "cars", "homes"];
+    const categoryKeys = ["events", "concerts", "travel", "cars", "homes", "activities"];
     const groups = await Promise.all(
       categoryKeys.map(async (category) => {
         const items = await dataService.getItems(category);
@@ -199,7 +237,7 @@ const dataService = {
   },
 
   async getCounts() {
-    const categoryKeys = ["concerts", "travel", "cars", "homes"];
+    const categoryKeys = ["events", "concerts", "travel", "cars", "homes", "activities"];
     const entries = await Promise.all(
       categoryKeys.map(async (category) => [
         category,
@@ -342,7 +380,17 @@ const dataService = {
     if (existing) {
       updated = overlays.map((o) =>
         o.id === existing.id
-          ? { ...o, ...overlay, updatedAt: new Date().toISOString() }
+          ? {
+              ...o,
+              snapshot1: overlay.snapshot1 ?? o.snapshot1,
+              snapshot2: overlay.snapshot2 ?? o.snapshot2,
+              snapshot3: overlay.snapshot3 ?? o.snapshot3,
+              rating: overlay.rating ?? o.rating,
+              photo1: overlay.photo1 ?? o.photo1,
+              photo2: overlay.photo2 ?? o.photo2,
+              photo3: overlay.photo3 ?? o.photo3,
+              updatedAt: new Date().toISOString(),
+            }
           : o
       );
     } else {
@@ -354,6 +402,9 @@ const dataService = {
         snapshot2: overlay.snapshot2 || "",
         snapshot3: overlay.snapshot3 || "",
         rating: overlay.rating || "",
+        photo1: overlay.photo1 || "",
+        photo2: overlay.photo2 || "",
+        photo3: overlay.photo3 || "",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

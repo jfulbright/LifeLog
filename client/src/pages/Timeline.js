@@ -3,9 +3,11 @@ import { Badge } from "react-bootstrap";
 import categoryMeta from "../helpers/categoryMeta";
 import { getStatusLabel } from "../helpers/statusLabels";
 import { getSnapshotTeaser } from "../helpers/operator";
-import dataService, { STORAGE_KEYS } from "../services/dataService";
+import dataService from "../services/dataService";
 
-const categories = Object.keys(STORAGE_KEYS).map((key) => ({
+const CATEGORY_KEYS = ["events", "travel", "cars", "homes", "activities", "wines"];
+
+const categories = CATEGORY_KEYS.map((key) => ({
   key,
   label: key.charAt(0).toUpperCase() + key.slice(1),
 }));

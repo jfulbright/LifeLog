@@ -1,0 +1,230 @@
+import React, { useRef, useState } from "react";
+import { Button, Spinner } from "react-bootstrap";
+import { BrowserMultiFormatReader } from "@zxing/browser";
+import {
+  lookupByBarcode,
+  scanLabelOcr,
+  parseOcrText,
+  searchWines,
+  fetchWineDetail,
+} from "../../features/wines/api/wineApi";
+
+const WINE_COLOR = "var(--color-wines, #8B3A8F)";
+
+/**
+ * Three-path label scan button for WineForm.
+ *
+ *   Path 1 — Barcode  : @zxing/browser reads UPC → Open Food Facts lookup
+ *   Path 2 — OCR      : Google Cloud Vision (via server proxy) → VinoFYI fuzzy match
+ *   Path 3 — Photo    : captured image always stored as photoLink (object URL,
+ *                        valid for the duration of the form session)
+ *
+ * Props:
+ *   onResult(fields)  — called with a partial formData object to merge
+ *   onError(message)  — called with a user-readable string when scan partially fails
+ */
+function LabelScanButton({ onResult, onError }) {
+  const fileInputRef = useRef(null);
+  const [phase, setPhase] = useState(null); // null | "barcode" | "ocr" | "search"
+
+  const handleClick = () => fileInputRef.current?.click();
+
+  /** Returns the full data URL string (used for photoLink so it persists). */
+  const fileToDataUrl = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  /** Strips the `data:…;base64,` prefix for the Google Vision API body. */
+  const dataUrlToBase64 = (dataUrl) => dataUrl.split(",")[1];
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = ""; // allow re-selecting the same file next time
+
+    let dataUrl = null;
+    // Build up fields incrementally — always at least deliver the photo
+    const fields = {};
+
+    try {
+      // Read the file once as a data URL (used for both photo storage and OCR)
+      dataUrl = await fileToDataUrl(file);
+      fields.photoLink = dataUrl;
+      console.log("[LabelScan] Image loaded — size:", Math.round(dataUrl.length / 1024), "KB");
+
+      // ── Path 1: Barcode ──────────────────────────────────────────────────────
+      setPhase("barcode");
+      let barcodeResult = null;
+      try {
+        // Create a short-lived object URL just for ZXing (revoked immediately after)
+        const objectUrl = URL.createObjectURL(file);
+        const reader = new BrowserMultiFormatReader();
+        // ZXing logs a NotFoundException (expected) when no barcode is found.
+        // Suppress both warn and error channels so the console stays clean.
+        const origError = console.error;
+        const origWarn = console.warn;
+        console.error = () => {};
+        console.warn = () => {};
+        try {
+          const decoded = await reader.decodeFromImageUrl(objectUrl);
+          if (decoded?.getText()) barcodeResult = decoded.getText();
+        } finally {
+          console.error = origError;
+          console.warn = origWarn;
+          URL.revokeObjectURL(objectUrl); // safe to revoke — ZXing is done with it
+        }
+      } catch {
+        // NotFoundException — no barcode, continue to OCR
+      }
+      console.log("[LabelScan] Barcode result:", barcodeResult || "none");
+
+      if (barcodeResult) {
+        fields.barcodeUpc = barcodeResult;
+        const barcodeFields = await lookupByBarcode(barcodeResult);
+        console.log("[LabelScan] Open Food Facts lookup:", barcodeFields || "no match");
+        if (barcodeFields) {
+          // Barcode hit — deliver everything and done
+          onResult({ ...fields, ...barcodeFields });
+          setPhase(null);
+          return;
+        }
+        // Barcode found but not in Open Food Facts — fall through to OCR with UPC noted
+      }
+
+      // ── Path 2: OCR via Google Cloud Vision ─────────────────────────────────
+      setPhase("ocr");
+      console.log("[LabelScan] Sending image to OCR server...");
+      let ocrText = null;
+      try {
+        ocrText = await scanLabelOcr(dataUrlToBase64(dataUrl));
+      } catch (err) {
+        console.error("[LabelScan] OCR threw unexpectedly:", err);
+        // fall through gracefully
+      }
+      console.log("[LabelScan] OCR result:", ocrText ? `"${ocrText.slice(0, 120)}…"` : "null / empty");
+
+      if (ocrText) {
+        const { vintageGuess, searchQuery, varietal, wineType, wineName: ocrName } = parseOcrText(ocrText);
+        console.log("[LabelScan] Parsed OCR →", { vintageGuess, searchQuery, varietal, wineType, ocrName });
+        if (vintageGuess) fields.vintage  = vintageGuess;
+        if (varietal)     fields.varietal  = varietal;
+        if (wineType)     fields.wineType  = wineType;
+
+        if (searchQuery) {
+          setPhase("search");
+          let results = [];
+          try {
+            results = await searchWines(searchQuery);
+          } catch {
+            // search unavailable — fall through to name pre-fill
+          }
+          console.log("[LabelScan] VinoFYI search returned", results.length, "results:", results);
+          const wineResult = results.find((r) => r.type === "wine");
+          if (wineResult) {
+            const detail = await fetchWineDetail(wineResult.slug);
+            console.log("[LabelScan] Wine detail:", detail);
+            if (detail) {
+              const merged = {
+                ...fields,
+                ...detail,
+                vintage: fields.vintage || detail.vintage || "",
+              };
+              console.log("[LabelScan] ✅ Full match — delivering:", Object.keys(merged));
+              onResult(merged);
+              setPhase(null);
+              return;
+            }
+          }
+
+          // OCR worked but VinoFYI had no confident match — use the clean
+          // OCR-extracted name, falling back to the first words of the search query.
+          const nameCandidate = ocrName || searchQuery.split(" ").slice(0, 4).join(" ");
+          fields.wineName = nameCandidate;
+          console.log("[LabelScan] ⚠️ No VinoFYI match — pre-filling wineName:", nameCandidate);
+          onError?.(
+            `Label read — no exact match found. Wine name pre-filled from label text. Please review and adjust.`
+          );
+        } else {
+          // No search query but we may still have a clean name from OCR
+          if (ocrName) fields.wineName = ocrName;
+          console.log("[LabelScan] ⚠️ OCR text found but no usable search query extracted.");
+          onError?.("Label photo saved. Couldn't extract text — enter the wine name manually.");
+        }
+      } else {
+        // OCR returned nothing (server not configured, API error, or unreadable label)
+        console.warn(
+          "[LabelScan] ⚠️ OCR returned null — check server logs and Network tab for /api/wine/scan"
+        );
+        onError?.(
+          barcodeResult
+            ? "Barcode scanned but wine not found in database. Label photo saved — enter details manually."
+            : "Label photo saved. OCR unavailable or label unreadable — enter the wine name manually."
+        );
+      }
+
+      // ── Path 3: Deliver whatever we have (photo + any partial fields) ────────
+      console.log("[LabelScan] Delivering partial fields:", Object.keys(fields));
+      onResult(fields);
+    } catch (err) {
+      console.error("[LabelScan] Unhandled scan error:", err);
+      onError?.("Scan failed — label photo saved if available. Enter wine details manually.");
+      if (fields.photoLink) onResult({ photoLink: fields.photoLink });
+    } finally {
+      setPhase(null);
+      // Note: dataUrl is a data URL string (not an object URL), so no revocation needed.
+    }
+  };
+
+  const phaseLabel = {
+    barcode: "Reading barcode…",
+    ocr: "Reading label…",
+    search: "Matching wine…",
+  };
+
+  return (
+    <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        style={{ display: "none" }}
+        onChange={handleFileChange}
+      />
+      <Button
+        type="button"
+        onClick={handleClick}
+        disabled={!!phase}
+        style={{
+          background: phase ? "var(--color-surface)" : WINE_COLOR,
+          border: `2px solid ${WINE_COLOR}`,
+          color: phase ? WINE_COLOR : "#fff",
+          borderRadius: "8px",
+          fontWeight: 600,
+          fontSize: "var(--font-size-sm)",
+          padding: "0.45rem 1rem",
+          display: "flex",
+          alignItems: "center",
+          gap: "0.4rem",
+          transition: "all 0.15s",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {phase ? (
+          <>
+            <Spinner animation="border" size="sm" style={{ color: WINE_COLOR }} />
+            {phaseLabel[phase]}
+          </>
+        ) : (
+          <>📷 Scan Label</>
+        )}
+      </Button>
+    </>
+  );
+}
+
+export default LabelScanButton;

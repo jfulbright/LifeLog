@@ -7,8 +7,14 @@ import {
 } from "../../helpers/operator";
 import StateDropdown from "./StateDropdown";
 import CountryDropdown from "./CountryDropdown";
+import CityAutocomplete from "./CityAutocomplete";
 import ContactPicker from "./ContactPicker";
+import RecommendSection from "./RecommendSection";
 import ShareWithSection from "./ShareWithSection";
+import ShareWithCompanionsToggle from "./ShareWithCompanionsToggle";
+import LinkedTripPicker from "./LinkedTripPicker";
+import PhotoUploadField from "./PhotoUploadField";
+import { getCountryContinent } from "../../data/countries";
 
 function ListFieldRenderer({ field, value, onChange, readOnly }) {
   const [inputValue, setInputValue] = useState("");
@@ -273,6 +279,15 @@ function ItemForm({
                   });
                 }
               }}
+              onFullChange={(selected) => {
+                if (selected) {
+                  setFormData((prev) => ({
+                    ...prev,
+                    continent: selected.continent || getCountryContinent(selected.code),
+                    state: "", // clear stale state/region when country changes
+                  }));
+                }
+              }}
             />
           );
         } else {
@@ -285,7 +300,7 @@ function ItemForm({
               <option value="">Select</option>
               {field.options.map((opt) => (
                 <option key={opt} value={opt}>
-                  {opt}
+                  {field.optionLabels?.[opt] || opt.charAt(0).toUpperCase() + opt.slice(1)}
                 </option>
               ))}
             </Form.Select>
@@ -343,6 +358,121 @@ function ItemForm({
         );
         break;
 
+      case "toggle":
+        inputElement = (
+          <div className="form-check form-switch">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              role="switch"
+              id={fieldId}
+              checked={!!value}
+              disabled={isReadOnly}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  [field.name]: e.target.checked,
+                }))
+              }
+            />
+          </div>
+        );
+        break;
+
+      case "city-autocomplete":
+        inputElement = (
+          <CityAutocomplete
+            id={fieldId}
+            value={value}
+            countryCode={formData.country || ""}
+            onChange={(e) => handleInputChange(e, setFormData)}
+            onLocationSelect={(location) => {
+              setFormData((prev) => {
+                const updates = { ...prev, city: location.city };
+                if (location.lat) updates.lat = location.lat;
+                if (location.lng) updates.lng = location.lng;
+                // Always apply country + state from Mapbox result
+                if (location.country) updates.country = location.country;
+                if (location.state) updates.state = location.state;
+                if (location.country) {
+                  updates.continent = getCountryContinent(location.country);
+                }
+                return updates;
+              });
+            }}
+            placeholder={field.placeholder}
+            disabled={isReadOnly}
+          />
+        );
+        break;
+
+      case "state-or-region": {
+        const currentCountry = formData.country || "US";
+        const isNorthAmerica = currentCountry === "US" || currentCountry === "CA";
+        if (isNorthAmerica) {
+          inputElement = (
+            <StateDropdown
+              id={fieldId}
+              value={value}
+              onChange={(e) => handleInputChange(e, setFormData)}
+              name={field.name}
+            />
+          );
+        } else {
+          inputElement = (
+            <Form.Control
+              type="text"
+              id={fieldId}
+              name={field.name}
+              value={value}
+              onChange={(e) => handleInputChange(e, setFormData)}
+              placeholder="State / Province / Region"
+              disabled={isReadOnly}
+            />
+          );
+        }
+        break;
+      }
+
+      case "linked-trip":
+        inputElement = (
+          <LinkedTripPicker
+            linkedTripId={formData.linkedTripId || ""}
+            linkedTripTitle={formData.linkedTripTitle || ""}
+            formDate={formData.startDate || ""}
+            formCity={formData.city || ""}
+            formCountry={formData.country || ""}
+            onChange={(patch) => setFormData((prev) => ({ ...prev, ...patch }))}
+            readOnly={isReadOnly}
+          />
+        );
+        break;
+
+      case "recommend":
+        inputElement = (
+          <RecommendSection formData={formData} setFormData={setFormData} />
+        );
+        break;
+
+      case "visible-to":
+        inputElement = (
+          <ShareWithSection formData={formData} setFormData={setFormData} />
+        );
+        break;
+
+      case "photo":
+        inputElement = (
+          <PhotoUploadField
+            field={field}
+            value={value}
+            onChange={(url) =>
+              setFormData((prev) => ({ ...prev, [field.name]: url }))
+            }
+            itemId={formData.id}
+          />
+        );
+        break;
+
       default:
         inputElement = (
           <Form.Control
@@ -364,12 +494,14 @@ function ItemForm({
         key={field.name}
         className={`mb-3${field.isSnapshot ? " snapshot-field-group" : ""}`}
       >
-        <Form.Label htmlFor={fieldId}>
-          {field.label}
-          {field.required && (
-            <span className="text-danger ms-1">*</span>
-          )}
-        </Form.Label>
+        {field.type !== "recommend" && field.type !== "visible-to" && field.type !== "linked-trip" && field.type !== "photo" && (
+          <Form.Label htmlFor={fieldId}>
+            {field.label}
+            {field.required && (
+              <span className="text-danger ms-1">*</span>
+            )}
+          </Form.Label>
+        )}
         {inputElement}
         {hasError && (
           <Form.Control.Feedback type="invalid" style={{ display: "block" }}>
@@ -384,9 +516,12 @@ function ItemForm({
     <Form ref={formRef} onSubmit={handleSubmit} noValidate>
       {Object.entries(groupedFields).map(([section, fields], sIdx) => {
         const isSnapSection = section === "Snapshots";
+        const isSocialSection = section === "Social";
+
+        const isPhotoSection = section === "Photos";
 
         return (
-          <div key={section} className={isSnapSection ? "snap-section-wrapper" : ""}>
+          <div key={section} className={isSnapSection ? "snap-section-wrapper" : isPhotoSection ? "photo-section-wrapper" : ""}>
             {isSnapSection ? (
               <div className="snap-section-banner">
                 <span className="snap-section-icon" aria-hidden="true">&#128247;</span>
@@ -397,7 +532,17 @@ function ItemForm({
                   </div>
                 </div>
               </div>
-            ) : (
+            ) : isPhotoSection ? (
+              <div className="photo-section-banner">
+                <span className="photo-section-icon" aria-hidden="true">&#128247;</span>
+                <div>
+                  <div className="photo-section-title">Add up to 3 photos</div>
+                  <div className="photo-section-subtitle">
+                    Upload from your camera roll or take a new photo
+                  </div>
+                </div>
+              </div>
+            ) : isSocialSection ? null : (
               <h6
                 className="form-section-heading"
                 style={
@@ -411,9 +556,25 @@ function ItemForm({
             )}
             <Row>
               {fields.map((field) => (
-                <Col md={field.fullWidth ? 12 : 6} key={field.name}>
-                  {renderField(field)}
-                </Col>
+                <React.Fragment key={field.name}>
+                  <Col md={field.fullWidth ? 12 : (field.col || 6)}>
+                    {renderField(field)}
+                  </Col>
+                  {field.name === "companions" && !isReadOnly && (
+                    <Col md={12}>
+                      <ShareWithCompanionsToggle
+                        companions={normalizeCompanions(formData.companions || [])}
+                        value={formData.shareWithCompanionIds || []}
+                        onChange={(ids) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            shareWithCompanionIds: ids,
+                          }))
+                        }
+                      />
+                    </Col>
+                  )}
+                </React.Fragment>
               ))}
             </Row>
           </div>
@@ -421,19 +582,16 @@ function ItemForm({
       })}
 
       {!isReadOnly && (
-        <>
-          <ShareWithSection formData={formData} setFormData={setFormData} />
-          <div className="d-flex gap-2 mt-3">
-            <Button variant="primary" type="submit" className="flex-grow-1">
-              {isEditing ? `Update ${buttonText}` : `Save ${buttonText}`}
+        <div className="d-flex gap-2 mt-3">
+          <Button variant="primary" type="submit" className="flex-grow-1">
+            {isEditing ? `Update ${buttonText}` : `Save ${buttonText}`}
+          </Button>
+          {onCancel && (
+            <Button variant="outline-secondary" onClick={onCancel}>
+              Cancel
             </Button>
-            {onCancel && (
-              <Button variant="outline-secondary" onClick={onCancel}>
-                Cancel
-              </Button>
-            )}
-          </div>
-        </>
+          )}
+        </div>
       )}
     </Form>
   );

@@ -28,12 +28,14 @@
   --color-danger: #E01E5A;
 
   /* Category Accents — Slack palette */
+  --color-events: #611F69;
   --color-concerts: #4A154B;
   --color-travel: #36C5F0;
   --color-cars: #E01E5A;
   --color-homes: #ECB22E;
   --color-restaurants: #2EB67D;
   --color-movies: #E01E5A;
+  --color-activities: #2EB67D;
 
   /* Sidebar — Aubergine theme */
   --color-sidebar-bg: #4A154B;
@@ -1328,6 +1330,424 @@ a:hover {
   letter-spacing: 0.05em;
   color: var(--color-text-secondary);
   margin-bottom: 0.25rem;
+}
+
+/* ===== Share With Companions Toggle ===== */
+.share-companions-toggle-wrapper {
+  margin-top: 0.5rem;
+  margin-bottom: 0.25rem;
+  padding: 0.875rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--card-radius);
+}
+
+.share-companions-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.375rem;
+}
+
+.share-companions-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.share-companions-heading {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.share-companions-hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.share-companions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.share-companion-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.375rem 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.share-companion-row:first-child {
+  border-top: none;
+}
+
+.share-companion-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.share-companion-name {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.share-companion-status {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  font-style: italic;
+}
+
+/* ===== Photo Upload Field ===== */
+.photo-upload-field {
+  width: 100%;
+}
+
+.photo-upload-trigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-height: 140px;
+  background: var(--color-surface);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--card-radius);
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease;
+  color: var(--color-text-tertiary);
+  padding: 0.5rem;
+}
+
+.photo-upload-trigger:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: var(--color-surface-hover);
+  color: var(--color-primary);
+}
+
+.photo-upload-trigger.uploading {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.photo-upload-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.photo-upload-label {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-align: center;
+}
+
+.photo-upload-spinner {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: photo-spin 0.7s linear infinite;
+}
+
+@keyframes photo-spin {
+  to { transform: rotate(360deg); }
+}
+
+.photo-upload-preview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-height: 140px;
+  border-radius: var(--card-radius);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.photo-upload-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.photo-upload-preview-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 150ms ease;
+}
+
+.photo-upload-preview:hover .photo-upload-preview-overlay {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.photo-upload-preview-hint {
+  color: #fff;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.photo-upload-preview:hover .photo-upload-preview-hint {
+  opacity: 1;
+}
+
+.photo-upload-remove-btn {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  width: 22px;
+  height: 22px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  font-size: 1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 150ms ease;
+  padding: 0;
+}
+
+.photo-upload-remove-btn:hover {
+  background: rgba(220, 53, 69, 0.85);
+}
+
+.photo-upload-error {
+  margin-top: 0.375rem;
+  font-size: var(--font-size-xs);
+  color: var(--color-danger);
+}
+
+/* ===== Photo Section in Forms ===== */
+.photo-section-wrapper {
+  animation: snapFadeIn 400ms ease both;
+}
+
+.photo-section-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: linear-gradient(135deg, #EAF8FE 0%, #F5EEF8 100%);
+  border: 1px solid var(--color-border);
+  border-radius: var(--card-radius);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.photo-section-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.photo-section-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  line-height: 1.3;
+}
+
+.photo-section-subtitle {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-top: 0.125rem;
+}
+
+/* ===== PhotoGrid (inline display) ===== */
+.photo-grid {
+  border-radius: var(--card-radius);
+  overflow: hidden;
+}
+
+/* ===== Photo Lightbox ===== */
+.photo-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  cursor: zoom-out;
+  animation: photo-lightbox-in 180ms ease;
+}
+
+@keyframes photo-lightbox-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.photo-lightbox-img {
+  max-width: 100%;
+  max-height: 90vh;
+  border-radius: var(--card-radius);
+  object-fit: contain;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  cursor: default;
+}
+
+.photo-lightbox-close {
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #fff;
+  font-size: 1.75rem;
+  line-height: 1;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.photo-lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+/* ===== Memories Page (Snaps.js) ===== */
+.memories-view-tabs {
+  display: flex;
+  gap: 0.375rem;
+  padding: 0.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  width: fit-content;
+}
+
+.memories-tab-btn {
+  padding: 0.3rem 1rem;
+  border-radius: 20px;
+  border: none;
+  background: transparent;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.memories-tab-btn.active {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.memories-tab-btn:hover:not(.active) {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+/* Photo grid on Memories page */
+.memories-photo-grid {
+  columns: 2;
+  column-gap: 0.75rem;
+}
+
+@media (min-width: 576px) {
+  .memories-photo-grid {
+    columns: 3;
+  }
+}
+
+@media (min-width: 992px) {
+  .memories-photo-grid {
+    columns: 4;
+  }
+}
+
+.memories-photo-card {
+  break-inside: avoid;
+  margin-bottom: 0.75rem;
+  border-radius: var(--card-radius);
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+  background: var(--color-surface);
+  transition: box-shadow 200ms ease, transform 200ms ease;
+}
+
+.memories-photo-card:hover {
+  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-1px);
+}
+
+.memories-photo-img {
+  width: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.memories-photo-caption {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  border-top: 1px solid var(--color-border);
+}
+
+.memories-photo-caption-icon {
+  margin-right: 0.1rem;
+}
+
+.memories-photo-caption-title {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+/* Mixed "All" feed on Memories page */
+.memories-mixed-feed {
+  columns: 1;
+  column-gap: 1rem;
+}
+
+@media (min-width: 576px) {
+  .memories-mixed-feed {
+    columns: 2;
+  }
+}
+
+@media (min-width: 992px) {
+  .memories-mixed-feed {
+    columns: 3;
+  }
+}
+
+.memories-photo-card.compact {
+  margin-bottom: 1rem;
 }
 
 /* ===== Responsive Overrides ===== */

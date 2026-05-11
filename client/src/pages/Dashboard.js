@@ -5,9 +5,13 @@ import categoryMeta from "../helpers/categoryMeta";
 import statusLabels from "../helpers/statusLabels";
 import { getStatusLabel } from "../helpers/statusLabels";
 import { getSnapshotTeaser } from "../helpers/operator";
-import dataService, { STORAGE_KEYS } from "../services/dataService";
+import dataService from "../services/dataService";
+import { computeTravelStats } from "../services/travelStats";
+import { codeToFlag } from "../data/countries";
 
-const categories = Object.keys(STORAGE_KEYS).map((key) => ({
+const CATEGORY_KEYS = ["events", "travel", "cars", "homes", "activities"];
+
+const categories = CATEGORY_KEYS.map((key) => ({
   key,
   label: key.charAt(0).toUpperCase() + key.slice(1),
 }));
@@ -17,6 +21,54 @@ function getGreeting() {
   if (hour < 12) return { text: "Good morning", emoji: "☀️" };
   if (hour < 17) return { text: "Good afternoon", emoji: "🌤" };
   return { text: "Good evening", emoji: "🌙" };
+}
+
+function TravelStatsWidget({ travelItems }) {
+  const stats = computeTravelStats(travelItems);
+  if (stats.totalTrips === 0) return null;
+
+  return (
+    <Link
+      to="/travel/stats"
+      className="text-decoration-none"
+      style={{ display: "block", marginBottom: "1.5rem" }}
+    >
+      <div style={{
+        background: "linear-gradient(135deg, #EAF8FE 0%, #F5EEF8 100%)",
+        border: "1px solid var(--color-border)",
+        borderLeft: "4px solid var(--color-travel)",
+        borderRadius: "var(--card-radius)",
+        padding: "0.875rem 1.125rem",
+        display: "flex",
+        alignItems: "center",
+        gap: "1.5rem",
+        flexWrap: "wrap",
+      }}>
+        <div style={{ fontSize: "1.5rem" }}>✈️</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 700, color: "var(--color-text-primary)", marginBottom: "0.15rem" }}>
+            Your World · {stats.currentYear}
+          </div>
+          <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)" }}>
+            {stats.visitedCountryCount} countries · {stats.visitedContinentCount} continents · {stats.totalDays} days traveling
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: "0.3rem", flexWrap: "wrap" }}>
+          {stats.visitedCountries.slice(0, 6).map(({ code }) => (
+            <span key={code} style={{ fontSize: "1.25rem" }}>{codeToFlag(code)}</span>
+          ))}
+          {stats.visitedCountryCount > 6 && (
+            <span style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-tertiary)", alignSelf: "center" }}>
+              +{stats.visitedCountryCount - 6} more
+            </span>
+          )}
+        </div>
+        <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-travel)", fontWeight: 700, whiteSpace: "nowrap" }}>
+          View Stats →
+        </div>
+      </div>
+    </Link>
+  );
 }
 
 function Dashboard() {
@@ -56,6 +108,7 @@ function Dashboard() {
         label: cat.label,
         meta: cat.meta,
         title:
+          (cat.meta.getPrimaryDisplay ? cat.meta.getPrimaryDisplay(item) : null) ||
           item[cat.meta.primaryField] ||
           item.artist ||
           item.title ||
@@ -109,6 +162,14 @@ function Dashboard() {
         {greeting.text}, LifeSnapper {greeting.emoji}
       </h2>
       <p className="dashboard-welcome-sub">Your life, captured.</p>
+
+      {/* Travel stats widget — only shows once there's travel data */}
+      {(() => {
+        const travelCat = allData.find((c) => c.key === "travel");
+        return travelCat && travelCat.items.length > 0 ? (
+          <TravelStatsWidget travelItems={travelCat.items} />
+        ) : null;
+      })()}
 
       {totalItems === 0 ? (
         <div className="empty-state">

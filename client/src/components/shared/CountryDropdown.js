@@ -1,11 +1,20 @@
 import React from "react";
 import Select from "react-select";
-import { CountryList } from "../../data/countries";
+import { CountryList, codeToFlag } from "../../data/countries";
 
 const options = CountryList.map((c) => ({
   value: c.code,
   label: c.name,
+  continent: c.continent,
+  flag: codeToFlag(c.code),
 }));
+
+const formatOptionLabel = ({ flag, label }) => (
+  <span>
+    <span style={{ marginRight: "0.5em", fontSize: "1.1em" }}>{flag}</span>
+    {label}
+  </span>
+);
 
 const selectStyles = {
   control: (base) => ({
@@ -17,7 +26,11 @@ const selectStyles = {
   menu: (base) => ({ ...base, zIndex: 9999 }),
 };
 
-function CountryDropdown({ value, onChange, name = "country", id, ...props }) {
+/**
+ * Flag-first country picker. Fires onChange with a synthetic event for the country
+ * ISO code, and also calls onFullChange({ code, name, continent }) when available.
+ */
+function CountryDropdown({ value, onChange, onFullChange, name = "country", id, ...props }) {
   const selected = options.find((o) => o.value === value) || null;
 
   const handleChange = (option) => {
@@ -25,6 +38,13 @@ function CountryDropdown({ value, onChange, name = "country", id, ...props }) {
       target: { name, value: option ? option.value : "" },
     };
     onChange(syntheticEvent);
+    if (onFullChange) {
+      onFullChange(
+        option
+          ? { code: option.value, name: option.label, continent: option.continent }
+          : null
+      );
+    }
   };
 
   return (
@@ -33,9 +53,10 @@ function CountryDropdown({ value, onChange, name = "country", id, ...props }) {
       options={options}
       value={selected}
       onChange={handleChange}
-      placeholder="Search countries..."
+      placeholder="🌍 Search countries..."
       isClearable
       styles={selectStyles}
+      formatOptionLabel={formatOptionLabel}
       aria-label="Country"
       {...props}
     />
