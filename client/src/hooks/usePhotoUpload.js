@@ -45,18 +45,18 @@ export function usePhotoUpload() {
       const userId = session.user.id;
 
       const compressed = await imageCompression(file, COMPRESSION_OPTIONS);
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
 
-      // Use itemId if available; otherwise generate a stable temporary ID
-      // for this upload session. The resulting URL is what gets stored.
+      // Always use .jpg regardless of input format — browser-image-compression
+      // outputs a JPEG-compatible blob, and a fixed extension means upsert: true
+      // always overwrites the same path when a slot is replaced.
       const pathItemId = itemId || crypto.randomUUID();
-      const path = `${userId}/${pathItemId}/${slot}.${ext}`;
+      const path = `${userId}/${pathItemId}/${slot}.jpg`;
 
       const { error: uploadError } = await supabase.storage
         .from(BUCKET)
         .upload(path, compressed, {
           upsert: true,
-          contentType: compressed.type || `image/${ext}`,
+          contentType: "image/jpeg",
         });
 
       if (uploadError) throw uploadError;
