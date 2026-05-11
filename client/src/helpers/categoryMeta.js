@@ -78,13 +78,21 @@ const categoryMeta = {
     secondaryFields: ["locationName", "city"],
     dateField: "startDate",
   },
-  wines: {
+  cellar: {
     icon: "🍷",
-    color: "var(--color-wines, #8B3A8F)",
+    color: "var(--color-cellar, #8B3A8F)",
     primaryField: "wineName",
     secondaryFields: ["winery", "vintage", "region"],
     dateField: "startDate",
+    getPrimaryDisplay: (item) => {
+      if (item.subType === "whiskey") return item.whiskyName || "";
+      return item.wineName || "";
+    },
     getSecondaryDisplay: (item) => {
+      if (item.subType === "whiskey") {
+        const parts = [item.distillery, item.whiskyType, item.ageStatement].filter(Boolean);
+        return parts.join(" · ");
+      }
       const parts = [item.winery, item.vintage, item.region].filter(Boolean);
       return parts.join(" · ");
     },

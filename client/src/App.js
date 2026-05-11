@@ -7,7 +7,7 @@ import TravelList from "./features/travel/components/TravelList";
 import ConcertList from "./features/concerts/components/ConcertList";
 import EventList from "./features/events/components/EventList";
 import ActivityList from "./features/activities/components/ActivityList";
-import WineList from "./features/wines/components/WineList";
+import CellarList from "./features/cellar/components/CellarList";
 import Dashboard from "./pages/Dashboard";
 import Timeline from "./pages/Timeline";
 import Snaps from "./pages/Snaps";
@@ -15,6 +15,7 @@ import Settings from "./pages/Settings";
 import SharedFeed from "./pages/SharedFeed";
 import Recommendations from "./pages/Recommendations";
 import InviteWelcome from "./pages/InviteWelcome";
+import MyPeople from "./pages/MyPeople";
 import TravelStatsPage from "./pages/TravelStatsPage";
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
@@ -118,9 +119,10 @@ function AppShell() {
             <Route path="/activities" element={<ActivityList />} />
             <Route path="/concerts" element={<ConcertList />} />
             <Route path="/events" element={<EventList />} />
-            <Route path="/wines" element={<WineList />} />
+            <Route path="/cellar" element={<CellarList />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/shared" element={<SharedFeed />} />
+            <Route path="/people" element={<MyPeople />} />
             <Route path="/recommendations" element={<Recommendations />} />
             <Route path="/invite/:token" element={<InviteWelcome />} />
           </Routes>

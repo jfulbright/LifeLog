@@ -30,7 +30,7 @@ const statusLabels = {
     done: "Done",
     wishlist: "Wishlist",
   },
-  wines: {
+  cellar: {
     tried: "Enjoyed",
     cellar: "In Cellar",
     wishlist: "Wishlist",

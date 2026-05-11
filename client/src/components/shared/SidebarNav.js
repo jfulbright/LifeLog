@@ -2,35 +2,34 @@ import React from "react";
 import { NavLink } from "react-router-dom";
 import categoryMeta from "../../helpers/categoryMeta";
 
-const navItems = [
+const navigateItems = [
   { path: "/", label: "Home", icon: "🏠" },
   { path: "/timeline", label: "Timeline", icon: "📅" },
-  { path: "/snaps", label: "Memories", icon: "📸" },
-  { path: "/shared", label: "Shared with Me", icon: "🤝" },
-  { path: "/recommendations", label: "For You", icon: "⭐" },
+  { path: "/snaps", label: "My Memories", icon: "📸" },
+];
+
+const socialItems = [
+  { path: "/people", label: "My People", icon: "👥" },
+  { path: "/shared", label: "Shared Experiences", icon: "🤝", badge: "notifications" },
+  { path: "/recommendations", label: "Recommendations", icon: "⭐" },
 ];
 
 const categoryItems = [
   { path: "/events", key: "events", label: "Events" },
   { path: "/travel", key: "travel", label: "Travel" },
   { path: "/activities", key: "activities", label: "Activities" },
-  { path: "/wines", key: "wines", label: "Wines" },
+  { path: "/cellar", key: "cellar", label: "Cellar" },
   { path: "/cars", key: "cars", label: "Cars" },
   { path: "/homes", key: "homes", label: "Homes" },
 ];
 
-/**
- * Desktop sidebar and mobile Offcanvas content share the same nav list.
- * This component renders the nav items; the parent decides whether
- * to put them in a sidebar or Offcanvas.
- */
 function SidebarNav({ counts = {}, notificationCount = 0, onItemClick }) {
   return (
     <nav style={{ paddingBottom: "1rem", display: "flex", flexDirection: "column", height: "calc(100% - 60px)" }}>
       <div style={{ flex: 1 }}>
+        {/* Navigate section */}
         <div className="sidebar-section-label">Navigate</div>
-
-        {navItems.map((item) => (
+        {navigateItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
@@ -42,7 +41,23 @@ function SidebarNav({ counts = {}, notificationCount = 0, onItemClick }) {
           >
             <span className="sidebar-nav-icon">{item.icon}</span>
             {item.label}
-            {item.path === "/shared" && notificationCount > 0 && (
+          </NavLink>
+        ))}
+
+        {/* Social section */}
+        <div className="sidebar-section-label" style={{ marginTop: "0.5rem" }}>Social</div>
+        {socialItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) =>
+              `sidebar-nav-item ${isActive ? "active" : ""}`
+            }
+            onClick={onItemClick}
+          >
+            <span className="sidebar-nav-icon">{item.icon}</span>
+            {item.label}
+            {item.badge === "notifications" && notificationCount > 0 && (
               <span className="sidebar-nav-count sidebar-nav-count--alert">
                 {notificationCount}
               </span>
@@ -50,8 +65,8 @@ function SidebarNav({ counts = {}, notificationCount = 0, onItemClick }) {
           </NavLink>
         ))}
 
-        <div className="sidebar-section-label" style={{ marginTop: "0.5rem" }}>Categories</div>
-
+        {/* Snap Categories section */}
+        <div className="sidebar-section-label" style={{ marginTop: "0.5rem" }}>Snap Categories</div>
         {categoryItems.map((item) => {
           const meta = categoryMeta[item.key] || {};
           const count = counts[item.key] || 0;

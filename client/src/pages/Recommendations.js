@@ -106,7 +106,7 @@ function Recommendations() {
   return (
     <>
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4 className="mb-0" style={{ fontWeight: 700 }}>For You</h4>
+        <h4 className="mb-0" style={{ fontWeight: 700 }}>Recommendations</h4>
         {enriched.length > 0 && (
           <Badge bg="warning" text="dark" pill>
             {enriched.length} new

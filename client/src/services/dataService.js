@@ -22,7 +22,7 @@ export const STORAGE_KEYS = {
 };
 
 // Category keys that are stored in Supabase (not localStorage)
-const SUPABASE_CATEGORIES = new Set(["events", "concerts", "travel", "cars", "homes", "activities", "wines"]);
+const SUPABASE_CATEGORIES = new Set(["events", "concerts", "travel", "cars", "homes", "activities", "cellar"]);
 
 // ── Auth helper ────────────────────────────────────────────────────────────────
 

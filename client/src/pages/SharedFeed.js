@@ -479,7 +479,7 @@ function SharedFeed() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.25rem", gap: "1rem" }}>
         <div>
           <h4 style={{ fontWeight: 700, marginBottom: "0.25rem" }}>
-            Shared with Me 🤝
+            Shared Experiences
             {pendingCount > 0 && (
               <Badge bg="warning" text="dark" style={{ marginLeft: "0.5rem", fontSize: "0.7rem", verticalAlign: "middle" }}>
                 {pendingCount} pending
@@ -487,7 +487,7 @@ function SharedFeed() {
             )}
           </h4>
           <p style={{ color: "var(--color-text-secondary)", margin: 0, fontSize: "var(--font-size-sm)" }}>
-            Entries shared with your rings or tagged directly to you.
+            Trips, events, and memories others have invited you to collaborate on.
           </p>
         </div>
       </div>

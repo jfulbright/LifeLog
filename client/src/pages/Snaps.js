@@ -4,7 +4,7 @@ import categoryMeta from "../helpers/categoryMeta";
 import { getAllSnapshots, getItemPhotos } from "../helpers/operator";
 import dataService from "../services/dataService";
 
-const CATEGORY_KEYS = ["events", "concerts", "travel", "cars", "homes", "activities", "wines"];
+const CATEGORY_KEYS = ["events", "concerts", "travel", "cars", "homes", "activities", "cellar"];
 
 const categories = CATEGORY_KEYS.map((key) => ({
   key,

@@ -7,10 +7,10 @@ import {
   parseOcrText,
   searchWines,
   fetchWineDetail,
-} from "../../features/wines/api/wineApi";
+} from "../../features/cellar/api/cellarApi";
 import { usePhotoUpload } from "../../hooks/usePhotoUpload";
 
-const WINE_COLOR = "var(--color-wines, #8B3A8F)";
+const WINE_COLOR = "var(--color-cellar, #8B3A8F)";
 
 /**
  * Three-path label scan button for WineForm.

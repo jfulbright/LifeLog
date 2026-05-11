@@ -4,6 +4,8 @@ import { getReflectionFields } from "../../helpers/reflection.schema";
 
 export const WINE_TYPES = ["Red", "White", "Rosé", "Sparkling", "Dessert", "Fortified", "Orange"];
 
+export const WHISKEY_TYPES = ["Bourbon", "Scotch", "Rye", "Irish", "Japanese", "Canadian", "Other"];
+
 export const COMMON_VARIETALS = [
   "Cabernet Sauvignon", "Pinot Noir", "Merlot", "Syrah / Shiraz", "Zinfandel",
   "Malbec", "Tempranillo", "Sangiovese", "Grenache", "Nebbiolo",
@@ -12,17 +14,32 @@ export const COMMON_VARIETALS = [
   "Blend", "Other",
 ];
 
-const wineSchema = [
+const cellarSchema = [
+  // ── Sub-type selector ──────────────────────────────────────────────────────
+  {
+    name: "subType",
+    label: "Category",
+    type: "select",
+    options: ["wine", "whiskey"],
+    optionLabels: { wine: "Wine", whiskey: "Whiskey" },
+    required: true,
+    section: "Main",
+    order: -1,
+  },
+
   // ── Main ────────────────────────────────────────────────────────────────────
   {
     name: "status",
     label: "Status",
     type: "select",
-    options: getStatusValues("wines"),
+    options: getStatusValues("cellar"),
+    optionLabels: { tried: "Enjoyed", cellar: "In Cellar", wishlist: "Wishlist" },
     required: true,
     section: "Main",
     order: 0,
   },
+
+  // ── Wine-specific fields ───────────────────────────────────────────────────
   {
     name: "wineName",
     label: "Wine Name",
@@ -32,6 +49,7 @@ const wineSchema = [
     placeholder: "e.g. Caymus Cabernet Sauvignon",
     section: "Main",
     order: 1,
+    visibleWhen: { subType: "wine" },
   },
   {
     name: "winery",
@@ -41,6 +59,7 @@ const wineSchema = [
     placeholder: "e.g. Caymus Vineyards",
     section: "Main",
     order: 2,
+    visibleWhen: { subType: "wine" },
   },
   {
     name: "vintage",
@@ -52,6 +71,7 @@ const wineSchema = [
     placeholder: "e.g. 2019",
     section: "Main",
     order: 3,
+    visibleWhen: { subType: "wine" },
   },
   {
     name: "wineType",
@@ -61,6 +81,7 @@ const wineSchema = [
     optional: true,
     section: "Main",
     order: 4,
+    visibleWhen: { subType: "wine" },
   },
   {
     name: "varietal",
@@ -71,15 +92,80 @@ const wineSchema = [
     placeholder: "e.g. Cabernet Sauvignon",
     section: "Main",
     order: 5,
+    visibleWhen: { subType: "wine" },
   },
 
-  // ── Region ──────────────────────────────────────────────────────────────────
+  // ── Whiskey-specific fields ────────────────────────────────────────────────
   {
-    name: "region",
-    label: "Region / Appellation",
+    name: "whiskyName",
+    label: "Whiskey Name",
+    type: "text",
+    required: true,
+    fullWidth: true,
+    placeholder: "e.g. Buffalo Trace, Lagavulin 16",
+    section: "Main",
+    order: 1,
+    visibleWhen: { subType: "whiskey" },
+  },
+  {
+    name: "distillery",
+    label: "Distillery",
     type: "text",
     optional: true,
-    placeholder: "e.g. Napa Valley, Burgundy, Rioja",
+    placeholder: "e.g. Buffalo Trace, Lagavulin",
+    section: "Main",
+    order: 2,
+    visibleWhen: { subType: "whiskey" },
+  },
+  {
+    name: "whiskyType",
+    label: "Whiskey Type",
+    type: "select",
+    options: WHISKEY_TYPES,
+    optional: true,
+    section: "Main",
+    order: 3,
+    visibleWhen: { subType: "whiskey" },
+  },
+  {
+    name: "ageStatement",
+    label: "Age Statement",
+    type: "text",
+    optional: true,
+    placeholder: "e.g. 12 Year, NAS",
+    section: "Main",
+    order: 4,
+    visibleWhen: { subType: "whiskey" },
+  },
+  {
+    name: "abv",
+    label: "ABV %",
+    type: "text",
+    optional: true,
+    inputMode: "decimal",
+    placeholder: "e.g. 45.0",
+    section: "Main",
+    order: 5,
+    visibleWhen: { subType: "whiskey" },
+  },
+  {
+    name: "caskType",
+    label: "Cask Type",
+    type: "text",
+    optional: true,
+    placeholder: "e.g. Ex-Bourbon, Sherry Butt",
+    section: "Main",
+    order: 6,
+    visibleWhen: { subType: "whiskey" },
+  },
+
+  // ── Region (shared) ───────────────────────────────────────────────────────
+  {
+    name: "region",
+    label: "Region",
+    type: "text",
+    optional: true,
+    placeholder: "e.g. Napa Valley, Islay, Kentucky",
     section: "Region",
     order: 10,
   },
@@ -96,10 +182,10 @@ const wineSchema = [
   { name: "lng", label: "Lng", type: "text", hidden: true },
   { name: "continent", label: "Continent", type: "text", hidden: true },
 
-  // ── Where You Drank It (Tried only) ─────────────────────────────────────────
+  // ── Where (tried only) ────────────────────────────────────────────────────
   {
     name: "city",
-    label: "City (Where Tried)",
+    label: "City (Where Enjoyed)",
     type: "city-autocomplete",
     optional: true,
     placeholder: "e.g. Florence, San Francisco",
@@ -120,7 +206,7 @@ const wineSchema = [
     name: "occasion",
     label: "Occasion",
     type: "select",
-    options: ["Everyday", "Dinner Party", "Gift", "Special Occasion", "Restaurant", "Winery Visit", "Cellar"],
+    options: ["Everyday", "Dinner Party", "Gift", "Special Occasion", "Restaurant", "Winery Visit", "Distillery Visit", "Tasting", "Cellar"],
     optional: true,
     visibleWhen: { status: "tried" },
     section: "Where",
@@ -150,14 +236,14 @@ const wineSchema = [
     hidden: true,
   },
 
-  // ── Taste Notes (Tried only) ─────────────────────────────────────────────────
+  // ── Tasting Notes — Wine (tried only) ─────────────────────────────────────
   {
     name: "tasteNotes",
     label: "Taste Notes",
     type: "textarea",
     optional: true,
     placeholder: "Aromas, tannins, acidity, finish…",
-    visibleWhen: { status: "tried" },
+    visibleWhen: { status: "tried", subType: "wine" },
     section: "Taste",
     order: 22,
     fullWidth: true,
@@ -173,7 +259,42 @@ const wineSchema = [
     order: 23,
   },
 
-  // ── Price (Tried + Wishlist) ─────────────────────────────────────────────────
+  // ── Tasting Notes — Whiskey (tried only) ──────────────────────────────────
+  {
+    name: "nose",
+    label: "Nose",
+    type: "textarea",
+    optional: true,
+    placeholder: "e.g. Vanilla, caramel, toasted oak…",
+    visibleWhen: { status: "tried", subType: "whiskey" },
+    section: "Taste",
+    order: 20,
+    fullWidth: true,
+  },
+  {
+    name: "palate",
+    label: "Palate",
+    type: "textarea",
+    optional: true,
+    placeholder: "e.g. Rich toffee, dark brown sugar, warming spice…",
+    visibleWhen: { status: "tried", subType: "whiskey" },
+    section: "Taste",
+    order: 21,
+    fullWidth: true,
+  },
+  {
+    name: "finish",
+    label: "Finish",
+    type: "textarea",
+    optional: true,
+    placeholder: "e.g. Long, smooth with lingering vanilla…",
+    visibleWhen: { status: "tried", subType: "whiskey" },
+    section: "Taste",
+    order: 22,
+    fullWidth: true,
+  },
+
+  // ── Price (Tried + Wishlist) ──────────────────────────────────────────────
   {
     name: "pricePerBottle",
     label: "Price / Bottle",
@@ -187,7 +308,7 @@ const wineSchema = [
     order: 26,
   },
 
-  // ── Cellar Fields (Cellar only) ──────────────────────────────────────────────
+  // ── Cellar Fields (cellar status only) ────────────────────────────────────
   {
     name: "bottleCount",
     label: "Bottles in Cellar",
@@ -216,7 +337,7 @@ const wineSchema = [
     label: "Where Purchased",
     type: "text",
     optional: true,
-    placeholder: "e.g. Total Wine, estate winery, auction",
+    placeholder: "e.g. Total Wine, distillery, auction",
     visibleWhen: { status: "cellar" },
     section: "Cellar",
     order: 42,
@@ -254,7 +375,7 @@ const wineSchema = [
     label: "Acquisition Story",
     type: "textarea",
     optional: true,
-    placeholder: "e.g. Bought at the estate after a tasting in Napa, August 2025",
+    placeholder: "e.g. Bought at the estate after a tasting…",
     visibleWhen: { status: "cellar" },
     section: "Cellar",
     order: 46,
@@ -270,13 +391,13 @@ const wineSchema = [
     order: 47,
   },
 
-  // ── Wishlist ─────────────────────────────────────────────────────────────────
+  // ── Wishlist ──────────────────────────────────────────────────────────────
   {
     name: "wishlistReason",
     label: "Why do you want to try this?",
     type: "textarea",
     optional: true,
-    placeholder: "What draws you to this wine?",
+    placeholder: "What draws you to this bottle?",
     visibleWhen: { status: "wishlist" },
     section: "Planning",
     order: 37,
@@ -292,10 +413,10 @@ const wineSchema = [
     order: 38,
   },
 
-  // ── Reflection (Tried only) ──────────────────────────────────────────────────
+  // ── Reflection (tried only) ───────────────────────────────────────────────
   ...getReflectionFields("tried"),
 
-  // ── Social ───────────────────────────────────────────────────────────────────
+  // ── Social ────────────────────────────────────────────────────────────────
   {
     name: "visibilityControl",
     type: "visible-to",
@@ -306,7 +427,7 @@ const wineSchema = [
   },
   {
     name: "recommendation",
-    label: "Recommend this wine",
+    label: "Recommend this",
     type: "recommend",
     optional: true,
     visibleWhen: { status: "tried" },
@@ -314,7 +435,7 @@ const wineSchema = [
     order: 51,
   },
 
-  // ── Label Photo ──────────────────────────────────────────────────────────────
+  // ── Label Photo ───────────────────────────────────────────────────────────
   {
     name: "photoLink",
     label: "Label Photo URL",
@@ -332,7 +453,7 @@ const wineSchema = [
     hidden: true,
   },
 
-  // ── Shared base fields ───────────────────────────────────────────────────────
+  // ── Shared base fields ────────────────────────────────────────────────────
   ...baseSchema
     .filter((f) => ["tags", "createdAt", "section"].includes(f.name))
     .map((f) => ({
@@ -343,4 +464,4 @@ const wineSchema = [
     })),
 ];
 
-export default wineSchema;
+export default cellarSchema;

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Form } from "react-bootstrap";
-import { searchWines, fetchWineDetail, fetchWineryDetail } from "../../features/wines/api/wineApi";
+import { searchWines, fetchWineDetail, fetchWineryDetail } from "../../features/cellar/api/cellarApi";
 
 const TYPE_ICONS = { wine: "🍷", grape: "🍇", winery: "🏠", region: "🗺️" };
 const SHOW_TYPES = ["wine", "winery", "grape", "region"];
@@ -236,7 +236,7 @@ function WineSearch({ value, onChange, onWineSelect, id, placeholder = "e.g. Opu
                   padding: "0.15rem 0.4rem",
                   borderRadius: "10px",
                   background: "rgba(139,58,143,0.1)",
-                  color: "var(--color-wines, #8B3A8F)",
+                  color: "var(--color-cellar, #8B3A8F)",
                   fontWeight: 600,
                 }}>
                   {wine.wineType}

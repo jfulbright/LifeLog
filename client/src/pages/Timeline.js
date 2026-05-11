@@ -5,7 +5,7 @@ import { getStatusLabel } from "../helpers/statusLabels";
 import { getSnapshotTeaser } from "../helpers/operator";
 import dataService from "../services/dataService";
 
-const CATEGORY_KEYS = ["events", "travel", "cars", "homes", "activities", "wines"];
+const CATEGORY_KEYS = ["events", "travel", "cars", "homes", "activities", "cellar"];
 
 const categories = CATEGORY_KEYS.map((key) => ({
   key,

@@ -1,19 +1,54 @@
 import React, { useMemo } from "react";
 import { Button } from "react-bootstrap";
-import WineForm from "./WineForm";
+import CellarForm from "./CellarForm";
 import ItemCardList from "../../../components/shared/ItemCardList";
 import StatusToggle from "../../../components/shared/StatusToggle";
 import FormPanel from "../../../components/shared/FormPanel";
 import SaveToast from "../../../components/shared/SaveToast";
 import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
-import wineSchema, { WINE_TYPES } from "../wineSchema";
+import cellarSchema, { WINE_TYPES } from "../cellarSchema";
 import useCategory from "../../../hooks/useCategory";
 import {
   getStatusFilterOptions,
   filterByStatus,
 } from "../../../helpers/filterUtils";
 
-const WINE_COLOR = "var(--color-wines, #8B3A8F)";
+const CELLAR_COLOR = "var(--color-cellar, #8B3A8F)";
+
+function SubTypeFilter({ value, onChange }) {
+  const options = [
+    { key: "all", label: "All" },
+    { key: "wine", label: "Wine" },
+    { key: "whiskey", label: "Whiskey" },
+  ];
+  return (
+    <div className="d-flex gap-2 flex-wrap mb-3">
+      {options.map(({ key, label }) => {
+        const isActive = value === key;
+        return (
+          <button
+            key={key}
+            type="button"
+            onClick={() => onChange(key)}
+            style={{
+              padding: "0.3rem 0.8rem",
+              borderRadius: "20px",
+              border: `2px solid ${CELLAR_COLOR}`,
+              background: isActive ? CELLAR_COLOR : "transparent",
+              color: isActive ? "#fff" : CELLAR_COLOR,
+              fontWeight: 600,
+              fontSize: "var(--font-size-sm)",
+              cursor: "pointer",
+              transition: "background 0.15s, color 0.15s",
+            }}
+          >
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 function WineTypeFilter({ value, onChange }) {
   return (
@@ -27,15 +62,16 @@ function WineTypeFilter({ value, onChange }) {
             type="button"
             onClick={() => onChange(key)}
             style={{
-              padding: "0.3rem 0.8rem",
-              borderRadius: "20px",
-              border: `2px solid ${WINE_COLOR}`,
-              background: isActive ? WINE_COLOR : "transparent",
-              color: isActive ? "#fff" : WINE_COLOR,
-              fontWeight: 600,
-              fontSize: "var(--font-size-sm)",
+              padding: "0.25rem 0.6rem",
+              borderRadius: "16px",
+              border: `1.5px solid ${CELLAR_COLOR}`,
+              background: isActive ? CELLAR_COLOR : "transparent",
+              color: isActive ? "#fff" : CELLAR_COLOR,
+              fontWeight: 500,
+              fontSize: "0.7rem",
               cursor: "pointer",
               transition: "background 0.15s, color 0.15s",
+              opacity: 0.85,
             }}
           >
             {type}
@@ -46,19 +82,13 @@ function WineTypeFilter({ value, onChange }) {
   );
 }
 
-function WineStats({ items }) {
+function CellarStats({ items }) {
   const stats = useMemo(() => {
     const tried = items.filter((i) => i.status === "tried");
     const cellar = items.filter((i) => i.status === "cellar");
     const wishlist = items.filter((i) => i.status === "wishlist");
-
-    const byType = {};
-    tried.forEach((i) => {
-      const t = i.wineType || "Other";
-      byType[t] = (byType[t] || 0) + 1;
-    });
-
-    const topType = Object.entries(byType).sort((a, b) => b[1] - a[1])[0];
+    const wines = items.filter((i) => (i.subType || "wine") === "wine");
+    const whiskeys = items.filter((i) => i.subType === "whiskey");
 
     const totalBottles = cellar.reduce((sum, i) => sum + (Number(i.bottleCount) || 1), 0);
     const totalInvested = cellar.reduce(
@@ -66,7 +96,14 @@ function WineStats({ items }) {
       0
     );
 
-    return { tried: tried.length, wishlist: wishlist.length, totalBottles, totalInvested, topType };
+    return {
+      tried: tried.length,
+      wishlist: wishlist.length,
+      totalBottles,
+      totalInvested,
+      wineCount: wines.length,
+      whiskeyCount: whiskeys.length,
+    };
   }, [items]);
 
   if (items.length === 0) return null;
@@ -94,11 +131,11 @@ function WineStats({ items }) {
           letterSpacing: "0.05em",
         }}
       >
-        Your wines
+        Your cellar
       </div>
       {stats.tried > 0 && (
         <div>
-          <span style={{ fontWeight: 800, fontSize: "1.1rem", color: WINE_COLOR }}>{stats.tried}</span>
+          <span style={{ fontWeight: 800, fontSize: "1.1rem", color: CELLAR_COLOR }}>{stats.tried}</span>
           <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-sm)", marginLeft: "0.3rem" }}>
             enjoyed
           </span>
@@ -106,7 +143,7 @@ function WineStats({ items }) {
       )}
       {stats.wishlist > 0 && (
         <div>
-          <span style={{ fontWeight: 800, fontSize: "1.1rem", color: WINE_COLOR }}>{stats.wishlist}</span>
+          <span style={{ fontWeight: 800, fontSize: "1.1rem", color: CELLAR_COLOR }}>{stats.wishlist}</span>
           <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-sm)", marginLeft: "0.3rem" }}>
             on wishlist
           </span>
@@ -114,7 +151,7 @@ function WineStats({ items }) {
       )}
       {stats.totalBottles > 0 && (
         <div>
-          <span style={{ fontWeight: 800, fontSize: "1.1rem", color: WINE_COLOR }}>{stats.totalBottles}</span>
+          <span style={{ fontWeight: 800, fontSize: "1.1rem", color: CELLAR_COLOR }}>{stats.totalBottles}</span>
           <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-sm)", marginLeft: "0.3rem" }}>
             in cellar
           </span>
@@ -122,7 +159,7 @@ function WineStats({ items }) {
       )}
       {stats.totalInvested > 0 && (
         <div>
-          <span style={{ fontWeight: 800, fontSize: "1.1rem", color: WINE_COLOR }}>
+          <span style={{ fontWeight: 800, fontSize: "1.1rem", color: CELLAR_COLOR }}>
             ${stats.totalInvested.toLocaleString()}
           </span>
           <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-sm)", marginLeft: "0.3rem" }}>
@@ -130,10 +167,11 @@ function WineStats({ items }) {
           </span>
         </div>
       )}
-      {stats.topType && (
+      {stats.wineCount > 0 && stats.whiskeyCount > 0 && (
         <div>
           <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-sm)" }}>
-            Mostly <strong style={{ color: WINE_COLOR }}>{stats.topType[0]}</strong>
+            <strong style={{ color: CELLAR_COLOR }}>{stats.wineCount}</strong> wines ·{" "}
+            <strong style={{ color: CELLAR_COLOR }}>{stats.whiskeyCount}</strong> whiskeys
           </span>
         </div>
       )}
@@ -141,11 +179,12 @@ function WineStats({ items }) {
   );
 }
 
-function WineList() {
+function CellarList() {
+  const [subTypeFilter, setSubTypeFilter] = React.useState("all");
   const [wineTypeFilter, setWineTypeFilter] = React.useState("all");
 
   const {
-    items: wines,
+    items: cellarItems,
     loading,
     formData,
     setFormData,
@@ -164,71 +203,84 @@ function WineList() {
     snapPromptTitle,
     handleSnapSave,
     dismissSnapPrompt,
-  } = useCategory("wines", { schema: wineSchema });
+  } = useCategory("cellar", { schema: cellarSchema });
 
-  const wineStatuses = getStatusFilterOptions("wines");
-  const statusFiltered = filterByStatus(wines, filterStatus);
-  const filteredWines =
-    wineTypeFilter === "all"
-      ? statusFiltered
-      : statusFiltered.filter((i) => i.wineType === wineTypeFilter);
+  const cellarStatuses = getStatusFilterOptions("cellar");
+  const statusFiltered = filterByStatus(cellarItems, filterStatus);
+
+  const filteredItems = useMemo(() => {
+    let items = statusFiltered;
+    if (subTypeFilter !== "all") {
+      items = items.filter((i) => (i.subType || "wine") === subTypeFilter);
+    }
+    if (subTypeFilter === "wine" && wineTypeFilter !== "all") {
+      items = items.filter((i) => i.wineType === wineTypeFilter);
+    }
+    return items;
+  }, [statusFiltered, subTypeFilter, wineTypeFilter]);
+
+  const getItemIcon = (item) => {
+    return (item.subType || "wine") === "whiskey" ? "🥃" : "🍷";
+  };
 
   return (
     <>
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h4 className="mb-0" style={{ fontWeight: 700 }}>
-          🍷 Wines
+          🍷 Cellar
         </h4>
         <Button variant="primary" size="sm" onClick={openForm}>
-          + Log Wine
+          + Add Bottle
         </Button>
       </div>
 
-      <WineStats items={wines} />
+      <CellarStats items={cellarItems} />
 
       <StatusToggle
-        category="wines"
-        options={wineStatuses}
+        category="cellar"
+        options={cellarStatuses}
         value={filterStatus}
         onChange={setFilterStatus}
       />
 
-      <WineTypeFilter value={wineTypeFilter} onChange={setWineTypeFilter} />
+      <SubTypeFilter value={subTypeFilter} onChange={setSubTypeFilter} />
 
-      {filteredWines.length === 0 && !loading && (
+      {subTypeFilter === "wine" && (
+        <WineTypeFilter value={wineTypeFilter} onChange={setWineTypeFilter} />
+      )}
+
+      {filteredItems.length === 0 && !loading && (
         <div className="empty-state">
-          <div className="empty-state-icon" style={{ backgroundColor: WINE_COLOR, color: "#fff" }}>
+          <div className="empty-state-icon" style={{ backgroundColor: CELLAR_COLOR, color: "#fff" }}>
             🍷
           </div>
           <div className="empty-state-title">
-            {wines.length === 0 ? "No wines logged yet" : "No matches"}
+            {cellarItems.length === 0 ? "No bottles logged yet" : "No matches"}
           </div>
           <div className="empty-state-text">
-            {wines.length === 0
-              ? "Start logging wines you've tried, bottles in your cellar, or ones on your wishlist."
-              : "No wines match this filter."}
+            {cellarItems.length === 0
+              ? "Start logging wines and whiskeys you've enjoyed, bottles in your cellar, or ones on your wishlist."
+              : "No items match this filter."}
           </div>
-          {wines.length === 0 && (
+          {cellarItems.length === 0 && (
             <Button variant="primary" onClick={openForm}>
-              Log Your First Wine
+              Log Your First Bottle
             </Button>
           )}
         </div>
       )}
 
       <ItemCardList
-        category="wines"
-        items={filteredWines}
-        schema={wineSchema}
+        category="cellar"
+        items={filteredItems}
+        schema={cellarSchema}
         onEdit={startEditing}
         onDelete={deleteItem}
         renderCompactExtra={(item) => {
-          const parts = [
-            item.vintage,
-            item.varietal,
-            item.region,
-            item.linkedTripTitle ? `✈️ ${item.linkedTripTitle}` : null,
-          ].filter(Boolean);
+          const isWhiskey = item.subType === "whiskey";
+          const parts = isWhiskey
+            ? [item.distillery, item.whiskyType, item.ageStatement, item.region].filter(Boolean)
+            : [item.vintage, item.varietal, item.region, item.linkedTripTitle ? `✈️ ${item.linkedTripTitle}` : null].filter(Boolean);
           return parts.length > 0 ? (
             <div
               style={{
@@ -237,7 +289,7 @@ function WineList() {
                 color: "var(--color-text-tertiary)",
               }}
             >
-              {parts.join(" · ")}
+              {getItemIcon(item)} {parts.join(" · ")}
             </div>
           ) : null;
         }}
@@ -246,9 +298,9 @@ function WineList() {
       <FormPanel
         show={showForm}
         onHide={closeForm}
-        title={editIndex !== null ? "Edit Wine" : "Log Wine"}
+        title={editIndex !== null ? "Edit Bottle" : "Log Bottle"}
       >
-        <WineForm
+        <CellarForm
           formData={formData}
           setFormData={setFormData}
           onSubmit={handleSubmit}
@@ -259,7 +311,7 @@ function WineList() {
       <SaveToast
         show={showToast}
         onClose={() => setShowToast(false)}
-        message="Wine logged 🍷"
+        message="Bottle logged 🥂"
       />
 
       <SnapCaptureModal
@@ -272,4 +324,4 @@ function WineList() {
   );
 }
 
-export default WineList;
+export default CellarList;

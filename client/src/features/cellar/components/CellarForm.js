@@ -1,30 +1,30 @@
 import React, { useState } from "react";
 import ItemForm from "../../../components/shared/ItemForm";
 import WineSearch from "../../../components/shared/WineSearch";
+import WhiskeySearch from "../../../components/shared/WhiskeySearch";
 import LabelScanButton from "../../../components/shared/LabelScanButton";
-import wineSchema from "../wineSchema";
+import cellarSchema from "../cellarSchema";
 
-function WineForm({ formData, setFormData, onSubmit, onCancel }) {
+const CELLAR_COLOR = "var(--color-cellar, #8B3A8F)";
+
+function CellarForm({ formData, setFormData, onSubmit, onCancel }) {
   const [scanError, setScanError] = useState(null);
   const isReadOnly = !setFormData;
+  const subType = formData.subType || "wine";
 
-  const handleWineSelect = (fields) => {
+  const handleSelect = (fields) => {
     setFormData((prev) => ({ ...prev, ...fields }));
   };
 
   const handleScanResult = (fields) => {
-    // Only clear the error banner when we actually got wine metadata — not
-    // when the result is photo-only (which happens when OCR/Vision fails).
-    const hasWineData = fields.wineName || fields.winery || fields.wineType;
-    if (hasWineData) setScanError(null);
+    const hasData = fields.wineName || fields.whiskyName || fields.winery || fields.distillery || fields.wineType || fields.whiskyType;
+    if (hasData) setScanError(null);
 
     setFormData((prev) => {
       const merged = { ...prev };
       Object.entries(fields).forEach(([key, val]) => {
-        // Only overwrite if the field is currently empty
         if (val && !prev[key]) merged[key] = val;
       });
-      // photoLink and barcodeUpc always overwrite
       if (fields.photoLink) merged.photoLink = fields.photoLink;
       if (fields.barcodeUpc) merged.barcodeUpc = fields.barcodeUpc;
       return merged;
@@ -46,7 +46,6 @@ function WineForm({ formData, setFormData, onSubmit, onCancel }) {
             border: "1px solid rgba(139,58,143,0.15)",
           }}
         >
-          {/* Wine name search */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{
               fontSize: "var(--font-size-xs)",
@@ -58,22 +57,33 @@ function WineForm({ formData, setFormData, onSubmit, onCancel }) {
             }}>
               Search by name
             </div>
-            <WineSearch
-              value={formData.wineName || ""}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, wineName: e.target.value }))
-              }
-              onWineSelect={handleWineSelect}
-              placeholder="Search wines, wineries, varietals…"
-            />
+            {subType === "whiskey" ? (
+              <WhiskeySearch
+                value={formData.whiskyName || ""}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, whiskyName: e.target.value }))
+                }
+                onWhiskeySelect={handleSelect}
+                placeholder="Search whiskeys, distilleries…"
+              />
+            ) : (
+              <WineSearch
+                value={formData.wineName || ""}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, wineName: e.target.value }))
+                }
+                onWineSelect={handleSelect}
+                placeholder="Search wines, wineries, varietals…"
+              />
+            )}
           </div>
 
-          {/* Label scan button */}
           <div style={{ flexShrink: 0, paddingTop: "1.55rem" }}>
             <LabelScanButton
               onResult={handleScanResult}
               onError={(msg) => setScanError(msg)}
               itemId={formData.id}
+              subType={subType}
             />
           </div>
         </div>
@@ -93,16 +103,16 @@ function WineForm({ formData, setFormData, onSubmit, onCancel }) {
       )}
 
       <ItemForm
-        schema={wineSchema}
+        schema={cellarSchema}
         formData={formData}
         setFormData={setFormData}
         onSubmit={onSubmit}
         onCancel={onCancel}
-        title="Add a Wine"
-        buttonText="Wine"
+        title={subType === "whiskey" ? "Add a Whiskey" : "Add a Wine"}
+        buttonText={subType === "whiskey" ? "Whiskey" : "Wine"}
       />
     </div>
   );
 }
 
-export default WineForm;
+export default CellarForm;

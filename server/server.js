@@ -226,6 +226,117 @@ app.get("/api/wine/winery/:slug", async (req, res) => {
 });
 
 /**
+ * GET /api/whiskey/search?q=
+ * Proxies whiskey/distillery search to WhiskeyFYI.
+ */
+app.get("/api/whiskey/search", async (req, res) => {
+  const q = req.query.q;
+  if (!q || !String(q).trim()) {
+    return res.status(400).json({ error: "q is required" });
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5_000);
+
+  try {
+    const response = await fetch(
+      `https://whiskeyfyi.com/api/search/?q=${encodeURIComponent(String(q).trim())}`,
+      {
+        signal: controller.signal,
+        headers: { Accept: "application/json" },
+      }
+    );
+    clearTimeout(timer);
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: `WhiskeyFYI error: ${response.statusText}` });
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    clearTimeout(timer);
+    if (err.name === "AbortError") {
+      return res.status(504).json({ error: "WhiskeyFYI search timed out" });
+    }
+    console.error("WhiskeyFYI search error:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+/**
+ * GET /api/whiskey/detail/:slug
+ * Proxies full whiskey expression detail from WhiskeyFYI.
+ */
+app.get("/api/whiskey/detail/:slug", async (req, res) => {
+  const { slug } = req.params;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(
+      `https://whiskeyfyi.com/api/expression/${encodeURIComponent(slug)}/`,
+      {
+        signal: controller.signal,
+        headers: { Accept: "application/json" },
+      }
+    );
+    clearTimeout(timer);
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: `WhiskeyFYI error: ${response.statusText}` });
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    clearTimeout(timer);
+    if (err.name === "AbortError") {
+      return res.status(504).json({ error: "WhiskeyFYI detail timed out" });
+    }
+    console.error("WhiskeyFYI detail error:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+/**
+ * GET /api/whiskey/distillery/:slug
+ * Proxies distillery detail from WhiskeyFYI.
+ */
+app.get("/api/whiskey/distillery/:slug", async (req, res) => {
+  const { slug } = req.params;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(
+      `https://whiskeyfyi.com/api/distillery/${encodeURIComponent(slug)}/`,
+      {
+        signal: controller.signal,
+        headers: { Accept: "application/json" },
+      }
+    );
+    clearTimeout(timer);
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: `WhiskeyFYI error: ${response.statusText}` });
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    clearTimeout(timer);
+    if (err.name === "AbortError") {
+      return res.status(504).json({ error: "WhiskeyFYI distillery timed out" });
+    }
+    console.error("WhiskeyFYI distillery error:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+/**
  * POST /api/wine/scan
  * Proxies a base64 label image to Google Cloud Vision TEXT_DETECTION.
  * Keeps the API key server-side so it is never exposed in the client bundle.

@@ -1,27 +1,20 @@
 /**
- * Wine API integrations for Phase W2.
+ * Cellar API integrations — Wine (VinoFYI) + Whiskey (WhiskeyFYI).
  *
- * Three data sources, all free at personal scale:
- *   1. VinoFYI      — wine search/detail (CORS-open, no key)
- *   2. Open Food Facts — barcode UPC lookup (CORS-open, no key)
- *   3. Google Cloud Vision — label OCR via server proxy (key stays server-side)
+ * Data sources (all free at personal scale):
+ *   1. VinoFYI        — wine search/detail (via server proxy)
+ *   2. WhiskeyFYI     — whiskey expression/distillery search (via server proxy)
+ *   3. Open Food Facts — barcode UPC lookup (CORS-open, no key)
+ *   4. Google Cloud Vision — label OCR via server proxy (key stays server-side)
  */
 
 const OFF_BASE = "https://world.openfoodfacts.org/api/v0/product";
 const SERVER_URL = process.env.REACT_APP_SERVER_URL || "http://localhost:5050";
 
-// ── VinoFYI ────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// WINE — VinoFYI
+// ═══════════════════════════════════════════════════════════════════════════════
 
-/**
- * Search VinoFYI across wines, wineries, grapes, and regions.
- * Returns an array of result objects: { name, slug, type, url }
- */
-/**
- * Search VinoFYI via the server proxy.
- * Throws an Error with `code: "unavailable"` when the server can't reach VinoFYI
- * so callers can show a helpful offline message.
- * Returns [] when the query is too short or no results exist.
- */
 export async function searchWines(query) {
   if (!query || query.trim().length < 2) return [];
   const res = await fetch(
@@ -36,10 +29,6 @@ export async function searchWines(query) {
   return data.results || [];
 }
 
-/**
- * Fetch full wine detail from VinoFYI by slug.
- * Returns a partial formData object ready to spread into state.
- */
 export async function fetchWineDetail(slug) {
   try {
     const res = await fetch(`${SERVER_URL}/api/wine/detail/${encodeURIComponent(slug)}`);
@@ -62,10 +51,6 @@ export async function fetchWineDetail(slug) {
   }
 }
 
-/**
- * Fetch winery detail from VinoFYI by slug.
- * Returns winery metadata plus a top-wines list for the sub-picker.
- */
 export async function fetchWineryDetail(slug) {
   try {
     const res = await fetch(`${SERVER_URL}/api/wine/winery/${encodeURIComponent(slug)}`);
@@ -87,9 +72,6 @@ export async function fetchWineryDetail(slug) {
   }
 }
 
-/**
- * Normalize VinoFYI's wine_type string to match our schema options.
- */
 function normalizeWineType(raw) {
   if (!raw) return "";
   const map = {
@@ -100,12 +82,76 @@ function normalizeWineType(raw) {
   return map[raw.toLowerCase()] || raw;
 }
 
-// ── Open Food Facts (barcode) ──────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// WHISKEY — WhiskeyFYI
+// ═══════════════════════════════════════════════════════════════════════════════
 
-/**
- * Look up a wine bottle by UPC/EAN barcode via Open Food Facts.
- * Returns partial formData or null.
- */
+export async function searchWhiskeys(query) {
+  if (!query || query.trim().length < 2) return [];
+  const res = await fetch(
+    `${SERVER_URL}/api/whiskey/search?q=${encodeURIComponent(query.trim())}`
+  );
+  if (!res.ok) {
+    const err = new Error("Whiskey search unavailable");
+    err.code = "unavailable";
+    throw err;
+  }
+  const data = await res.json();
+  return data.results || [];
+}
+
+export async function fetchWhiskeyDetail(slug) {
+  try {
+    const res = await fetch(`${SERVER_URL}/api/whiskey/detail/${encodeURIComponent(slug)}`);
+    if (!res.ok) return null;
+    const d = await res.json();
+
+    return {
+      whiskyName: d.name || "",
+      distillery: d.distillery?.name || "",
+      whiskyType: normalizeWhiskeyType(d.whiskey_type?.name),
+      abv: d.abv ? String(d.abv) : "",
+      ageStatement: d.age_statement || "",
+      priceRange: d.price_range || "",
+      nose: d.nose || "",
+      palate: d.palate || "",
+      finish: d.finish || "",
+      caskType: (d.cask_types || []).map((c) => c.name || c).join(", "),
+      description: d.description || "",
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchDistilleryDetail(slug) {
+  try {
+    const res = await fetch(`${SERVER_URL}/api/whiskey/distillery/${encodeURIComponent(slug)}`);
+    if (!res.ok) return null;
+    const d = await res.json();
+    return {
+      distillery: d.name || "",
+      region: d.region?.name || d.region || "",
+      country: d.country?.name || d.country || "",
+    };
+  } catch {
+    return null;
+  }
+}
+
+function normalizeWhiskeyType(raw) {
+  if (!raw) return "";
+  const map = {
+    bourbon: "Bourbon", scotch: "Scotch", rye: "Rye",
+    irish: "Irish", japanese: "Japanese", canadian: "Canadian",
+  };
+  return map[raw.toLowerCase()] || raw;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SHARED — Barcode + OCR
+// ═══════════════════════════════════════════════════════════════════════════════
+
 export async function lookupByBarcode(upc) {
   if (!upc) return null;
   try {
@@ -132,13 +178,6 @@ export async function lookupByBarcode(upc) {
   }
 }
 
-// ── Google Cloud Vision OCR (via server proxy) ─────────────────────────────────
-
-/**
- * Send a base64 image to the server's /api/wine/scan endpoint.
- * The server calls Google Cloud Vision TEXT_DETECTION and returns the text blob.
- * Returns extracted text string, or null if unavailable.
- */
 export async function scanLabelOcr(base64Image) {
   try {
     const res = await fetch(`${SERVER_URL}/api/wine/scan`, {
@@ -148,23 +187,21 @@ export async function scanLabelOcr(base64Image) {
     });
     if (!res.ok) {
       const body = await res.text().catch(() => "");
-      console.error(`[wineApi] OCR server error ${res.status}:`, body);
+      console.error(`[cellarApi] OCR server error ${res.status}:`, body);
       return null;
     }
     const data = await res.json();
     return data.text || null;
   } catch (err) {
-    console.error("[wineApi] OCR fetch failed (server down or CORS?):", err.message);
+    console.error("[cellarApi] OCR fetch failed:", err.message);
     return null;
   }
 }
 
-// ── OCR text parsing ───────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// OCR TEXT PARSING
+// ═══════════════════════════════════════════════════════════════════════════════
 
-/**
- * Maps every recognised varietal to its wine type.
- * Kept here (not imported from wineSchema) so this module stays side-effect-free.
- */
 const VARIETAL_TYPE_MAP = {
   "Cabernet Sauvignon": "Red",
   "Pinot Noir": "Red",
@@ -192,11 +229,6 @@ const VARIETAL_TYPE_MAP = {
   "Cava": "Sparkling",
 };
 
-/**
- * Well-known wine regions commonly found on bottle labels.
- * Used for OCR text matching — if any of these appear in the label, we can
- * pre-fill the region field without needing VinoFYI.
- */
 const KNOWN_REGIONS = [
   "Napa Valley", "Sonoma", "Willamette Valley", "Paso Robles", "Central Coast",
   "Walla Walla", "Columbia Valley", "Finger Lakes", "Russian River Valley",
@@ -206,46 +238,45 @@ const KNOWN_REGIONS = [
   "Marlborough", "Hawke's Bay",
   "Barossa Valley", "McLaren Vale", "Margaret River",
   "Mendoza", "Stellenbosch", "Mosel", "Douro",
+  "Kentucky", "Islay", "Speyside", "Highland", "Lowland", "Campbeltown",
 ];
 
-/**
- * Extract wine-relevant tokens from a raw OCR text blob.
- * Returns { vintageGuess, searchQuery, varietal, wineType, wineName, region }.
- *
- * Strategy:
- *   1. Find a vintage year (4-digit, reasonable range).
- *   2. Match the full text against VARIETAL_TYPE_MAP (case-insensitive) to get
- *      varietal and wineType without needing VinoFYI.
- *   3. Match against KNOWN_REGIONS for region extraction.
- *   4. Build a clean wineName by removing the year, varietal component words,
- *      and very long lines — what remains is most likely the winery / wine name.
- *   5. Build a smart searchQuery (wineName + varietal for better VinoFYI hits).
- */
+const WHISKEY_KEYWORDS = [
+  "bourbon", "whiskey", "whisky", "scotch", "rye", "single malt",
+  "blended", "distillery", "cask strength", "barrel proof", "proof",
+];
+
 export function parseOcrText(text) {
-  if (!text) return { vintageGuess: null, searchQuery: "", varietal: null, wineType: null, wineName: null, region: null };
+  if (!text) return { vintageGuess: null, searchQuery: "", varietal: null, wineType: null, wineName: null, region: null, isWhiskey: false };
 
   const lines = text
     .split(/\n/)
     .map((l) => l.trim())
     .filter((l) => l.length > 1);
 
-  // 1. Vintage year
+  const textLower = text.toLowerCase();
+
+  // Detect if this is likely a whiskey label
+  const isWhiskey = WHISKEY_KEYWORDS.some((kw) => textLower.includes(kw));
+
+  // 1. Vintage year (wine) or age statement
   const yearMatch = text.match(/\b(19[5-9]\d|20[0-2]\d|2030|2031|2032|2033|2034|2035)\b/);
   const vintageGuess = yearMatch ? yearMatch[1] : null;
 
-  // 2. Varietal + wineType — scan full text case-insensitively
+  // 2. Varietal + wineType
   let varietal = null;
   let wineType = null;
-  const textLower = text.toLowerCase();
-  for (const [v, t] of Object.entries(VARIETAL_TYPE_MAP)) {
-    if (textLower.includes(v.toLowerCase())) {
-      varietal = v;
-      wineType = t;
-      break;
+  if (!isWhiskey) {
+    for (const [v, t] of Object.entries(VARIETAL_TYPE_MAP)) {
+      if (textLower.includes(v.toLowerCase())) {
+        varietal = v;
+        wineType = t;
+        break;
+      }
     }
   }
 
-  // 3. Region — match against known wine regions
+  // 3. Region
   let region = null;
   for (const r of KNOWN_REGIONS) {
     if (textLower.includes(r.toLowerCase())) {
@@ -254,7 +285,7 @@ export function parseOcrText(text) {
     }
   }
 
-  // 4. Clean wineName — strip lines that are just varietal component words, year, or region
+  // 4. Clean name
   const varietalWords = varietal
     ? new Set(varietal.toLowerCase().split(/[\s/]+/).filter(Boolean))
     : new Set();
@@ -262,10 +293,9 @@ export function parseOcrText(text) {
 
   const nameLines = lines.filter((l) => {
     const lower = l.toLowerCase().replace(/[^a-z\s]/g, "");
-    if (/^\d+$/.test(l)) return false;                            // pure number
-    if (vintageGuess && l.includes(vintageGuess)) return false;   // year line
-    if (regionLower && lower.includes(regionLower)) return false; // region line
-    // Skip if the line is entirely made up of varietal component words
+    if (/^\d+$/.test(l)) return false;
+    if (vintageGuess && l.includes(vintageGuess)) return false;
+    if (regionLower && lower.includes(regionLower)) return false;
     if (varietalWords.size > 0) {
       const lineWords = new Set(lower.split(/\s+/).filter(Boolean));
       const allVarietal = [...lineWords].every((w) => varietalWords.has(w));
@@ -274,14 +304,11 @@ export function parseOcrText(text) {
     return true;
   });
 
-  // Prefer shorter lines (≤ 20 chars) as they're more likely to be a name than a
-  // description or region — fall back to the first available line if none are short.
   const shortLines = nameLines.filter((l) => l.length <= 20);
   const nameCandidates = shortLines.length > 0 ? shortLines : nameLines;
   const wineName = nameCandidates.slice(0, 2).join(" ").trim() || null;
 
-  // 5. Smart searchQuery — "wineName varietal" matches VinoFYI's index better
-  //    than dumping the full OCR text
+  // 5. Smart search query
   const targetedQuery = [wineName, varietal].filter(Boolean).join(" ");
   const searchQuery = targetedQuery.length >= 4
     ? targetedQuery.slice(0, 60)
@@ -294,5 +321,5 @@ export function parseOcrText(text) {
         .trim()
         .slice(0, 80);
 
-  return { vintageGuess, searchQuery, varietal, wineType, wineName, region };
+  return { vintageGuess, searchQuery, varietal, wineType, wineName, region, isWhiskey };
 }
