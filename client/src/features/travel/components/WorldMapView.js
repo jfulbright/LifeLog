@@ -3,8 +3,7 @@ import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from "re
 import topology from "world-atlas/countries-110m.json";
 import { getCountryName, codeToFlag } from "../../../data/countries";
 
-// Numeric ISO → alpha-2 mapping for the topojson features
-// (react-simple-maps includes numeric codes in the geo features)
+// Numeric ISO -> alpha-2 mapping for the topojson features
 const NUMERIC_TO_ALPHA = {
   "004": "AF", "008": "AL", "012": "DZ", "020": "AD", "024": "AO", "028": "AG",
   "032": "AR", "051": "AM", "036": "AU", "040": "AT", "031": "AZ", "044": "BS",
@@ -41,83 +40,66 @@ const NUMERIC_TO_ALPHA = {
   "887": "YE", "894": "ZM", "716": "ZW", "124": "CA",
 };
 
-const LAYERS = [
-  { id: "visited", label: "Visited", color: "#36C5F0", activeColor: "#0a94bf" },
-  { id: "wishlist", label: "Wishlist", color: "#ECB22E", activeColor: "#c48f0b" },
-  { id: "recommended", label: "Recommended to me", color: "#611F69", activeColor: "#4A154B" },
-];
-
-// Pin colors per status — slightly deeper than fill colors so pins pop off the country shading
 const PIN_COLORS = {
-  visited:     { fill: "#0a7fa8", stroke: "#fff", text: "#fff" },
-  recommended: { fill: "#4A154B", stroke: "#fff", text: "#fff" },
-  wishlist:    { fill: "#c48f0b", stroke: "#fff", text: "#fff" },
+  visited:  { fill: "#0a7fa8", stroke: "#fff", text: "#fff" },
+  wishlist: { fill: "#c48f0b", stroke: "#fff", text: "#fff" },
+};
+
+const COUNTRY_FILLS = {
+  visited: "#36C5F0",
+  wishlist: "#ECB22E",
+};
+
+const COUNTRY_STROKES = {
+  visited: "#0a94bf",
+  wishlist: "#c48f0b",
 };
 
 function WorldMapView({ items = [], onCountryClick }) {
-  const [activeLayers, setActiveLayers] = useState(new Set(["visited", "wishlist"]));
   const [showPins, setShowPins] = useState(true);
   const [tooltip, setTooltip] = useState(null);
   const [position, setPosition] = useState({ coordinates: [0, 20], zoom: 1 });
 
-  const toggleLayer = (layerId) => {
-    setActiveLayers((prev) => {
-      const next = new Set(prev);
-      if (next.has(layerId)) next.delete(layerId);
-      else next.add(layerId);
-      return next;
-    });
-  };
-
-  // Build country-level lookup: countryCode → { visited, wishlist, recommended, trips }
   const countryData = useMemo(() => {
     const map = {};
     items.forEach((item) => {
       const code = item.country;
       if (!code) return;
-      if (!map[code]) map[code] = { visited: false, wishlist: false, recommended: false, trips: [] };
+      if (!map[code]) map[code] = { visited: false, wishlist: false, trips: [] };
       if (item.status === "visited") map[code].visited = true;
       if (item.status === "wishlist") map[code].wishlist = true;
-      if (item.recommendedToRings?.length > 0 || item.recommendedToContacts?.length > 0) {
-        map[code].recommended = true;
-      }
       map[code].trips.push(item);
     });
     return map;
   }, [items]);
 
-  // Build city-level pin data from items that have geocoded lat/lng
   const pinData = useMemo(() => {
     const cityMap = {};
     items.forEach((item) => {
       const lat = parseFloat(item.lat);
       const lng = parseFloat(item.lng);
       if (!lat || !lng) return;
-      // Group nearby coords (same city logged multiple times) by city+country key
       const key = `${item.city || ""}|${item.country || ""}`;
       if (!cityMap[key]) {
         cityMap[key] = {
-          coordinates: [lng, lat], // react-simple-maps expects [longitude, latitude]
+          coordinates: [lng, lat],
           city: item.city || getCountryName(item.country) || "Location",
           country: item.country,
           trips: [],
           visited: false,
           wishlist: false,
-          recommended: false,
         };
       }
       if (item.status === "visited") cityMap[key].visited = true;
       if (item.status === "wishlist") cityMap[key].wishlist = true;
-      if (item.recommendedToRings?.length > 0) cityMap[key].recommended = true;
       cityMap[key].trips.push(item);
     });
     return Object.values(cityMap);
   }, [items]);
 
   const getPinStyle = (pin) => {
-    if (activeLayers.has("visited") && pin.visited) return PIN_COLORS.visited;
-    if (activeLayers.has("recommended") && pin.recommended) return PIN_COLORS.recommended;
-    if (activeLayers.has("wishlist") && pin.wishlist) return PIN_COLORS.wishlist;
+    if (pin.visited) return PIN_COLORS.visited;
+    if (pin.wishlist) return PIN_COLORS.wishlist;
     return null;
   };
 
@@ -125,9 +107,8 @@ function WorldMapView({ items = [], onCountryClick }) {
     const alpha2 = NUMERIC_TO_ALPHA[numericCode];
     if (!alpha2 || !countryData[alpha2]) return "#e8e8e8";
     const data = countryData[alpha2];
-    if (activeLayers.has("visited") && data.visited) return "#36C5F0";
-    if (activeLayers.has("recommended") && data.recommended) return "#611F69";
-    if (activeLayers.has("wishlist") && data.wishlist) return "#ECB22E";
+    if (data.visited) return COUNTRY_FILLS.visited;
+    if (data.wishlist) return COUNTRY_FILLS.wishlist;
     return "#e8e8e8";
   };
 
@@ -135,53 +116,18 @@ function WorldMapView({ items = [], onCountryClick }) {
     const alpha2 = NUMERIC_TO_ALPHA[numericCode];
     if (!alpha2 || !countryData[alpha2]) return "#d0d0d0";
     const data = countryData[alpha2];
-    if (activeLayers.has("visited") && data.visited) return "#0a94bf";
-    if (activeLayers.has("recommended") && data.recommended) return "#4A154B";
-    if (activeLayers.has("wishlist") && data.wishlist) return "#c48f0b";
+    if (data.visited) return COUNTRY_STROKES.visited;
+    if (data.wishlist) return COUNTRY_STROKES.wishlist;
     return "#d0d0d0";
   };
 
-  const visitedCount = Object.values(countryData).filter((d) => d.visited).length;
-  const wishlistCount = Object.values(countryData).filter((d) => d.wishlist).length;
   const pinnedCityCount = pinData.filter((p) => getPinStyle(p)).length;
-
-  // Inverse scale so pins stay a constant screen size regardless of zoom level
   const s = 1 / position.zoom;
 
   return (
     <div style={{ position: "relative" }}>
-      {/* Layer toggle + Pins toggle */}
+      {/* Pins toggle */}
       <div className="d-flex gap-2 flex-wrap mb-3">
-        {LAYERS.map((layer) => (
-          <button
-            key={layer.id}
-            type="button"
-            onClick={() => toggleLayer(layer.id)}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.4rem",
-              padding: "0.3rem 0.75rem",
-              borderRadius: "20px",
-              border: `2px solid ${layer.color}`,
-              background: activeLayers.has(layer.id) ? layer.color : "transparent",
-              color: activeLayers.has(layer.id) ? "#fff" : layer.activeColor,
-              fontSize: "var(--font-size-sm)",
-              fontWeight: 600,
-              cursor: "pointer",
-              transition: "all 0.15s",
-            }}
-          >
-            <span style={{
-              width: 10, height: 10, borderRadius: "50%",
-              background: activeLayers.has(layer.id) ? "#fff" : layer.color,
-              display: "inline-block",
-            }} />
-            {layer.label}
-          </button>
-        ))}
-
-        {/* Pins toggle */}
         <button
           type="button"
           onClick={() => setShowPins((v) => !v)}
@@ -202,11 +148,6 @@ function WorldMapView({ items = [], onCountryClick }) {
         >
           📍 Pins {pinnedCityCount > 0 && `(${pinnedCityCount})`}
         </button>
-
-        <div className="ms-auto d-flex align-items-center gap-3" style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)" }}>
-          <span>✈️ <strong>{visitedCount}</strong> visited</span>
-          <span>💛 <strong>{wishlistCount}</strong> on wishlist</span>
-        </div>
       </div>
 
       {/* Map */}
@@ -221,7 +162,6 @@ function WorldMapView({ items = [], onCountryClick }) {
             center={position.coordinates}
             onMoveEnd={({ coordinates, zoom }) => setPosition({ coordinates, zoom })}
           >
-            {/* Country fills */}
             <Geographies geography={topology}>
               {({ geographies }) =>
                 geographies.map((geo) => {
@@ -275,7 +215,6 @@ function WorldMapView({ items = [], onCountryClick }) {
               }
             </Geographies>
 
-            {/* City pins — rendered on top of country fills */}
             {showPins && pinData.map((pin, i) => {
               const style = getPinStyle(pin);
               if (!style) return null;
@@ -305,14 +244,12 @@ function WorldMapView({ items = [], onCountryClick }) {
                   }}
                   style={{ cursor: "pointer" }}
                 >
-                  {/* Drop shadow */}
                   <circle
                     r={7 * s}
                     cx={0.5 * s}
                     cy={0.5 * s}
                     fill="rgba(0,0,0,0.25)"
                   />
-                  {/* Pin body */}
                   <circle
                     r={7 * s}
                     fill={style.fill}
@@ -320,7 +257,6 @@ function WorldMapView({ items = [], onCountryClick }) {
                     strokeWidth={1.5 * s}
                   />
                   {count > 1 ? (
-                    /* Trip count badge */
                     <text
                       textAnchor="middle"
                       dominantBaseline="central"
@@ -332,7 +268,6 @@ function WorldMapView({ items = [], onCountryClick }) {
                       {count}
                     </text>
                   ) : (
-                    /* Single-trip inner dot */
                     <circle r={2.5 * s} fill={style.stroke} />
                   )}
                 </Marker>
@@ -345,8 +280,8 @@ function WorldMapView({ items = [], onCountryClick }) {
         <div style={{ position: "absolute", bottom: "1rem", right: "1rem", display: "flex", flexDirection: "column", gap: "0.25rem" }}>
           {[
             { label: "+", action: () => setPosition((p) => ({ ...p, zoom: Math.min(p.zoom * 1.5, 8) })) },
-            { label: "−", action: () => setPosition((p) => ({ ...p, zoom: Math.max(p.zoom / 1.5, 1) })) },
-            { label: "⌂", action: () => setPosition({ coordinates: [0, 20], zoom: 1 }) },
+            { label: "\u2212", action: () => setPosition((p) => ({ ...p, zoom: Math.max(p.zoom / 1.5, 1) })) },
+            { label: "\u2302", action: () => setPosition({ coordinates: [0, 20], zoom: 1 }) },
           ].map(({ label, action }) => (
             <button
               key={label}

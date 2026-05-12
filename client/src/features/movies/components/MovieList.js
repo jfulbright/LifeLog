@@ -3,27 +3,29 @@ import { Button } from "react-bootstrap";
 import movieSchema from "../movieSchema";
 import MovieForm from "./MovieForm";
 import ItemCardList from "../../../components/shared/ItemCardList";
-import StatusToggle from "../../../components/shared/StatusToggle";
 import FormPanel from "../../../components/shared/FormPanel";
 import SaveToast from "../../../components/shared/SaveToast";
 import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
+import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
+import CategoryListHeader from "../../../components/shared/CategoryListHeader";
+import { RATING_GROUP } from "../../../components/shared/GroupedDropdownFilter";
 import useCategory from "../../../hooks/useCategory";
-
+import { useAppData } from "../../../contexts/AppDataContext";
 import {
   getStatusFilterOptions,
   filterByStatus,
   getStatusLabel,
 } from "../../../helpers/filterUtils";
 
-const MOVIE_COLOR = "var(--color-movies, #E01E5A)";
+const GENRE_EMOJIS = {
+  Action: "\u{1F3AC}", Comedy: "\u{1F602}", Drama: "\u{1F3AD}", Horror: "\u{1F631}",
+  "Science Fiction": "\u{1F52E}", "Sci-Fi": "\u{1F52E}", Romance: "\u{1F495}",
+  Documentary: "\u{1F4D6}", Thriller: "\u{1F52A}", Animation: "\u{1F9F8}",
+  Fantasy: "\u{1F409}", Adventure: "\u{1F5FA}\uFE0F", Crime: "\u{1F50D}", Family: "\u{1F468}\u200D\u{1F469}\u200D\u{1F467}",
+  Mystery: "\u{1F50E}", War: "\u2694\uFE0F", Music: "\u{1F3B5}", Western: "\u{1F920}",
+};
 
-function normalizeMovie(data) {
-  return {
-    ...data,
-    status: data.status || "watchlist",
-    startDate: data.startDate || "",
-  };
-}
+const DECADE_ORDER = ["2020s", "2010s", "2000s", "90s", "80s", "Classic"];
 
 function getDecade(year) {
   const y = parseInt(year, 10);
@@ -45,85 +47,6 @@ function matchesRating(rating, filter) {
   return true;
 }
 
-function FilterPill({ label, isActive, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        padding: "0.25rem 0.7rem",
-        borderRadius: "20px",
-        border: `1.5px solid ${MOVIE_COLOR}`,
-        background: isActive ? MOVIE_COLOR : "transparent",
-        color: isActive ? "#fff" : MOVIE_COLOR,
-        fontWeight: 600,
-        fontSize: "var(--font-size-sm)",
-        cursor: "pointer",
-        transition: "background 0.15s, color 0.15s",
-      }}
-    >
-      {label}
-    </button>
-  );
-}
-
-function GenreFilter({ value, onChange, genres }) {
-  if (genres.length === 0) return null;
-  return (
-    <div className="d-flex gap-2 flex-wrap mb-2">
-      <FilterPill label="All" isActive={value === "all"} onClick={() => onChange("all")} />
-      {genres.map((genre) => (
-        <FilterPill
-          key={genre}
-          label={genre}
-          isActive={value === genre}
-          onClick={() => onChange(genre)}
-        />
-      ))}
-    </div>
-  );
-}
-
-function DecadeFilter({ value, onChange, decades }) {
-  if (decades.length === 0) return null;
-  return (
-    <div className="d-flex gap-2 flex-wrap mb-2">
-      <FilterPill label="All" isActive={value === "all"} onClick={() => onChange("all")} />
-      {decades.map((decade) => (
-        <FilterPill
-          key={decade}
-          label={decade}
-          isActive={value === decade}
-          onClick={() => onChange(decade)}
-        />
-      ))}
-    </div>
-  );
-}
-
-function RatingFilter({ value, onChange, hasRatedItems }) {
-  if (!hasRatedItems) return null;
-  const options = [
-    { key: "all", label: "All" },
-    { key: "5", label: "5 Stars" },
-    { key: "4+", label: "4+" },
-    { key: "3+", label: "3+" },
-    { key: "unrated", label: "Unrated" },
-  ];
-  return (
-    <div className="d-flex gap-2 flex-wrap mb-2">
-      {options.map(({ key, label }) => (
-        <FilterPill
-          key={key}
-          label={label}
-          isActive={value === key}
-          onClick={() => onChange(key)}
-        />
-      ))}
-    </div>
-  );
-}
-
 function MovieList() {
   const {
     items: movies,
@@ -134,11 +57,12 @@ function MovieList() {
     showToast, setShowToast,
     handleSubmit, startEditing, deleteItem, closeForm, openForm,
     showSnapPrompt, snapPromptTitle, handleSnapSave, dismissSnapPrompt,
-  } = useCategory("movies", { normalize: normalizeMovie, schema: movieSchema });
+    viewDetailItem, setViewDetailItem,
+  } = useCategory("movies", { normalize: (data) => ({ ...data, status: data.status || "watchlist", startDate: data.startDate || "" }), schema: movieSchema });
 
-  const [genreFilter, setGenreFilter] = useState("all");
-  const [decadeFilter, setDecadeFilter] = useState("all");
-  const [ratingFilter, setRatingFilter] = useState("all");
+  const [movieFilter, setMovieFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
+  const { profile } = useAppData();
 
   const movieStatuses = getStatusFilterOptions("movies");
 
@@ -156,33 +80,59 @@ function MovieList() {
   }, [movies]);
 
   const availableDecades = useMemo(() => {
-    const decadeOrder = ["2020s", "2010s", "2000s", "90s", "80s", "Classic"];
     const present = new Set();
     movies.forEach((m) => {
       const d = getDecade(m.year);
       if (d) present.add(d);
     });
-    return decadeOrder.filter((d) => present.has(d));
+    return DECADE_ORDER.filter((d) => present.has(d));
   }, [movies]);
 
-  const hasRatedItems = useMemo(
-    () => movies.some((m) => parseInt(m.rating, 10) > 0),
-    [movies]
-  );
+  const movieFilterGroups = useMemo(() => {
+    const groups = [];
+    if (availableGenres.length > 0) {
+      groups.push({
+        key: "genre",
+        label: "\u{1F3AC} Genre",
+        options: availableGenres.map((g) => ({ value: `genre:${g}`, label: `${GENRE_EMOJIS[g] || "\u{1F3DE}\uFE0F"} ${g}` })),
+      });
+    }
+    if (availableDecades.length > 0) {
+      groups.push({
+        key: "decade",
+        label: "\u{1F4C5} Decade",
+        options: availableDecades.map((d) => ({ value: `decade:${d}`, label: d })),
+      });
+    }
+    groups.push(RATING_GROUP);
+    return groups;
+  }, [availableGenres, availableDecades]);
 
-  // Chain filters: status -> genre -> decade -> rating
   const statusFiltered = filterByStatus(movies, filterStatus);
-  const genreFiltered = genreFilter === "all"
-    ? statusFiltered
-    : statusFiltered.filter((m) =>
-        (m.genre || "").split(",").map((g) => g.trim()).includes(genreFilter)
+  const sourceFiltered = sourceFilter === "mine"
+    ? statusFiltered.filter((i) => !i._isShared)
+    : sourceFilter === "shared"
+    ? statusFiltered.filter((i) => i._isShared)
+    : sourceFilter === "recommended"
+    ? statusFiltered.filter((i) => i._isRecommended)
+    : statusFiltered;
+
+  const filteredMovies = useMemo(() => {
+    if (movieFilter === "all") return sourceFiltered;
+    const [type, val] = movieFilter.split(":");
+    if (type === "genre") {
+      return sourceFiltered.filter((m) =>
+        (m.genre || "").split(",").map((g) => g.trim()).includes(val)
       );
-  const decadeFiltered = decadeFilter === "all"
-    ? genreFiltered
-    : genreFiltered.filter((m) => getDecade(m.year) === decadeFilter);
-  const filteredMovies = ratingFilter === "all"
-    ? decadeFiltered
-    : decadeFiltered.filter((m) => matchesRating(m.rating, ratingFilter));
+    }
+    if (type === "decade") {
+      return sourceFiltered.filter((m) => getDecade(m.year) === val);
+    }
+    if (type === "rating") {
+      return sourceFiltered.filter((m) => matchesRating(m.rating, val));
+    }
+    return sourceFiltered;
+  }, [sourceFiltered, movieFilter]);
 
   const sectionTitle = `Movies - ${getStatusLabel("movies", filterStatus)}`;
   const watchedCount = movies.filter((m) => m.status === "watched").length;
@@ -190,38 +140,28 @@ function MovieList() {
 
   return (
     <>
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4 className="mb-0" style={{ fontWeight: 700 }}>Movies</h4>
-        <Button variant="primary" size="sm" onClick={openForm}>
-          + Add Movie
-        </Button>
-      </div>
-
-      {movies.length > 0 && (
-        <div
-          style={{
-            display: "flex",
-            gap: "1.5rem",
-            marginBottom: "1rem",
-            fontSize: "var(--font-size-sm)",
-            color: "var(--color-text-secondary)",
-          }}
-        >
-          <span><strong style={{ color: "var(--color-success)" }}>{watchedCount}</strong> watched</span>
-          <span><strong style={{ color: "var(--color-warning, #F2994A)" }}>{watchlistCount}</strong> on watchlist</span>
-        </div>
-      )}
-
-      <StatusToggle
+      <CategoryListHeader
+        title={"\u{1F3AC} Movies"}
+        addLabel="+ Add Movie"
+        onAdd={openForm}
+        stats={movies.length > 0 ? [
+          { value: watchedCount, label: "watched", color: "var(--color-movies, #E91E63)" },
+          { value: watchlistCount, label: "on watchlist", color: "var(--color-text-secondary)" },
+        ] : null}
         category="movies"
-        options={movieStatuses}
-        value={filterStatus}
-        onChange={setFilterStatus}
+        statusOptions={movieStatuses}
+        filterStatus={filterStatus}
+        onStatusChange={setFilterStatus}
+        filterGroups={movieFilterGroups}
+        filterValue={movieFilter}
+        onFilterChange={setMovieFilter}
+        filterColor="var(--color-movies, #E91E63)"
+        sourceFilter={sourceFilter}
+        onSourceChange={setSourceFilter}
+        avatarUrl={profile?.avatar_url}
+        sharedCount={movies.filter((i) => i._isShared).length}
+        recommendedCount={movies.filter((i) => i._isRecommended).length}
       />
-
-      <GenreFilter value={genreFilter} onChange={setGenreFilter} genres={availableGenres} />
-      <DecadeFilter value={decadeFilter} onChange={setDecadeFilter} decades={availableDecades} />
-      <RatingFilter value={ratingFilter} onChange={setRatingFilter} hasRatedItems={hasRatedItems} />
 
       {filteredMovies.length === 0 && !showForm && !loading && (
         <div className="empty-state">
@@ -229,7 +169,7 @@ function MovieList() {
             className="empty-state-icon"
             style={{ backgroundColor: "var(--color-movies, #E91E63)", color: "#fff" }}
           >
-            🎬
+            {"\u{1F3AC}"}
           </div>
           <div className="empty-state-title">
             {movies.length === 0 ? "No movies yet" : "No matches"}
@@ -254,6 +194,7 @@ function MovieList() {
         schema={movieSchema}
         onEdit={startEditing}
         onDelete={deleteItem}
+        onViewDetail={setViewDetailItem}
       />
 
       <FormPanel
@@ -272,7 +213,7 @@ function MovieList() {
       <SaveToast
         show={showToast}
         onClose={() => setShowToast(false)}
-        message="Movie saved 🎬"
+        message="Movie saved \u{1F3AC}"
       />
 
       <SnapCaptureModal
@@ -281,6 +222,17 @@ function MovieList() {
         onSave={handleSnapSave}
         itemTitle={snapPromptTitle}
       />
+
+      {viewDetailItem && (
+        <EntryDetailPanel
+          item={viewDetailItem}
+          category="movies"
+          schema={movieSchema}
+          onClose={() => setViewDetailItem(null)}
+          onSave={() => setViewDetailItem(null)}
+          onDelete={(id) => { deleteItem(id); setViewDetailItem(null); }}
+        />
+      )}
     </>
   );
 }

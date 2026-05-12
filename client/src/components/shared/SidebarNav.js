@@ -29,7 +29,6 @@ function SidebarNav({ counts = {}, notificationCount = 0, user, onSignOut, onIte
     <nav style={{ paddingBottom: "1rem", display: "flex", flexDirection: "column", height: "calc(100% - 60px)" }}>
       <div style={{ flex: 1 }}>
         {/* Profile link (user's name) */}
-        <div className="sidebar-section-label">Navigate</div>
         <NavLink
           to="/"
           end
@@ -37,6 +36,7 @@ function SidebarNav({ counts = {}, notificationCount = 0, user, onSignOut, onIte
           onClick={onItemClick}
         >
           <span
+            className="sidebar-nav-icon"
             style={{
               width: 22,
               height: 22,
@@ -48,7 +48,6 @@ function SidebarNav({ counts = {}, notificationCount = 0, user, onSignOut, onIte
               justifyContent: "center",
               fontSize: "0.6rem",
               fontWeight: 700,
-              flexShrink: 0,
               overflow: "hidden",
             }}
           >
@@ -58,7 +57,7 @@ function SidebarNav({ counts = {}, notificationCount = 0, user, onSignOut, onIte
               displayName[0]?.toUpperCase()
             )}
           </span>
-          <span style={{ marginLeft: "0.4rem" }}>{displayName}</span>
+          {displayName}
         </NavLink>
         <NavLink
           to="/timeline"
@@ -78,7 +77,7 @@ function SidebarNav({ counts = {}, notificationCount = 0, user, onSignOut, onIte
         </NavLink>
 
         {/* Social section */}
-        <div className="sidebar-section-label" style={{ marginTop: "0.5rem" }}>Social</div>
+        <div className="sidebar-section-label" style={{ marginTop: "0.5rem" }}>Shared</div>
         {socialItems.map((item) => (
           <NavLink
             key={item.path}
@@ -99,10 +98,9 @@ function SidebarNav({ counts = {}, notificationCount = 0, user, onSignOut, onIte
         ))}
 
         {/* Snap Categories section */}
-        <div className="sidebar-section-label" style={{ marginTop: "0.5rem" }}>Snap Categories</div>
+        <div className="sidebar-section-label" style={{ marginTop: "0.5rem" }}>Categories</div>
         {categoryItems.map((item) => {
           const meta = categoryMeta[item.key] || {};
-          const count = counts[item.key] || 0;
           return (
             <NavLink
               key={item.path}
@@ -114,9 +112,6 @@ function SidebarNav({ counts = {}, notificationCount = 0, user, onSignOut, onIte
             >
               <span className="sidebar-nav-icon">{meta.icon}</span>
               {item.label}
-              {count > 0 && (
-                <span className="sidebar-nav-count">{count}</span>
-              )}
             </NavLink>
           );
         })}

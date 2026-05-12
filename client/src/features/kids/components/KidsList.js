@@ -2,10 +2,12 @@ import React, { useMemo } from "react";
 import { Button } from "react-bootstrap";
 import KidsForm from "./KidsForm";
 import ItemCardList from "../../../components/shared/ItemCardList";
-import StatusToggle from "../../../components/shared/StatusToggle";
 import FormPanel from "../../../components/shared/FormPanel";
 import SaveToast from "../../../components/shared/SaveToast";
 import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
+import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
+import CategoryListHeader from "../../../components/shared/CategoryListHeader";
+import { RATING_GROUP } from "../../../components/shared/GroupedDropdownFilter";
 import kidsSchema, { KIDS_EVENT_TYPES } from "../kidsSchema";
 import useCategory from "../../../hooks/useCategory";
 import { useAppData } from "../../../contexts/AppDataContext";
@@ -163,9 +165,11 @@ function KidsStats({ items, contacts }) {
 }
 
 function KidsList() {
-  const { contacts } = useAppData();
+  const { contacts, profile } = useAppData();
   const [milestoneTypeFilter, setMilestoneTypeFilter] = React.useState("all");
   const [childFilter, setChildFilter] = React.useState("all");
+  const [sourceFilter, setSourceFilter] = React.useState("all");
+  const [ratingFilter, setRatingFilter] = React.useState("all");
 
   const {
     items: milestones,
@@ -176,14 +180,40 @@ function KidsList() {
     showToast, setShowToast,
     handleSubmit, startEditing, deleteItem, closeForm, openForm,
     showSnapPrompt, snapPromptTitle, handleSnapSave, dismissSnapPrompt,
+    viewDetailItem, setViewDetailItem,
   } = useCategory("kids", { schema: kidsSchema });
 
   const kidsStatuses = getStatusFilterOptions("kids");
   const statusFiltered = filterByStatus(milestones, filterStatus);
 
-  const filtered = statusFiltered
-    .filter((i) => milestoneTypeFilter === "all" || i.milestoneType === milestoneTypeFilter)
-    .filter((i) => childFilter === "all" || i.childContactId === childFilter);
+  const sourceFiltered = sourceFilter === "mine"
+    ? statusFiltered.filter((i) => !i._isShared)
+    : sourceFilter === "shared"
+    ? statusFiltered.filter((i) => i._isShared)
+    : sourceFilter === "recommended"
+    ? statusFiltered.filter((i) => i._isRecommended)
+    : statusFiltered;
+
+  const filtered = useMemo(() => {
+    let items = sourceFiltered
+      .filter((i) => milestoneTypeFilter === "all" || i.milestoneType === milestoneTypeFilter)
+      .filter((i) => childFilter === "all" || i.childContactId === childFilter);
+    if (ratingFilter !== "all" && ratingFilter.startsWith("rating:")) {
+      const rVal = ratingFilter.split(":")[1];
+      items = items.filter((i) => {
+        const r = parseInt(i.rating, 10);
+        if (rVal === "unrated") return !r;
+        if (rVal === "5") return r === 5;
+        if (rVal === "4+") return r >= 4;
+        if (rVal === "3+") return r >= 3;
+        return true;
+      });
+    }
+    return items;
+  }, [sourceFiltered, milestoneTypeFilter, childFilter, ratingFilter]);
+
+  const sharedCount = milestones.filter((i) => i._isShared).length;
+  const recommendedCount = milestones.filter((i) => i._isRecommended).length;
 
   const groupedByYear = useMemo(() => {
     const groups = {};
@@ -220,24 +250,34 @@ function KidsList() {
 
   return (
     <>
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4 className="mb-0" style={{ fontWeight: 700 }}>🌟 Kids</h4>
-        <Button variant="primary" size="sm" onClick={openForm}>
-          + Log Milestone
-        </Button>
-      </div>
-
-      <KidsStats items={milestones} contacts={contacts} />
-
-      <StatusToggle
+      <CategoryListHeader
+        title={"\u{1F31F} Kids"}
+        addLabel="+ Log Milestone"
+        onAdd={openForm}
+        stats={milestones.length > 0 ? [
+          { value: milestones.length, label: "milestones", color: "var(--color-kids, #E91E63)" },
+        ] : null}
         category="kids"
-        options={kidsStatuses}
-        value={filterStatus}
-        onChange={setFilterStatus}
+        statusOptions={kidsStatuses}
+        filterStatus={filterStatus}
+        onStatusChange={setFilterStatus}
+        renderExtraFilters={() => (
+          <>
+            <KidsStats items={milestones} contacts={contacts} />
+            <ChildFilter contacts={contacts} value={childFilter} onChange={setChildFilter} />
+            <MilestoneTypeFilter value={milestoneTypeFilter} onChange={setMilestoneTypeFilter} />
+          </>
+        )}
+        filterGroups={[RATING_GROUP]}
+        filterValue={ratingFilter}
+        onFilterChange={setRatingFilter}
+        filterColor="var(--color-kids, #FF6B35)"
+        sourceFilter={sourceFilter}
+        onSourceChange={setSourceFilter}
+        avatarUrl={profile?.avatar_url}
+        sharedCount={sharedCount}
+        recommendedCount={recommendedCount}
       />
-
-      <ChildFilter contacts={contacts} value={childFilter} onChange={setChildFilter} />
-      <MilestoneTypeFilter value={milestoneTypeFilter} onChange={setMilestoneTypeFilter} />
 
       {filtered.length === 0 && !loading && (
         <div className="empty-state">
@@ -280,6 +320,7 @@ function KidsList() {
             schema={kidsSchema}
             onEdit={startEditing}
             onDelete={deleteItem}
+            onViewDetail={setViewDetailItem}
             renderCompactExtra={renderExtra}
           />
         </div>
@@ -310,6 +351,17 @@ function KidsList() {
         onSave={handleSnapSave}
         itemTitle={snapPromptTitle}
       />
+
+      {viewDetailItem && (
+        <EntryDetailPanel
+          item={viewDetailItem}
+          category="kids"
+          schema={kidsSchema}
+          onClose={() => setViewDetailItem(null)}
+          onSave={() => setViewDetailItem(null)}
+          onDelete={(id) => { deleteItem(id); setViewDetailItem(null); }}
+        />
+      )}
     </>
   );
 }

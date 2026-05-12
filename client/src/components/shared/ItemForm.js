@@ -678,7 +678,7 @@ function ItemForm({
               <div className="snap-section-banner">
                 <span className="snap-section-icon" aria-hidden="true">&#128247;</span>
                 <div>
-                  <div className="snap-section-title">Capture your snapshots</div>
+                  <div className="snap-section-title">Capture your Memories</div>
                   <div className="snap-section-subtitle">
                     Three quick memories -- 140 characters each
                   </div>
@@ -688,7 +688,7 @@ function ItemForm({
               <div className="photo-section-banner">
                 <span className="photo-section-icon" aria-hidden="true">&#128247;</span>
                 <div>
-                  <div className="photo-section-title">Add up to 3 photos</div>
+                  <div className="photo-section-title">3 quick Photos</div>
                   <div className="photo-section-subtitle">
                     Upload from your camera roll or take a new photo
                   </div>
@@ -698,9 +698,9 @@ function ItemForm({
               <div className="snap-section-banner" style={{ background: "linear-gradient(135deg, #F5EEF8 0%, #EAF8FE 100%)", borderColor: "var(--color-border)" }}>
                 <span className="snap-section-icon" aria-hidden="true">&#129309;</span>
                 <div>
-                  <div className="snap-section-title">Social</div>
+                  <div className="snap-section-title">Share</div>
                   <div className="snap-section-subtitle">
-                    Share experiences, control visibility, and recommend to others
+                    Share experiences, control who can see, and recommend to others
                   </div>
                 </div>
               </div>
@@ -736,7 +736,7 @@ function ItemForm({
                   {isSocialSection && field.type === "visible-to" && (
                     <Col md={12}>
                       <div className="share-with-sublabel" style={{ marginTop: "0.75rem", marginBottom: "0.5rem" }}>
-                        👥 Visible to
+                        👥 Who can see this
                       </div>
                     </Col>
                   )}

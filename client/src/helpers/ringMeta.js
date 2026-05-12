@@ -4,7 +4,7 @@
  */
 export const RING_META = {
   1: {
-    label: "Partner",
+    label: "Partner in Crime",
     emoji: "💎",
     description: "Your partner or spouse",
     color: "#4A154B",

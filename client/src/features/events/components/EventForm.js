@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Button, Spinner, Alert } from "react-bootstrap";
 import ItemForm from "../../../components/shared/ItemForm";
 import eventSchema, { EVENT_TYPES } from "../eventSchema";
-import { fetchSetlists } from "../../concerts/api/concertApi";
+import { fetchSetlists } from "../api/concertApi";
 import CountryDropdown from "../../../components/shared/CountryDropdown";
 import StateDropdown from "../../../components/shared/StateDropdown";
 import { States } from "../../../data/states";

@@ -2,13 +2,15 @@ import React from "react";
 import { Button } from "react-bootstrap";
 import HomeForm from "../../../features/homes/components/HomeForm";
 import ItemCardList from "../../../components/shared/ItemCardList";
-import StatusToggle from "../../../components/shared/StatusToggle";
 import FormPanel from "../../../components/shared/FormPanel";
 import SaveToast from "../../../components/shared/SaveToast";
 import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
+import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
+import CategoryListHeader from "../../../components/shared/CategoryListHeader";
+import { RATING_GROUP } from "../../../components/shared/GroupedDropdownFilter";
 import homeSchema from "../../../features/homes/homeSchema";
 import useCategory from "../../../hooks/useCategory";
-
+import { useAppData } from "../../../contexts/AppDataContext";
 import {
   getStatusFilterOptions,
   filterByStatus,
@@ -16,6 +18,9 @@ import {
 } from "../../../helpers/filterUtils";
 
 function HomeList() {
+  const [sourceFilter, setSourceFilter] = React.useState("all");
+  const [homeFilter, setHomeFilter] = React.useState("all");
+  const { profile } = useAppData();
   const {
     items: homes,
     loading,
@@ -25,26 +30,61 @@ function HomeList() {
     showToast, setShowToast,
     handleSubmit, startEditing, deleteItem, closeForm, openForm,
     showSnapPrompt, snapPromptTitle, handleSnapSave, dismissSnapPrompt,
+    viewDetailItem, setViewDetailItem,
   } = useCategory("homes", { schema: homeSchema });
 
   const homeStatuses = getStatusFilterOptions("homes");
-  const filteredHomes = filterByStatus(homes, filterStatus);
+  const statusFiltered = filterByStatus(homes, filterStatus);
+  const sourceFiltered = sourceFilter === "mine"
+    ? statusFiltered.filter((i) => !i._isShared)
+    : sourceFilter === "shared"
+    ? statusFiltered.filter((i) => i._isShared)
+    : sourceFilter === "recommended"
+    ? statusFiltered.filter((i) => i._isRecommended)
+    : statusFiltered;
+
+  const filteredHomes = React.useMemo(() => {
+    if (homeFilter === "all") return sourceFiltered;
+    if (homeFilter.startsWith("rating:")) {
+      const rVal = homeFilter.split(":")[1];
+      return sourceFiltered.filter((i) => {
+        const r = parseInt(i.rating, 10);
+        if (rVal === "unrated") return !r;
+        if (rVal === "5") return r === 5;
+        if (rVal === "4+") return r >= 4;
+        if (rVal === "3+") return r >= 3;
+        return true;
+      });
+    }
+    return sourceFiltered;
+  }, [sourceFiltered, homeFilter]);
+
+  const sharedCount = homes.filter((i) => i._isShared).length;
+  const recommendedCount = homes.filter((i) => i._isRecommended).length;
   const sectionTitle = `Homes - ${getStatusLabel("homes", filterStatus)}`;
 
   return (
     <>
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4 className="mb-0" style={{ fontWeight: 700 }}>Homes</h4>
-        <Button variant="primary" size="sm" onClick={openForm}>
-          + Add Home
-        </Button>
-      </div>
-
-      <StatusToggle
+      <CategoryListHeader
+        title={"\u{1F3E0} Homes"}
+        addLabel="+ Add Home"
+        onAdd={openForm}
+        stats={homes.length > 0 ? [
+          { value: homes.length, label: "logged", color: "var(--color-homes, #2EB67D)" },
+        ] : null}
         category="homes"
-        options={homeStatuses}
-        value={filterStatus}
-        onChange={setFilterStatus}
+        statusOptions={homeStatuses}
+        filterStatus={filterStatus}
+        onStatusChange={setFilterStatus}
+        filterGroups={[RATING_GROUP]}
+        filterValue={homeFilter}
+        onFilterChange={setHomeFilter}
+        filterColor="var(--color-homes, #2EB67D)"
+        sourceFilter={sourceFilter}
+        onSourceChange={setSourceFilter}
+        avatarUrl={profile?.avatar_url}
+        sharedCount={sharedCount}
+        recommendedCount={recommendedCount}
       />
 
       {filteredHomes.length === 0 && !loading && (
@@ -53,7 +93,7 @@ function HomeList() {
             &#127968;
           </div>
           <div className="empty-state-title">
-            {homes.length === 0 ? "No homes yet 🏠" : "No matches"}
+            {homes.length === 0 ? "No homes yet \u{1F3E0}" : "No matches"}
           </div>
           <div className="empty-state-text">
             {homes.length === 0
@@ -75,6 +115,7 @@ function HomeList() {
         schema={homeSchema}
         onEdit={startEditing}
         onDelete={deleteItem}
+        onViewDetail={setViewDetailItem}
       />
 
       <FormPanel
@@ -93,7 +134,7 @@ function HomeList() {
       <SaveToast
         show={showToast}
         onClose={() => setShowToast(false)}
-        message="Home saved ✅"
+        message="Home saved \u2705"
       />
 
       <SnapCaptureModal
@@ -102,6 +143,17 @@ function HomeList() {
         onSave={handleSnapSave}
         itemTitle={snapPromptTitle}
       />
+
+      {viewDetailItem && (
+        <EntryDetailPanel
+          item={viewDetailItem}
+          category="homes"
+          schema={homeSchema}
+          onClose={() => setViewDetailItem(null)}
+          onSave={() => setViewDetailItem(null)}
+          onDelete={(id) => { deleteItem(id); setViewDetailItem(null); }}
+        />
+      )}
     </>
   );
 }

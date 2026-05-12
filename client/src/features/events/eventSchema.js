@@ -332,7 +332,7 @@ const eventSchema = [
     type: "visible-to",
     optional: true,
     section: "Social",
-    order: 62,
+    order: 65,
     fullWidth: true,
   },
   {
@@ -341,7 +341,7 @@ const eventSchema = [
     type: "recommend",
     optional: true,
     section: "Social",
-    order: 64,
+    order: 61,
   },
 
   // ── Base fields (tags, hidden metadata) ─────────────────────────────────────

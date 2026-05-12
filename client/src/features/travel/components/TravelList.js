@@ -1,16 +1,18 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Button, Badge, Modal, Form } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import TravelForm from "../../../features/travel/components/TravelForm";
 import ItemCardList from "../../../components/shared/ItemCardList";
-import StatusToggle from "../../../components/shared/StatusToggle";
 import FormPanel from "../../../components/shared/FormPanel";
 import SaveToast from "../../../components/shared/SaveToast";
 import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
 import WorldMapView from "../../../features/travel/components/WorldMapView";
 import PhotoGrid from "../../../components/shared/PhotoGrid";
+import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
+import CategoryListHeader from "../../../components/shared/CategoryListHeader";
 import travelSchema from "../../../features/travel/travelSchema";
 import useCategory from "../../../hooks/useCategory";
+import { useAppData } from "../../../contexts/AppDataContext";
 import { codeToFlag, getCountryName } from "../../../data/countries";
 import dataService from "../../../services/dataService";
 import { computeTravelStats } from "../../../services/travelStats";
@@ -51,54 +53,6 @@ function groupByItinerary(items) {
     g.sort((a, b) => (a.startDate || "").localeCompare(b.startDate || ""))
   );
   return { groups, ungrouped };
-}
-
-/** Compact stats strip shown above the filter toggle. */
-function TravelMiniStats({ items }) {
-  const stats = computeTravelStats(items);
-  if (stats.totalTrips === 0) return null;
-  return (
-    <div style={{
-      display: "flex",
-      gap: "0.5rem",
-      flexWrap: "wrap",
-      alignItems: "center",
-      background: "linear-gradient(135deg, #EAF8FE 0%, #F5EEF8 100%)",
-      border: "1px solid var(--color-border)",
-      borderRadius: "var(--card-radius)",
-      padding: "0.55rem 1rem",
-      marginBottom: "0.75rem",
-      fontSize: "var(--font-size-sm)",
-    }}>
-      <span style={{ fontWeight: 800, color: "var(--color-travel)" }}>{stats.visitedCountryCount}</span>
-      <span style={{ color: "var(--color-text-secondary)" }}>countries</span>
-      <span style={{ color: "var(--color-text-tertiary)" }}>·</span>
-      <span style={{ fontWeight: 800, color: "var(--color-events)" }}>{stats.visitedContinentCount}</span>
-      <span style={{ color: "var(--color-text-secondary)" }}>continents</span>
-      {stats.totalDays > 0 && (
-        <>
-          <span style={{ color: "var(--color-text-tertiary)" }}>·</span>
-          <span style={{ fontWeight: 800, color: "var(--color-success)" }}>{stats.totalDays}</span>
-          <span style={{ color: "var(--color-text-secondary)" }}>days traveling</span>
-        </>
-      )}
-      {stats.tripsThisYear > 0 && (
-        <>
-          <span style={{ color: "var(--color-text-tertiary)" }}>·</span>
-          <span style={{ color: "var(--color-text-secondary)" }}>
-            <span style={{ fontWeight: 800, color: "var(--color-warning)" }}>{stats.tripsThisYear}</span>{" "}
-            trips in {stats.currentYear}
-          </span>
-        </>
-      )}
-      <Link
-        to="/travel/stats"
-        style={{ marginLeft: "auto", fontSize: "var(--font-size-xs)", fontWeight: 600, color: "var(--color-travel)", textDecoration: "none" }}
-      >
-        Full Stats →
-      </Link>
-    </div>
-  );
 }
 
 /** Collapsible itinerary accordion header with full metadata and actions. */
@@ -526,16 +480,18 @@ const VIEW_TABS = [
 
 function TravelList() {
   const navigate = useNavigate();
+  const { profile } = useAppData();
   const [activeView, setActiveView] = useState("list");
   const [selectedCountry, setSelectedCountry] = useState(null);
   const [showItineraryModal, setShowItineraryModal] = useState(false);
   const [itineraryName, setItineraryName] = useState("");
   const [checkedTripIds, setCheckedTripIds] = useState(new Set());
   const [itinerarySaving, setItinerarySaving] = useState(false);
-  const [collapsedItineraries, setCollapsedItineraries] = useState(new Set());
+  const [collapsedItineraries, setCollapsedItineraries] = useState(null);
   const [showNextSteps, setShowNextSteps] = useState(false);
   const [linkedActivities, setLinkedActivities] = useState([]);
   const [mapPeekTrip, setMapPeekTrip] = useState(null);
+  const [sourceFilter, setSourceFilter] = useState("all");
   const lastSavedRef = useRef(null);
 
   const {
@@ -547,6 +503,7 @@ function TravelList() {
     showToast, setShowToast,
     handleSubmit, startEditing, deleteItem, batchPatch, closeForm, openForm,
     showSnapPrompt, snapPromptTitle, handleSnapSave, dismissSnapPrompt,
+    viewDetailItem, setViewDetailItem,
   } = useCategory("travel", { migrate: migrateMemoryToSnapshot, schema: travelSchema });
 
   // Load activities once to show back-references in trip cards
@@ -555,11 +512,25 @@ function TravelList() {
   }, []);
 
   const travelStatuses = getStatusFilterOptions("travel");
-  const filteredTravels = filterByStatus(travels, filterStatus);
+  const statusFiltered = filterByStatus(travels, filterStatus);
+  const filteredTravels = sourceFilter === "mine"
+    ? statusFiltered.filter((i) => !i._isShared)
+    : sourceFilter === "shared"
+    ? statusFiltered.filter((i) => i._isShared)
+    : sourceFilter === "recommended"
+    ? statusFiltered.filter((i) => i._isRecommended)
+    : statusFiltered;
+  const sharedCount = travels.filter((i) => i._isShared).length;
+  const recommendedCount = travels.filter((i) => i._isRecommended).length;
   const sectionTitle = `Travel - ${getStatusLabel("travel", filterStatus)}`;
 
   const { groups, ungrouped } = groupByItinerary(filteredTravels);
   const { ungrouped: allUngrouped } = groupByItinerary(travels);
+
+  const effectiveCollapsed = useMemo(() => {
+    if (collapsedItineraries !== null) return collapsedItineraries;
+    return new Set(Object.keys(groups));
+  }, [collapsedItineraries, groups]);
 
   const handleAddStop = (tripId, tripName) => {
     setFormData({ tripId, tripName });
@@ -568,7 +539,8 @@ function TravelList() {
 
   const toggleItineraryCollapse = (tripId) => {
     setCollapsedItineraries((prev) => {
-      const next = new Set(prev);
+      const base = prev !== null ? prev : new Set(Object.keys(groups));
+      const next = new Set(base);
       if (next.has(tripId)) next.delete(tripId);
       else next.add(tripId);
       return next;
@@ -647,52 +619,51 @@ function TravelList() {
 
   return (
     <>
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4 className="mb-0" style={{ fontWeight: 700 }}>✈️ Travel</h4>
-        <div className="d-flex gap-2">
+      <CategoryListHeader
+        title={"\u2708\uFE0F Travel"}
+        addLabel="+ Add Trip"
+        onAdd={openForm}
+        extraActions={<>
           <Link to="/travel/stats" className="btn btn-sm btn-outline-secondary">
-            📊 Stats
+            {"\u{1F4CA}"} Stats
           </Link>
           {allUngrouped.length >= 2 && (
             <Button variant="outline-secondary" size="sm" onClick={openItineraryModal}>
-              🗺️ Create Itinerary
+              {"\u{1F5FA}\uFE0F"} Create Itinerary
             </Button>
           )}
-          <Button variant="primary" size="sm" onClick={openForm}>
-            + Add Trip
-          </Button>
-        </div>
-      </div>
-
-      {/* View tabs */}
-      <div className="d-flex gap-2 mb-3">
-        {VIEW_TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveView(tab.id)}
-            style={{
-              padding: "0.3rem 0.9rem",
-              borderRadius: "20px",
-              border: "2px solid var(--color-travel)",
-              background: activeView === tab.id ? "var(--color-travel)" : "transparent",
-              color: activeView === tab.id ? "#fff" : "var(--color-travel)",
-              fontWeight: 600,
-              fontSize: "var(--font-size-sm)",
-              cursor: "pointer",
-              transition: "all 0.15s",
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+        </>}
+        stats={(() => {
+          const stats = computeTravelStats(travels);
+          if (stats.totalTrips === 0) return null;
+          const items = [
+            { value: stats.visitedCountryCount, label: "countries", color: "var(--color-travel)" },
+            { value: stats.visitedContinentCount, label: "continents", color: "var(--color-events)" },
+          ];
+          if (stats.totalDays > 0) items.push({ value: stats.totalDays, label: "days traveling", color: "var(--color-success)" });
+          items.push({ value: stats.totalTrips, label: "trips", color: "var(--color-primary)" });
+          return items;
+        })()}
+        category="travel"
+        statusOptions={travelStatuses}
+        filterStatus={filterStatus}
+        onStatusChange={setFilterStatus}
+        tabs={VIEW_TABS}
+        activeTab={activeView}
+        onTabChange={setActiveView}
+        tabColor="var(--color-travel)"
+        sourceFilter={sourceFilter}
+        onSourceChange={setSourceFilter}
+        avatarUrl={profile?.avatar_url}
+        sharedCount={sharedCount}
+        recommendedCount={recommendedCount}
+      />
 
       {/* Map View */}
       {activeView === "map" && (
         <div>
           <WorldMapView
-            items={travels}
+            items={filteredTravels}
             onCountryClick={({ code, name, data }) => {
               setSelectedCountry({ code, name, trips: data?.trips || [] });
             }}
@@ -837,16 +808,6 @@ function TravelList() {
             </div>
           )}
 
-          {/* Inline travel stats strip */}
-          <TravelMiniStats items={travels} />
-
-          <StatusToggle
-            category="travel"
-            options={travelStatuses}
-            value={filterStatus}
-            onChange={setFilterStatus}
-          />
-
           {filteredTravels.length === 0 && !loading && (
             <div className="empty-state">
               <div className="empty-state-icon" style={{ backgroundColor: "var(--color-travel)", color: "#fff" }}>
@@ -870,7 +831,7 @@ function TravelList() {
 
           {/* Itinerary groups */}
           {Object.entries(groups).map(([tripId, groupItems]) => {
-            const isCollapsed = collapsedItineraries.has(tripId);
+            const isCollapsed = effectiveCollapsed.has(tripId);
             return (
               <div key={tripId} className="mb-2">
                 <ItineraryHeader
@@ -886,10 +847,14 @@ function TravelList() {
                 {!isCollapsed && (
                   <ItemCardList
                     category="travel"
-                    items={groupItems}
+                    items={groupItems.map((item, idx) => ({
+                      ...item,
+                      title: `Stop #${idx + 1}: ${item.title || "Untitled"}`,
+                    }))}
                     schema={travelSchema}
                     onEdit={startEditing}
                     onDelete={deleteItem}
+                    onViewDetail={setViewDetailItem}
                     renderItemExtras={renderItemExtras}
                   />
                 )}
@@ -906,6 +871,7 @@ function TravelList() {
               schema={travelSchema}
               onEdit={startEditing}
               onDelete={deleteItem}
+              onViewDetail={setViewDetailItem}
               renderItemExtras={renderItemExtras}
             />
           )}
@@ -1015,6 +981,24 @@ function TravelList() {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      {viewDetailItem && (
+        <EntryDetailPanel
+          item={viewDetailItem}
+          category="travel"
+          schema={travelSchema}
+          onClose={() => setViewDetailItem(null)}
+          onSave={(updatedData) => {
+            handleSubmit({ preventDefault: () => {} });
+            setViewDetailItem(null);
+          }}
+          onDelete={(id) => {
+            deleteItem(id);
+            setViewDetailItem(null);
+          }}
+          renderItemExtras={renderItemExtras}
+        />
+      )}
     </>
   );
 }

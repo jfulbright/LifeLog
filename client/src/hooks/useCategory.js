@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import dataService from "../services/dataService";
 import collaboratorService from "../services/collaboratorService";
 import contactsService from "../services/contactsService";
@@ -36,11 +37,15 @@ export default function useCategory(category, { migrate, normalize, schema } = {
   const [showSnapPrompt, setShowSnapPrompt] = useState(false);
   const [snapPromptItemIndex, setSnapPromptItemIndex] = useState(null);
   const [snapPromptTitle, setSnapPromptTitle] = useState("");
+  const [viewDetailItem, setViewDetailItem] = useState(null);
+
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // isReady: prevents saving before the initial async load completes
   // skipNextSave: skips the first post-load save (data hasn't changed — avoids a wasted API call)
   const isReady = useRef(false);
   const skipNextSave = useRef(false);
+  const editParamHandled = useRef(false);
 
   // Async initial load — migrate is intentionally excluded from deps (must be a stable reference)
   useEffect(() => {
@@ -70,6 +75,22 @@ export default function useCategory(category, { migrate, normalize, schema } = {
       cancelled = true;
     };
   }, [category]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-open edit form when navigated with ?edit=<itemId>
+  useEffect(() => {
+    if (loading || editParamHandled.current) return;
+    const editId = searchParams.get("edit");
+    if (editId) {
+      const item = items.find((i) => i.id === editId);
+      if (item) {
+        setFormData(item);
+        setEditIndex(editId);
+        setShowForm(true);
+      }
+      editParamHandled.current = true;
+      setSearchParams({}, { replace: true });
+    }
+  }, [loading, items, searchParams, setSearchParams]);
 
   // Persist after every mutation — skips pre-load renders and the first post-load echo
   // Only saves OWN items (not shared items from collaborators)
@@ -262,5 +283,7 @@ export default function useCategory(category, { migrate, normalize, schema } = {
     snapPromptTitle,
     handleSnapSave,
     dismissSnapPrompt,
+    viewDetailItem,
+    setViewDetailItem,
   };
 }

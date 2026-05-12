@@ -2,13 +2,15 @@ import React from "react";
 import { Button } from "react-bootstrap";
 import CarForm from "../../../features/cars/components/CarForm";
 import ItemCardList from "../../../components/shared/ItemCardList";
-import StatusToggle from "../../../components/shared/StatusToggle";
 import FormPanel from "../../../components/shared/FormPanel";
 import SaveToast from "../../../components/shared/SaveToast";
 import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
+import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
+import CategoryListHeader from "../../../components/shared/CategoryListHeader";
+import { RATING_GROUP } from "../../../components/shared/GroupedDropdownFilter";
 import carSchema from "../../../features/cars/carSchema";
 import useCategory from "../../../hooks/useCategory";
-
+import { useAppData } from "../../../contexts/AppDataContext";
 import {
   getStatusFilterOptions,
   filterByStatus,
@@ -16,6 +18,9 @@ import {
 } from "../../../helpers/filterUtils";
 
 function CarList() {
+  const [sourceFilter, setSourceFilter] = React.useState("all");
+  const [carFilter, setCarFilter] = React.useState("all");
+  const { profile } = useAppData();
   const {
     items: cars,
     loading,
@@ -25,26 +30,61 @@ function CarList() {
     showToast, setShowToast,
     handleSubmit, startEditing, deleteItem, closeForm, openForm,
     showSnapPrompt, snapPromptTitle, handleSnapSave, dismissSnapPrompt,
+    viewDetailItem, setViewDetailItem,
   } = useCategory("cars", { schema: carSchema });
 
   const carStatuses = getStatusFilterOptions("cars");
-  const filteredCars = filterByStatus(cars, filterStatus);
+  const statusFiltered = filterByStatus(cars, filterStatus);
+  const sourceFiltered = sourceFilter === "mine"
+    ? statusFiltered.filter((i) => !i._isShared)
+    : sourceFilter === "shared"
+    ? statusFiltered.filter((i) => i._isShared)
+    : sourceFilter === "recommended"
+    ? statusFiltered.filter((i) => i._isRecommended)
+    : statusFiltered;
+
+  const filteredCars = React.useMemo(() => {
+    if (carFilter === "all") return sourceFiltered;
+    if (carFilter.startsWith("rating:")) {
+      const rVal = carFilter.split(":")[1];
+      return sourceFiltered.filter((i) => {
+        const r = parseInt(i.rating, 10);
+        if (rVal === "unrated") return !r;
+        if (rVal === "5") return r === 5;
+        if (rVal === "4+") return r >= 4;
+        if (rVal === "3+") return r >= 3;
+        return true;
+      });
+    }
+    return sourceFiltered;
+  }, [sourceFiltered, carFilter]);
+
+  const sharedCount = cars.filter((i) => i._isShared).length;
+  const recommendedCount = cars.filter((i) => i._isRecommended).length;
   const sectionTitle = `Cars - ${getStatusLabel("cars", filterStatus)}`;
 
   return (
     <>
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4 className="mb-0" style={{ fontWeight: 700 }}>Cars</h4>
-        <Button variant="primary" size="sm" onClick={openForm}>
-          + Add Car
-        </Button>
-      </div>
-
-      <StatusToggle
+      <CategoryListHeader
+        title={"\u{1F697} Cars"}
+        addLabel="+ Add Car"
+        onAdd={openForm}
+        stats={cars.length > 0 ? [
+          { value: cars.length, label: "logged", color: "var(--color-cars, #36C5F0)" },
+        ] : null}
         category="cars"
-        options={carStatuses}
-        value={filterStatus}
-        onChange={setFilterStatus}
+        statusOptions={carStatuses}
+        filterStatus={filterStatus}
+        onStatusChange={setFilterStatus}
+        filterGroups={[RATING_GROUP]}
+        filterValue={carFilter}
+        onFilterChange={setCarFilter}
+        filterColor="var(--color-cars, #36C5F0)"
+        sourceFilter={sourceFilter}
+        onSourceChange={setSourceFilter}
+        avatarUrl={profile?.avatar_url}
+        sharedCount={sharedCount}
+        recommendedCount={recommendedCount}
       />
 
       {filteredCars.length === 0 && !loading && (
@@ -53,7 +93,7 @@ function CarList() {
             &#128663;
           </div>
           <div className="empty-state-title">
-            {cars.length === 0 ? "No cars yet 🚗" : "No matches"}
+            {cars.length === 0 ? "No cars yet \u{1F697}" : "No matches"}
           </div>
           <div className="empty-state-text">
             {cars.length === 0
@@ -75,6 +115,7 @@ function CarList() {
         schema={carSchema}
         onEdit={startEditing}
         onDelete={deleteItem}
+        onViewDetail={setViewDetailItem}
       />
 
       <FormPanel
@@ -93,7 +134,7 @@ function CarList() {
       <SaveToast
         show={showToast}
         onClose={() => setShowToast(false)}
-        message="Car saved ✅"
+        message="Car saved \u2705"
       />
 
       <SnapCaptureModal
@@ -102,6 +143,17 @@ function CarList() {
         onSave={handleSnapSave}
         itemTitle={snapPromptTitle}
       />
+
+      {viewDetailItem && (
+        <EntryDetailPanel
+          item={viewDetailItem}
+          category="cars"
+          schema={carSchema}
+          onClose={() => setViewDetailItem(null)}
+          onSave={() => setViewDetailItem(null)}
+          onDelete={(id) => { deleteItem(id); setViewDetailItem(null); }}
+        />
+      )}
     </>
   );
 }

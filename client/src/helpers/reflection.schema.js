@@ -15,7 +15,7 @@ export function getReflectionFields(experiencedStatus) {
       renderAs: "stars",
       optional: true,
       visibleWhen: { status: experiencedStatus },
-      section: "Reflection",
+      section: "Snapshots",
       order: 30,
     },
     {

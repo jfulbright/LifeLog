@@ -24,13 +24,33 @@ import categoryMeta from "../helpers/categoryMeta";
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getEntryDisplayTitle(entry) {
+  const meta = categoryMeta[entry._category];
+  if (meta?.getPrimaryDisplay) {
+    const display = meta.getPrimaryDisplay(entry);
+    if (display) return display;
+  }
+  if (meta?.primaryField && entry[meta.primaryField]) {
+    return entry[meta.primaryField];
+  }
   if (entry.artist) return entry.artist;
   if (entry.title) return entry.title;
+  if (entry.activityType) return entry.activityType;
+  if (entry.wineName) return entry.wineName;
+  if (entry.whiskyName) return entry.whiskyName;
   if (entry.make) return `${entry.make}${entry.model ? " " + entry.model : ""}`.trim();
   return entry.type || "Entry";
 }
 
 function getEntrySubtitle(entry) {
+  const meta = categoryMeta[entry._category];
+  if (meta?.getSecondaryDisplay) {
+    const display = meta.getSecondaryDisplay(entry);
+    if (display) return display;
+  }
+  if (meta?.secondaryFields) {
+    const parts = meta.secondaryFields.map((f) => entry[f]).filter(Boolean);
+    if (parts.length > 0) return parts.join(", ");
+  }
   const parts = [];
   if (entry.venue) parts.push(entry.venue);
   if (entry.city) parts.push(entry.city);
@@ -46,7 +66,7 @@ function formatDateRange(entry) {
 
 // ── Shared Entry Card ─────────────────────────────────────────────────────────
 
-function SharedEntryCard({ entry, tag, contacts, onAccept, onDecline, onViewOverlays }) {
+function SharedEntryCard({ entry, tag, contacts, onAccept, onDecline, onViewOverlays, onEditShared, onLeaveShare }) {
   const meta = categoryMeta[entry._category] || {};
 
   // Find who shared this with us
@@ -92,6 +112,19 @@ function SharedEntryCard({ entry, tag, contacts, onAccept, onDecline, onViewOver
             <span style={{ fontWeight: 700, fontSize: "var(--font-size-base)", color: "var(--color-text-primary)" }}>
               {getEntryDisplayTitle(entry)}
             </span>
+            {entry.status && (
+              <span style={{
+                fontSize: "0.6rem",
+                fontWeight: 700,
+                padding: "0.1rem 0.4rem",
+                borderRadius: 6,
+                background: entry.status === "wishlist" ? "var(--color-warning)" : "var(--color-success)",
+                color: entry.status === "wishlist" ? "#1D1C1D" : "#fff",
+                textTransform: "capitalize",
+              }}>
+                {entry.status}
+              </span>
+            )}
             <StatusBadge status={tagStatus} />
           </div>
 
@@ -160,12 +193,26 @@ function SharedEntryCard({ entry, tag, contacts, onAccept, onDecline, onViewOver
             paddingTop: "0.75rem",
             borderTop: "1px solid var(--color-border)",
             display: "flex",
-            justifyContent: "flex-end",
+            justifyContent: "space-between",
+            alignItems: "center",
           }}
         >
-          <Button variant="outline-primary" size="sm" onClick={() => onViewOverlays(entry, tag)}>
-            View &amp; Add Snapshots
+          <Button
+            variant="outline-danger"
+            size="sm"
+            onClick={() => onLeaveShare && onLeaveShare(entry)}
+            style={{ fontSize: "var(--font-size-xs)" }}
+          >
+            Leave Share
           </Button>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <Button variant="outline-primary" size="sm" onClick={() => onEditShared && onEditShared(entry)}>
+              Edit
+            </Button>
+            <Button variant="primary" size="sm" onClick={() => onViewOverlays(entry, tag)}>
+              Add Memories
+            </Button>
+          </div>
         </div>
       )}
     </div>
@@ -343,6 +390,7 @@ function SharedFeed() {
   const [filterRing, setFilterRing] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [overlayTarget, setOverlayTarget] = useState(null);
+  const [editTarget, setEditTarget] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -450,6 +498,20 @@ function SharedFeed() {
 
   const handleViewOverlays = (entry, tag) => {
     setOverlayTarget({ entry, tag });
+  };
+
+  const handleEditShared = (entry) => {
+    setEditTarget(entry);
+  };
+
+  const handleLeaveShare = async (entry) => {
+    if (!window.confirm("This will remove this shared experience from your account. The owner will still have it. Continue?")) return;
+    if (isCollaboratorMode) {
+      await collaboratorService.declineCollaboration(entry._collabId);
+    }
+    await load();
+    refreshNotifications();
+    window.dispatchEvent(new Event("data-changed"));
   };
 
   const handleSaveOverlay = async (overlayData) => {
@@ -570,6 +632,8 @@ function SharedFeed() {
               onAccept={handleAccept}
               onDecline={handleDecline}
               onViewOverlays={handleViewOverlays}
+              onEditShared={handleEditShared}
+              onLeaveShare={handleLeaveShare}
             />
           );
         })
@@ -585,6 +649,223 @@ function SharedFeed() {
           onSave={handleSaveOverlay}
         />
       )}
+
+      {editTarget && (
+        <SharedEditPanel
+          entry={editTarget}
+          contacts={contacts}
+          onClose={() => setEditTarget(null)}
+          onSave={async (updatedData) => {
+            try {
+              const { supabase } = await import("../services/supabaseClient");
+              await supabase
+                .from("items")
+                .update({ data: updatedData })
+                .eq("id", editTarget.id);
+              await load();
+              setEditTarget(null);
+              window.dispatchEvent(new Event("data-changed"));
+            } catch (err) {
+              console.error("[SharedFeed] edit save failed:", err);
+            }
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function SharedEditPanel({ entry, contacts, onClose, onSave }) {
+  const [formData, setFormData] = useState({ ...entry });
+  const [whyNotes, setWhyNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [notesSaved, setNotesSaved] = useState(false);
+
+  useEffect(() => {
+    overlayService.getMyOverlay(entry.id).then((o) => {
+      if (o?.why_notes) setWhyNotes(o.why_notes);
+    }).catch(() => {});
+  }, [entry.id]);
+
+  const meta = categoryMeta[entry._category] || {};
+  const title = getEntryDisplayTitle(entry);
+
+  const handleSave = async () => {
+    setSaving(true);
+    const now = new Date().toISOString();
+    const updated = {
+      ...formData,
+      last_edited_at: now,
+    };
+    await onSave(updated);
+    setSaving(false);
+  };
+
+  const handleSaveNotes = async () => {
+    try {
+      await overlayService.saveOverlay(entry.id, { why_notes: whyNotes });
+      setNotesSaved(true);
+      setTimeout(() => setNotesSaved(false), 3000);
+    } catch (err) {
+      console.error("[SharedEditPanel] notes save failed:", err);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.5)",
+        zIndex: 2000,
+        display: "flex",
+        alignItems: "flex-end",
+        justifyContent: "center",
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: "var(--color-surface)",
+          borderRadius: "16px 16px 0 0",
+          padding: "1.5rem",
+          width: "100%",
+          maxWidth: 560,
+          maxHeight: "85vh",
+          overflowY: "auto",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+          <h6 style={{ fontWeight: 700, margin: 0 }}>Edit — {title}</h6>
+          <button type="button" onClick={onClose} style={{ background: "none", border: "none", fontSize: "1.5rem", lineHeight: 1, cursor: "pointer", color: "var(--color-text-tertiary)" }}>×</button>
+        </div>
+
+        {entry.last_edited_at && (
+          <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)", marginBottom: "1rem", fontStyle: "italic" }}>
+            Last updated {new Date(entry.last_edited_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+          </div>
+        )}
+
+        <div style={{ marginBottom: "1rem" }}>
+          <label style={{ display: "block", fontSize: "var(--font-size-xs)", fontWeight: 700, color: "var(--color-text-secondary)", marginBottom: "0.25rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            {meta.icon} Category
+          </label>
+          <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-primary)", fontWeight: 600 }}>
+            {entry._category?.charAt(0).toUpperCase() + entry._category?.slice(1)}
+            {entry.activityType && ` — ${entry.activityType}`}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: 140 }}>
+            <label style={{ display: "block", fontSize: "var(--font-size-xs)", fontWeight: 600, marginBottom: "0.25rem" }}>City</label>
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              value={formData.city || ""}
+              onChange={(e) => setFormData((p) => ({ ...p, city: e.target.value }))}
+            />
+          </div>
+          <div style={{ flex: 1, minWidth: 140 }}>
+            <label style={{ display: "block", fontSize: "var(--font-size-xs)", fontWeight: 600, marginBottom: "0.25rem" }}>Country</label>
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              value={formData.country || ""}
+              onChange={(e) => setFormData((p) => ({ ...p, country: e.target.value }))}
+            />
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: 140 }}>
+            <label style={{ display: "block", fontSize: "var(--font-size-xs)", fontWeight: 600, marginBottom: "0.25rem" }}>Start Date</label>
+            <input
+              type="date"
+              className="form-control form-control-sm"
+              value={formData.startDate || ""}
+              onChange={(e) => setFormData((p) => ({ ...p, startDate: e.target.value }))}
+            />
+          </div>
+          <div style={{ flex: 1, minWidth: 140 }}>
+            <label style={{ display: "block", fontSize: "var(--font-size-xs)", fontWeight: 600, marginBottom: "0.25rem" }}>End Date</label>
+            <input
+              type="date"
+              className="form-control form-control-sm"
+              value={formData.endDate || ""}
+              onChange={(e) => setFormData((p) => ({ ...p, endDate: e.target.value }))}
+            />
+          </div>
+        </div>
+
+        {entry.locationName !== undefined && (
+          <div style={{ marginBottom: "1rem" }}>
+            <label style={{ display: "block", fontSize: "var(--font-size-xs)", fontWeight: 600, marginBottom: "0.25rem" }}>Venue / Location</label>
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              value={formData.locationName || formData.venue || ""}
+              onChange={(e) => setFormData((p) => ({ ...p, locationName: e.target.value, venue: e.target.value }))}
+            />
+          </div>
+        )}
+
+        <Button variant="primary" className="w-100 mb-3" onClick={handleSave} disabled={saving}>
+          {saving ? "Saving..." : "Save Changes"}
+        </Button>
+
+        {/* Collaborative "Why this..." notes section */}
+        <div style={{
+          borderTop: "1px solid var(--color-border)",
+          paddingTop: "1rem",
+          marginTop: "0.5rem",
+        }}>
+          {entry.wishlistReason && (
+            <div style={{ marginBottom: "1rem" }}>
+              <div style={{ fontSize: "var(--font-size-xs)", fontWeight: 700, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.375rem" }}>
+                💭 Why this {entry._category === "activities" ? "activity" : entry._category === "travel" ? "place" : "experience"}
+              </div>
+              <div style={{
+                fontStyle: "italic",
+                fontSize: "var(--font-size-sm)",
+                color: "var(--color-text-secondary)",
+                background: "var(--color-bg, #fafafa)",
+                padding: "0.625rem 0.75rem",
+                borderRadius: 6,
+                borderLeft: "3px solid var(--color-primary)",
+              }}>
+                "{entry.wishlistReason}"
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label style={{ display: "block", fontSize: "var(--font-size-xs)", fontWeight: 700, color: "var(--color-text-secondary)", marginBottom: "0.375rem" }}>
+              ✨ My thoughts / I have some ideas
+            </label>
+            <textarea
+              className="form-control"
+              rows={3}
+              maxLength={500}
+              value={whyNotes}
+              onChange={(e) => setWhyNotes(e.target.value)}
+              placeholder={entry.status === "wishlist" ? "What excites you? Any ideas for planning?" : "Your personal memory or notes..."}
+              style={{ fontSize: "var(--font-size-sm)" }}
+            />
+            <div className="d-flex align-items-center gap-2 mt-2">
+              <Button size="sm" variant="outline-primary" onClick={handleSaveNotes} disabled={!whyNotes.trim()}>
+                Save Notes
+              </Button>
+              {notesSaved && (
+                <span style={{ fontSize: "var(--font-size-xs)", color: "var(--color-success)", fontWeight: 600 }}>
+                  Saved!
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

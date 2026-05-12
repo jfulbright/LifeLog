@@ -3,8 +3,30 @@ import { Link } from "react-router-dom";
 import categoryMeta from "../helpers/categoryMeta";
 import { getAllSnapshots, getItemPhotos } from "../helpers/operator";
 import dataService from "../services/dataService";
+import SourceFilterPills from "../components/shared/SourceFilterPills";
+import StatsStrip from "../components/shared/StatsStrip";
+import { isEntryShared } from "../components/shared/PrivacyIndicator";
+import EntryDetailPanel from "../components/shared/EntryDetailPanel";
+import { useAppData } from "../contexts/AppDataContext";
+import eventSchema from "../features/events/eventSchema";
+import travelSchema from "../features/travel/travelSchema";
+import carSchema from "../features/cars/carSchema";
+import homeSchema from "../features/homes/homeSchema";
+import activitySchema from "../features/activities/activitySchema";
+import cellarSchema from "../features/cellar/cellarSchema";
+import kidsSchema from "../features/kids/kidsSchema";
 
-const CATEGORY_KEYS = ["events", "concerts", "travel", "cars", "homes", "activities", "cellar", "kids"];
+const SCHEMA_MAP = {
+  events: eventSchema,
+  travel: travelSchema,
+  cars: carSchema,
+  homes: homeSchema,
+  activities: activitySchema,
+  cellar: cellarSchema,
+  kids: kidsSchema,
+};
+
+const CATEGORY_KEYS = ["events", "travel", "cars", "homes", "activities", "cellar", "kids"];
 
 const categories = CATEGORY_KEYS.map((key) => ({
   key,
@@ -31,9 +53,12 @@ function formatDate(dateStr) {
 function Snaps() {
   const [activeView, setActiveView] = useState("all");
   const [activeCategory, setActiveCategory] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
   const [allSnaps, setAllSnaps] = useState([]);
   const [allPhotos, setAllPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [detailEntry, setDetailEntry] = useState(null);
+  const { profile } = useAppData();
 
   useEffect(() => {
     let cancelled = false;
@@ -42,7 +67,7 @@ function Snaps() {
       const groups = await Promise.all(
         categories.map(async (cat) => {
           const meta = categoryMeta[cat.key] || {};
-          const items = await dataService.getItems(cat.key);
+          const items = await dataService.getItemsWithShared(cat.key);
 
           const snaps = [];
           const photos = [];
@@ -63,11 +88,14 @@ function Snaps() {
                 kind: "snap",
                 text,
                 title,
+                itemId: item.id,
                 category: cat.key,
                 label: cat.label,
                 icon: meta.icon,
                 color: meta.color,
                 date,
+                isShared: isEntryShared(item),
+                rawItem: item,
                 key: `${cat.key}-snap-${item.id || title}-${i}`,
               });
             });
@@ -78,11 +106,14 @@ function Snaps() {
                 kind: "photo",
                 url,
                 title,
+                itemId: item.id,
                 category: cat.key,
                 label: cat.label,
                 icon: meta.icon,
                 color: meta.color,
                 date,
+                isShared: isEntryShared(item),
+                rawItem: item,
                 key: `${cat.key}-photo-${item.id || title}-${i}`,
               });
             });
@@ -106,12 +137,18 @@ function Snaps() {
   const filterByCategory = (items) =>
     activeCategory === "all" ? items : items.filter((i) => i.category === activeCategory);
 
+  const filterBySource = (items) => {
+    if (sourceFilter === "mine") return items.filter((i) => !i.isShared);
+    if (sourceFilter === "shared") return items.filter((i) => i.isShared);
+    return items;
+  };
+
   const sortByDate = (items) =>
     [...items].sort((a, b) => b.date.localeCompare(a.date));
 
-  const filteredSnaps = sortByDate(filterByCategory(allSnaps));
-  const filteredPhotos = sortByDate(filterByCategory(allPhotos));
-  const filteredAll = sortByDate(filterByCategory([...allSnaps, ...allPhotos]));
+  const filteredSnaps = sortByDate(filterBySource(filterByCategory(allSnaps)));
+  const filteredPhotos = sortByDate(filterBySource(filterByCategory(allPhotos)));
+  const filteredAll = sortByDate(filterBySource(filterByCategory([...allSnaps, ...allPhotos])));
 
   const visibleItems =
     activeView === "snaps" ? filteredSnaps :
@@ -134,20 +171,33 @@ function Snaps() {
     <div>
       <div className="d-flex align-items-center justify-content-between mb-3">
         <h4 style={{ fontWeight: 700, margin: 0 }}>📸 Memories</h4>
-        <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)" }}>
-          {totalSnaps > 0 && `${totalSnaps} snap${totalSnaps !== 1 ? "s" : ""}`}
-          {totalSnaps > 0 && totalPhotos > 0 && " · "}
-          {totalPhotos > 0 && `${totalPhotos} photo${totalPhotos !== 1 ? "s" : ""}`}
-        </div>
       </div>
 
+      {(totalSnaps > 0 || totalPhotos > 0) && (
+        <StatsStrip stats={[
+          ...(totalSnaps > 0 ? [{ value: totalSnaps, label: "snaps", color: "var(--color-primary)" }] : []),
+          ...(totalPhotos > 0 ? [{ value: totalPhotos, label: "photos", color: "var(--color-events)" }] : []),
+        ]} />
+      )}
+
       {/* View tabs: All / Snaps / Photos */}
-      <div className="memories-view-tabs mb-3">
+      <div className="d-flex gap-2 mb-3">
         {VIEW_TABS.map((tab) => (
           <button
             key={tab.id}
-            className={`memories-tab-btn${activeView === tab.id ? " active" : ""}`}
+            type="button"
             onClick={() => setActiveView(tab.id)}
+            style={{
+              padding: "0.3rem 0.9rem",
+              borderRadius: "20px",
+              border: "2px solid var(--color-primary)",
+              background: activeView === tab.id ? "var(--color-primary)" : "transparent",
+              color: activeView === tab.id ? "#fff" : "var(--color-primary)",
+              fontWeight: 600,
+              fontSize: "var(--font-size-sm)",
+              cursor: "pointer",
+              transition: "all 0.15s",
+            }}
           >
             {tab.label}
           </button>
@@ -156,7 +206,7 @@ function Snaps() {
 
       {/* Category filter pills */}
       {categoriesWithContent.length > 1 && (
-        <div className="status-toggle mb-4">
+        <div className="status-toggle mb-3">
           <button
             className={`btn ${activeCategory === "all" ? "active" : ""}`}
             onClick={() => setActiveCategory("all")}
@@ -177,6 +227,13 @@ function Snaps() {
           })}
         </div>
       )}
+
+      <SourceFilterPills
+        value={sourceFilter}
+        onChange={setSourceFilter}
+        avatarUrl={profile?.avatar_url}
+        sharedCount={[...allSnaps, ...allPhotos].filter((i) => i.isShared).length}
+      />
 
       {isEmpty ? (
         <div className="empty-state">
@@ -208,14 +265,14 @@ function Snaps() {
         /* ── Photo grid layout ── */
         <div className="memories-photo-grid">
           {filteredPhotos.map((photo) => (
-            <PhotoCard key={photo.key} item={photo} />
+            <PhotoCard key={photo.key} item={photo} onViewDetail={setDetailEntry} />
           ))}
         </div>
       ) : activeView === "snaps" ? (
         /* ── Text snaps layout ── */
         <div className="snaps-gallery">
           {filteredSnaps.map((snap) => (
-            <SnapCard key={snap.key} item={snap} />
+            <SnapCard key={snap.key} item={snap} onViewDetail={setDetailEntry} />
           ))}
         </div>
       ) : (
@@ -223,20 +280,40 @@ function Snaps() {
         <div className="memories-mixed-feed">
           {visibleItems.map((item) =>
             item.kind === "photo" ? (
-              <PhotoCard key={item.key} item={item} compact />
+              <PhotoCard key={item.key} item={item} compact onViewDetail={setDetailEntry} />
             ) : (
-              <SnapCard key={item.key} item={item} />
+              <SnapCard key={item.key} item={item} onViewDetail={setDetailEntry} />
             )
           )}
         </div>
+      )}
+
+      {detailEntry && (
+        <EntryDetailPanel
+          item={detailEntry.rawItem}
+          category={detailEntry.category}
+          schema={SCHEMA_MAP[detailEntry.category] || []}
+          onClose={() => setDetailEntry(null)}
+          onSave={(updatedData) => {
+            dataService.saveItems(detailEntry.category, [updatedData]);
+            setDetailEntry(null);
+          }}
+          onDelete={(id) => {
+            setDetailEntry(null);
+          }}
+        />
       )}
     </div>
   );
 }
 
-function SnapCard({ item }) {
+function SnapCard({ item, onViewDetail }) {
   return (
-    <div className="snap-card" style={{ borderLeftColor: item.color }}>
+    <div
+      className="snap-card"
+      style={{ borderLeftColor: item.color, cursor: "pointer" }}
+      onClick={() => item.rawItem && onViewDetail(item)}
+    >
       <div className="snap-card-quote">✨ &ldquo;{item.text}&rdquo;</div>
       <div className="snap-card-source">
         <span className="snap-card-icon" aria-hidden="true">{item.icon}</span>
@@ -254,9 +331,13 @@ function SnapCard({ item }) {
   );
 }
 
-function PhotoCard({ item, compact = false }) {
+function PhotoCard({ item, compact = false, onViewDetail }) {
   return (
-    <div className={`memories-photo-card${compact ? " compact" : ""}`}>
+    <div
+      className={`memories-photo-card${compact ? " compact" : ""}`}
+      style={{ cursor: "pointer" }}
+      onClick={() => item.rawItem && onViewDetail(item)}
+    >
       <img
         src={item.url}
         alt={item.title}

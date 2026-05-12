@@ -92,7 +92,7 @@ const travelFields = [
     optional: true,
     visibleWhen: { status: "wishlist" },
     section: "Planning",
-    order: 35,
+    order: 14,
   },
   {
     name: "targetYear",
@@ -103,7 +103,7 @@ const travelFields = [
     inputMode: "numeric",
     visibleWhen: { status: "wishlist" },
     section: "Planning",
-    order: 36,
+    order: 15,
   },
   {
     name: "wishlistReason",
@@ -112,8 +112,8 @@ const travelFields = [
     placeholder: "What draws you here?",
     optional: true,
     visibleWhen: { status: "wishlist" },
-    section: "Planning",
-    order: 37,
+    section: "Details",
+    order: 51,
     fullWidth: true,
   },
   {
@@ -135,7 +135,7 @@ const travelFields = [
     type: "visible-to",
     optional: true,
     section: "Social",
-    order: 62,
+    order: 65,
     fullWidth: true,
   },
   {
@@ -144,7 +144,7 @@ const travelFields = [
     type: "recommend",
     optional: true,
     section: "Social",
-    order: 64,
+    order: 61,
   },
 
   // ── Details ───────────────────────────────────────────────────────────────────

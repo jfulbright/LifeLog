@@ -4,7 +4,6 @@ import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import CarList from "./features/cars/components/CarList";
 import HomeList from "./features/homes/components/HomeList";
 import TravelList from "./features/travel/components/TravelList";
-import ConcertList from "./features/concerts/components/ConcertList";
 import EventList from "./features/events/components/EventList";
 import ActivityList from "./features/activities/components/ActivityList";
 import CellarList from "./features/cellar/components/CellarList";
@@ -123,7 +122,6 @@ function AppShell() {
             <Route path="/travel" element={<TravelList />} />
             <Route path="/travel/stats" element={<TravelStatsPage />} />
             <Route path="/activities" element={<ActivityList />} />
-            <Route path="/concerts" element={<ConcertList />} />
             <Route path="/events" element={<EventList />} />
             <Route path="/cellar" element={<CellarList />} />
             <Route path="/kids" element={<KidsList />} />

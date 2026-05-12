@@ -1,142 +1,27 @@
-import React, { useMemo, useEffect } from "react";
+import React, { useEffect } from "react";
 import { Button } from "react-bootstrap";
 import { useLocation } from "react-router-dom";
 import ActivityForm from "./ActivityForm";
 import ItemCardList from "../../../components/shared/ItemCardList";
-import StatusToggle from "../../../components/shared/StatusToggle";
 import FormPanel from "../../../components/shared/FormPanel";
 import SaveToast from "../../../components/shared/SaveToast";
 import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
+import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
+import CategoryListHeader from "../../../components/shared/CategoryListHeader";
+import { RATING_GROUP } from "../../../components/shared/GroupedDropdownFilter";
 import activitySchema, { ACTIVITY_TYPES } from "../activitySchema";
 import useCategory from "../../../hooks/useCategory";
+import { useAppData } from "../../../contexts/AppDataContext";
 import {
   getStatusFilterOptions,
   filterByStatus,
 } from "../../../helpers/filterUtils";
 
-function ActivityTypeFilter({ value, onChange }) {
-  const groupLabels = Object.values(ACTIVITY_TYPES).map((g) => ({
-    label: g.label,
-    options: g.options,
-  }));
-
-  return (
-    <div className="d-flex gap-2 flex-wrap mb-3">
-      <button
-        type="button"
-        onClick={() => onChange("all")}
-        style={{
-          padding: "0.3rem 0.75rem",
-          borderRadius: "20px",
-          border: "2px solid var(--color-activities, #2EB67D)",
-          background: value === "all" ? "var(--color-activities, #2EB67D)" : "transparent",
-          color: value === "all" ? "#fff" : "var(--color-activities, #2EB67D)",
-          fontWeight: 600,
-          fontSize: "var(--font-size-sm)",
-          cursor: "pointer",
-        }}
-      >
-        All
-      </button>
-      {groupLabels.map((group) => (
-        <details key={group.label} style={{ display: "inline-block" }}>
-          <summary style={{
-            padding: "0.3rem 0.75rem",
-            borderRadius: "20px",
-            border: "2px solid var(--color-activities, #2EB67D)",
-            background: group.options.includes(value) ? "var(--color-activities, #2EB67D)" : "transparent",
-            color: group.options.includes(value) ? "#fff" : "var(--color-activities, #2EB67D)",
-            fontWeight: 600,
-            fontSize: "var(--font-size-sm)",
-            cursor: "pointer",
-            listStyle: "none",
-          }}>
-            {group.label}
-          </summary>
-          <div style={{
-            position: "absolute",
-            zIndex: 100,
-            background: "var(--color-surface)",
-            border: "1px solid var(--color-border)",
-            borderRadius: "var(--card-radius)",
-            padding: "0.5rem",
-            boxShadow: "var(--card-shadow-hover)",
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.25rem",
-            minWidth: 160,
-          }}>
-            {group.options.map((opt) => (
-              <button
-                key={opt}
-                type="button"
-                onClick={() => { onChange(opt); }}
-                style={{
-                  textAlign: "left",
-                  padding: "0.3rem 0.5rem",
-                  border: "none",
-                  background: value === opt ? "var(--color-surface-hover)" : "none",
-                  borderRadius: 4,
-                  cursor: "pointer",
-                  fontSize: "var(--font-size-sm)",
-                  fontWeight: value === opt ? 700 : 400,
-                }}
-              >
-                {opt}
-              </button>
-            ))}
-          </div>
-        </details>
-      ))}
-    </div>
-  );
-}
-
-function ActivityStats({ items }) {
-  const stats = useMemo(() => {
-    const done = items.filter((i) => i.status === "done");
-    const byType = {};
-    done.forEach((i) => {
-      const t = i.activityType || "Other";
-      byType[t] = (byType[t] || 0) + 1;
-    });
-    return { total: done.length, byType };
-  }, [items]);
-
-  if (stats.total === 0) return null;
-
-  return (
-    <div style={{
-      background: "linear-gradient(135deg, #F0FAF6 0%, #EAF8FE 100%)",
-      border: "1px solid var(--color-border)",
-      borderRadius: "var(--card-radius)",
-      padding: "0.75rem 1rem",
-      marginBottom: "1rem",
-      display: "flex",
-      gap: "1.5rem",
-      flexWrap: "wrap",
-      alignItems: "center",
-    }}>
-      <div style={{ fontWeight: 700, color: "var(--color-text-secondary)", fontSize: "var(--font-size-xs)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-        Your adventures
-      </div>
-      <div>
-        <span style={{ fontWeight: 800, fontSize: "1.1rem", color: "#2EB67D" }}>{stats.total}</span>
-        <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-sm)", marginLeft: "0.3rem" }}>completed</span>
-      </div>
-      {Object.entries(stats.byType).slice(0, 4).map(([type, count]) => (
-        <div key={type}>
-          <span style={{ fontWeight: 700, color: "#2EB67D" }}>{count}</span>
-          <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-sm)", marginLeft: "0.3rem" }}>{type}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function ActivityList() {
   const location = useLocation();
   const [activityTypeFilter, setActivityTypeFilter] = React.useState("all");
+  const [sourceFilter, setSourceFilter] = React.useState("all");
+  const { profile } = useAppData();
 
   const {
     items: activities,
@@ -147,9 +32,9 @@ function ActivityList() {
     showToast, setShowToast,
     handleSubmit, startEditing, deleteItem, closeForm, openForm,
     showSnapPrompt, snapPromptTitle, handleSnapSave, dismissSnapPrompt,
+    viewDetailItem, setViewDetailItem,
   } = useCategory("activities", { schema: activitySchema });
 
-  // Auto-open the form pre-filled when navigated from Travel's next-steps card
   useEffect(() => {
     const pre = location.state?.prefilledTripTitle;
     if (pre) {
@@ -159,41 +44,75 @@ function ActivityList() {
 
   const activityStatuses = getStatusFilterOptions("activities");
   const statusFiltered = filterByStatus(activities, filterStatus);
-  const filteredActivities = activityTypeFilter === "all"
-    ? statusFiltered
-    : statusFiltered.filter((i) => i.activityType === activityTypeFilter);
+  const sourceFiltered = sourceFilter === "mine"
+    ? statusFiltered.filter((i) => !i._isShared)
+    : sourceFilter === "shared"
+    ? statusFiltered.filter((i) => i._isShared)
+    : sourceFilter === "recommended"
+    ? statusFiltered.filter((i) => i._isRecommended)
+    : statusFiltered;
+  const filteredActivities = React.useMemo(() => {
+    if (activityTypeFilter === "all") return sourceFiltered;
+    if (activityTypeFilter.startsWith("rating:")) {
+      const rVal = activityTypeFilter.split(":")[1];
+      return sourceFiltered.filter((i) => {
+        const r = parseInt(i.rating, 10);
+        if (rVal === "unrated") return !r;
+        if (rVal === "5") return r === 5;
+        if (rVal === "4+") return r >= 4;
+        if (rVal === "3+") return r >= 3;
+        return true;
+      });
+    }
+    return sourceFiltered.filter((i) => i.activityType === activityTypeFilter);
+  }, [sourceFiltered, activityTypeFilter]);
+  const sharedCount = activities.filter((i) => i._isShared).length;
+  const recommendedCount = activities.filter((i) => i._isRecommended).length;
+
+  const done = activities.filter((i) => i.status === "done");
 
   return (
     <>
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4 className="mb-0" style={{ fontWeight: 700 }}>🏔️ Activities</h4>
-        <Button variant="primary" size="sm" onClick={openForm}>
-          + Log Activity
-        </Button>
-      </div>
-
-      <ActivityStats items={activities} />
-
-      <StatusToggle
+      <CategoryListHeader
+        title={"\u{1F3D4}\uFE0F Activities"}
+        addLabel="+ Log Activity"
+        onAdd={openForm}
+        stats={done.length > 0 ? [
+          { value: done.length, label: "accomplished", color: "#2EB67D" },
+        ] : null}
         category="activities"
-        options={activityStatuses}
-        value={filterStatus}
-        onChange={setFilterStatus}
+        statusOptions={activityStatuses}
+        filterStatus={filterStatus}
+        onStatusChange={setFilterStatus}
+        filterGroups={[
+          ...Object.entries(ACTIVITY_TYPES).map(([key, g]) => ({
+            key,
+            label: g.label,
+            options: g.options.map((opt) => ({ value: opt, label: opt })),
+          })),
+          RATING_GROUP,
+        ]}
+        filterValue={activityTypeFilter}
+        onFilterChange={setActivityTypeFilter}
+        filterColor="var(--color-activities, #2EB67D)"
+        sourceFilter={sourceFilter}
+        onSourceChange={setSourceFilter}
+        avatarUrl={profile?.avatar_url}
+        sharedCount={sharedCount}
+        recommendedCount={recommendedCount}
       />
-
-      <ActivityTypeFilter value={activityTypeFilter} onChange={setActivityTypeFilter} />
 
       {filteredActivities.length === 0 && !loading && (
         <div className="empty-state">
           <div className="empty-state-icon" style={{ backgroundColor: "#2EB67D", color: "#fff" }}>
-            🏔️
+            {"🏔️"}
           </div>
           <div className="empty-state-title">
             {activities.length === 0 ? "No adventures yet" : "No matches"}
           </div>
           <div className="empty-state-text">
             {activities.length === 0
-              ? "Log your first activity — snowboarding, hiking, surfing, and more."
+              ? "Log your first activity \u2014 snowboarding, hiking, surfing, and more."
               : "No activities match this filter."}
           </div>
           {activities.length === 0 && (
@@ -210,6 +129,7 @@ function ActivityList() {
         schema={activitySchema}
         onEdit={startEditing}
         onDelete={deleteItem}
+        onViewDetail={setViewDetailItem}
         renderCompactExtra={(item) =>
           item.linkedTripTitle ? (
             <div style={{
@@ -220,7 +140,7 @@ function ActivityList() {
               fontSize: "var(--font-size-xs)",
               color: "var(--color-text-tertiary)",
             }}>
-              ✈️ {item.linkedTripTitle}
+              {"\u2708\uFE0F"} {item.linkedTripTitle}
             </div>
           ) : null
         }
@@ -242,7 +162,7 @@ function ActivityList() {
       <SaveToast
         show={showToast}
         onClose={() => setShowToast(false)}
-        message="Activity logged ✅"
+        message="Activity logged \u2705"
       />
 
       <SnapCaptureModal
@@ -251,6 +171,22 @@ function ActivityList() {
         onSave={handleSnapSave}
         itemTitle={snapPromptTitle}
       />
+
+      {viewDetailItem && (
+        <EntryDetailPanel
+          item={viewDetailItem}
+          category="activities"
+          schema={activitySchema}
+          onClose={() => setViewDetailItem(null)}
+          onSave={(updatedData) => {
+            setViewDetailItem(null);
+          }}
+          onDelete={(id) => {
+            deleteItem(id);
+            setViewDetailItem(null);
+          }}
+        />
+      )}
     </>
   );
 }

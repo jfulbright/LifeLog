@@ -6,6 +6,27 @@ import { getStatusLabel } from "../helpers/statusLabels";
 import { getSnapshotTeaser } from "../helpers/operator";
 import dataService from "../services/dataService";
 import PrivacyIndicator, { isEntryShared } from "../components/shared/PrivacyIndicator";
+import SourceFilterPills from "../components/shared/SourceFilterPills";
+import EntryDetailPanel from "../components/shared/EntryDetailPanel";
+import StatsStrip from "../components/shared/StatsStrip";
+import { useAppData } from "../contexts/AppDataContext";
+import eventSchema from "../features/events/eventSchema";
+import travelSchema from "../features/travel/travelSchema";
+import carSchema from "../features/cars/carSchema";
+import homeSchema from "../features/homes/homeSchema";
+import activitySchema from "../features/activities/activitySchema";
+import cellarSchema from "../features/cellar/cellarSchema";
+import kidsSchema from "../features/kids/kidsSchema";
+
+const SCHEMA_MAP = {
+  events: eventSchema,
+  travel: travelSchema,
+  cars: carSchema,
+  homes: homeSchema,
+  activities: activitySchema,
+  cellar: cellarSchema,
+  kids: kidsSchema,
+};
 
 const CATEGORY_KEYS = ["events", "travel", "cars", "homes", "activities", "cellar", "kids"];
 
@@ -19,64 +40,14 @@ const MONTH_NAMES = [
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
-function MiniStats({ entries }) {
-  if (entries.length === 0) return null;
-
-  const totalEntries = entries.length;
-  const categoriesUsed = [...new Set(entries.map((e) => e.category))].length;
-  const countries = [...new Set(
-    entries.filter((e) => e.country && e.country !== "US").map((e) => e.country)
-  )].length;
-  const wishlistCount = entries.filter((e) => e.isWishlist).length;
-
-  return (
-    <div style={{
-      display: "flex",
-      gap: "0.5rem",
-      flexWrap: "wrap",
-      alignItems: "center",
-      background: "var(--color-surface)",
-      border: "1px solid var(--color-border)",
-      borderRadius: "var(--card-radius, 8px)",
-      padding: "0.55rem 1rem",
-      marginBottom: "0.75rem",
-      fontSize: "var(--font-size-sm)",
-    }}>
-      <span style={{ fontWeight: 800, color: "var(--color-primary)" }}>{totalEntries}</span>
-      <span style={{ color: "var(--color-text-secondary)" }}>entries</span>
-      <span style={{ color: "var(--color-text-tertiary)" }}>&middot;</span>
-      <span style={{ fontWeight: 800, color: "var(--color-events, #611F69)" }}>{categoriesUsed}</span>
-      <span style={{ color: "var(--color-text-secondary)" }}>categories</span>
-      {countries > 0 && (
-        <>
-          <span style={{ color: "var(--color-text-tertiary)" }}>&middot;</span>
-          <span style={{ fontWeight: 800, color: "var(--color-travel)" }}>{countries}</span>
-          <span style={{ color: "var(--color-text-secondary)" }}>countries</span>
-        </>
-      )}
-      {wishlistCount > 0 && (
-        <>
-          <span style={{ color: "var(--color-text-tertiary)" }}>&middot;</span>
-          <span style={{ fontWeight: 800, color: "var(--color-warning)" }}>{wishlistCount}</span>
-          <span style={{ color: "var(--color-text-secondary)" }}>planned</span>
-        </>
-      )}
-      <Link
-        to="/travel/stats"
-        style={{ marginLeft: "auto", fontSize: "var(--font-size-xs)", fontWeight: 600, color: "var(--color-travel)", textDecoration: "none" }}
-      >
-        Full Stats &rarr;
-      </Link>
-    </div>
-  );
-}
-
 function Timeline() {
   const [activeYear, setActiveYear] = useState("all");
   const [activeMonth, setActiveMonth] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [allEntries, setAllEntries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [detailEntry, setDetailEntry] = useState(null);
+  const { profile } = useAppData();
 
   useEffect(() => {
     let cancelled = false;
@@ -197,7 +168,18 @@ function Timeline() {
       </div>
 
       {/* Teaser stats */}
-      <MiniStats entries={allEntries} />
+      {(() => {
+        if (allEntries.length === 0) return null;
+        const totalEntries = allEntries.length;
+        const categoriesUsed = [...new Set(allEntries.map((e) => e.category))].length;
+        const countries = [...new Set(allEntries.filter((e) => e.country && e.country !== "US").map((e) => e.country))].length;
+        const stats = [
+          { value: totalEntries, label: "entries", color: "var(--color-primary)" },
+          { value: categoriesUsed, label: "categories" },
+        ];
+        if (countries > 0) stats.push({ value: countries, label: "countries", color: "var(--color-travel)" });
+        return <StatsStrip stats={stats} />;
+      })()}
 
       {/* Year pills */}
       {years.length > 0 && (
@@ -227,7 +209,7 @@ function Timeline() {
       )}
 
       {/* Month sub-pills (only when a year is selected) */}
-      {activeYear !== "all" && monthsWithData.length > 1 && (
+      {activeYear !== "all" && monthsWithData.length > 0 && (
         <div className="status-toggle mb-2" style={{ fontSize: "var(--font-size-xs)" }}>
           <button
             className={`btn ${activeMonth === "all" ? "active" : ""}`}
@@ -248,30 +230,12 @@ function Timeline() {
       )}
 
       {/* Source filter (All / Mine / Shared) */}
-      <div className="d-flex gap-2 mb-3" style={{ fontSize: "var(--font-size-xs)" }}>
-        {[
-          { id: "all", label: "All" },
-          { id: "mine", label: "\uD83D\uDD12 Mine" },
-          { id: "shared", label: "\uD83D\uDC65 Shared" },
-        ].map((opt) => (
-          <button
-            key={opt.id}
-            className="btn btn-sm"
-            style={{
-              padding: "0.2rem 0.6rem",
-              borderRadius: 12,
-              fontSize: "var(--font-size-xs)",
-              fontWeight: sourceFilter === opt.id ? 700 : 500,
-              background: sourceFilter === opt.id ? "var(--color-primary)" : "var(--color-surface)",
-              color: sourceFilter === opt.id ? "#fff" : "var(--color-text-secondary)",
-              border: `1px solid ${sourceFilter === opt.id ? "var(--color-primary)" : "var(--color-border)"}`,
-            }}
-            onClick={() => setSourceFilter(opt.id)}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
+      <SourceFilterPills
+        value={sourceFilter}
+        onChange={setSourceFilter}
+        avatarUrl={profile?.avatar_url}
+        sharedCount={allEntries.filter((e) => e.isShared).length}
+      />
 
       {groupedMonths.length === 0 ? (
         <div className="empty-state">
@@ -292,22 +256,32 @@ function Timeline() {
             <div key={month}>
               <div className="timeline-month">{month}</div>
               {grouped[month].map((entry, i) => (
-                <div key={i} className="timeline-entry">
+                <div key={i} className="timeline-entry"
+                  onClick={() => {
+                    if (entry.rawItem) setDetailEntry(entry);
+                  }}
+                  style={{ cursor: "pointer" }}
+                >
                   <div
                     style={{
                       position: "absolute",
-                      left: "-2rem",
-                      top: "4px",
-                      width: "12px",
-                      height: "12px",
+                      left: "-2.4rem",
+                      top: "0px",
+                      width: "20px",
+                      height: "20px",
                       borderRadius: "50%",
-                      backgroundColor: entry.isWishlist ? "var(--color-surface)" : entry.meta.color,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "0.65rem",
+                      backgroundColor: entry.isWishlist ? "var(--color-surface)" : entry.meta.color + "20",
                       border: entry.isWishlist
                         ? `2px dashed ${entry.meta.color}`
-                        : "2px solid var(--color-surface)",
-                      boxShadow: entry.isWishlist ? "none" : `0 0 0 2px ${entry.meta.color}40`,
+                        : `2px solid ${entry.meta.color}`,
                     }}
-                  />
+                  >
+                    {entry.meta.icon}
+                  </div>
                   <div className="d-flex justify-content-between align-items-start">
                     <div>
                       <div className="timeline-entry-title">
@@ -348,6 +322,22 @@ function Timeline() {
             </div>
           ))}
         </div>
+      )}
+
+      {detailEntry && (
+        <EntryDetailPanel
+          item={detailEntry.rawItem}
+          category={detailEntry.category}
+          schema={SCHEMA_MAP[detailEntry.category] || []}
+          onClose={() => setDetailEntry(null)}
+          onSave={(updatedData) => {
+            dataService.saveItems(detailEntry.category, [updatedData]);
+            setDetailEntry(null);
+          }}
+          onDelete={(id) => {
+            setDetailEntry(null);
+          }}
+        />
       )}
     </div>
   );

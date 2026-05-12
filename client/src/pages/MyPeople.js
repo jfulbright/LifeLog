@@ -402,7 +402,7 @@ function RingSection({ ringLevel, contacts, onEdit, onInvite, onViewProfile }) {
         ringContacts.map((c) => (
           <ContactCard key={c.id} contact={c} onEdit={onEdit} onInvite={onInvite} onViewProfile={onViewProfile} />
         ))
-      )}}
+      )}
     </div>
   );
 }

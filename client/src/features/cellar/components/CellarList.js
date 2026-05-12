@@ -1,187 +1,42 @@
-import React, { useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { Button } from "react-bootstrap";
 import CellarForm from "./CellarForm";
 import ItemCardList from "../../../components/shared/ItemCardList";
-import StatusToggle from "../../../components/shared/StatusToggle";
 import FormPanel from "../../../components/shared/FormPanel";
 import SaveToast from "../../../components/shared/SaveToast";
 import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
-import cellarSchema, { WINE_TYPES } from "../cellarSchema";
+import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
+import CategoryListHeader from "../../../components/shared/CategoryListHeader";
+import { RATING_GROUP } from "../../../components/shared/GroupedDropdownFilter";
+import cellarSchema, { WINE_TYPES, WHISKEY_TYPES } from "../cellarSchema";
 import useCategory from "../../../hooks/useCategory";
+import { useAppData } from "../../../contexts/AppDataContext";
 import {
   getStatusFilterOptions,
   filterByStatus,
 } from "../../../helpers/filterUtils";
 
-const CELLAR_COLOR = "var(--color-cellar, #8B3A8F)";
+const WINE_TYPE_EMOJIS = {
+  Red: "\u{1F534}", White: "\u26AA", "Ros\u00E9": "\u{1F338}", Sparkling: "\u2728",
+  Dessert: "\u{1F36F}", Fortified: "\u{1F3F0}", Orange: "\u{1F7E0}",
+};
 
-function SubTypeFilter({ value, onChange }) {
-  const options = [
-    { key: "all", label: "All" },
-    { key: "wine", label: "Wine" },
-    { key: "whiskey", label: "Whiskey" },
-  ];
-  return (
-    <div className="d-flex gap-2 flex-wrap mb-3">
-      {options.map(({ key, label }) => {
-        const isActive = value === key;
-        return (
-          <button
-            key={key}
-            type="button"
-            onClick={() => onChange(key)}
-            style={{
-              padding: "0.3rem 0.8rem",
-              borderRadius: "20px",
-              border: `2px solid ${CELLAR_COLOR}`,
-              background: isActive ? CELLAR_COLOR : "transparent",
-              color: isActive ? "#fff" : CELLAR_COLOR,
-              fontWeight: 600,
-              fontSize: "var(--font-size-sm)",
-              cursor: "pointer",
-              transition: "background 0.15s, color 0.15s",
-            }}
-          >
-            {label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
+const WHISKEY_TYPE_EMOJIS = {
+  Bourbon: "\u{1F1FA}\u{1F1F8}", Scotch: "\u{1F3F4}", Rye: "\u{1F33E}", Irish: "\u{1F1EE}\u{1F1EA}",
+  Japanese: "\u{1F1EF}\u{1F1F5}", Canadian: "\u{1F1E8}\u{1F1E6}", Other: "\u{1F4CC}",
+};
 
-function WineTypeFilter({ value, onChange }) {
-  return (
-    <div className="d-flex gap-2 flex-wrap mb-3">
-      {["All", ...WINE_TYPES].map((type) => {
-        const key = type === "All" ? "all" : type;
-        const isActive = value === key;
-        return (
-          <button
-            key={key}
-            type="button"
-            onClick={() => onChange(key)}
-            style={{
-              padding: "0.25rem 0.6rem",
-              borderRadius: "16px",
-              border: `1.5px solid ${CELLAR_COLOR}`,
-              background: isActive ? CELLAR_COLOR : "transparent",
-              color: isActive ? "#fff" : CELLAR_COLOR,
-              fontWeight: 500,
-              fontSize: "0.7rem",
-              cursor: "pointer",
-              transition: "background 0.15s, color 0.15s",
-              opacity: 0.85,
-            }}
-          >
-            {type}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function CellarStats({ items }) {
-  const stats = useMemo(() => {
-    const tried = items.filter((i) => i.status === "tried");
-    const cellar = items.filter((i) => i.status === "cellar");
-    const wishlist = items.filter((i) => i.status === "wishlist");
-    const wines = items.filter((i) => (i.subType || "wine") === "wine");
-    const whiskeys = items.filter((i) => i.subType === "whiskey");
-
-    const totalBottles = cellar.reduce((sum, i) => sum + (Number(i.bottleCount) || 1), 0);
-    const totalInvested = cellar.reduce(
-      (sum, i) => sum + (Number(i.bottleCount) || 1) * (Number(i.purchasePrice) || 0),
-      0
-    );
-
-    return {
-      tried: tried.length,
-      wishlist: wishlist.length,
-      totalBottles,
-      totalInvested,
-      wineCount: wines.length,
-      whiskeyCount: whiskeys.length,
-    };
-  }, [items]);
-
-  if (items.length === 0) return null;
-
-  return (
-    <div
-      style={{
-        background: "linear-gradient(135deg, #FAF0FB 0%, #F5EAF8 100%)",
-        border: "1px solid var(--color-border)",
-        borderRadius: "var(--card-radius)",
-        padding: "0.75rem 1rem",
-        marginBottom: "1rem",
-        display: "flex",
-        gap: "1.5rem",
-        flexWrap: "wrap",
-        alignItems: "center",
-      }}
-    >
-      <div
-        style={{
-          fontWeight: 700,
-          color: "var(--color-text-secondary)",
-          fontSize: "var(--font-size-xs)",
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-        }}
-      >
-        Your cellar
-      </div>
-      {stats.tried > 0 && (
-        <div>
-          <span style={{ fontWeight: 800, fontSize: "1.1rem", color: CELLAR_COLOR }}>{stats.tried}</span>
-          <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-sm)", marginLeft: "0.3rem" }}>
-            enjoyed
-          </span>
-        </div>
-      )}
-      {stats.wishlist > 0 && (
-        <div>
-          <span style={{ fontWeight: 800, fontSize: "1.1rem", color: CELLAR_COLOR }}>{stats.wishlist}</span>
-          <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-sm)", marginLeft: "0.3rem" }}>
-            on wishlist
-          </span>
-        </div>
-      )}
-      {stats.totalBottles > 0 && (
-        <div>
-          <span style={{ fontWeight: 800, fontSize: "1.1rem", color: CELLAR_COLOR }}>{stats.totalBottles}</span>
-          <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-sm)", marginLeft: "0.3rem" }}>
-            in cellar
-          </span>
-        </div>
-      )}
-      {stats.totalInvested > 0 && (
-        <div>
-          <span style={{ fontWeight: 800, fontSize: "1.1rem", color: CELLAR_COLOR }}>
-            ${stats.totalInvested.toLocaleString()}
-          </span>
-          <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-sm)", marginLeft: "0.3rem" }}>
-            invested
-          </span>
-        </div>
-      )}
-      {stats.wineCount > 0 && stats.whiskeyCount > 0 && (
-        <div>
-          <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-sm)" }}>
-            <strong style={{ color: CELLAR_COLOR }}>{stats.wineCount}</strong> wines ·{" "}
-            <strong style={{ color: CELLAR_COLOR }}>{stats.whiskeyCount}</strong> whiskeys
-          </span>
-        </div>
-      )}
-    </div>
-  );
-}
+const CELLAR_TABS = [
+  { id: "all", label: "All" },
+  { id: "wine", label: "\u{1F377} Wine" },
+  { id: "whiskey", label: "\u{1F943} Whiskey" },
+];
 
 function CellarList() {
-  const [subTypeFilter, setSubTypeFilter] = React.useState("all");
-  const [wineTypeFilter, setWineTypeFilter] = React.useState("all");
+  const [activeTab, setActiveTab] = useState("all");
+  const [subFilter, setSubFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
+  const { profile } = useAppData();
 
   const {
     items: cellarItems,
@@ -203,55 +58,137 @@ function CellarList() {
     snapPromptTitle,
     handleSnapSave,
     dismissSnapPrompt,
+    viewDetailItem,
+    setViewDetailItem,
   } = useCategory("cellar", { schema: cellarSchema });
 
   const cellarStatuses = getStatusFilterOptions("cellar");
   const statusFiltered = filterByStatus(cellarItems, filterStatus);
 
+  const availableVarietals = useMemo(() => {
+    const wineItems = cellarItems.filter((i) => (i.subType || "wine") === "wine" && i.varietal);
+    const varietalSet = new Set(wineItems.map((i) => i.varietal));
+    return [...varietalSet].sort();
+  }, [cellarItems]);
+
+  const subFilterGroups = useMemo(() => {
+    if (activeTab === "wine") {
+      const groups = [
+        {
+          key: "type",
+          label: "\u{1F377} Type",
+          options: WINE_TYPES.map((t) => ({
+            value: `wine:${t}`,
+            label: `${WINE_TYPE_EMOJIS[t] || "\u{1F377}"} ${t}`,
+          })),
+        },
+      ];
+      if (availableVarietals.length > 0) {
+        groups.push({
+          key: "varietal",
+          label: "\u{1F347} Varietal",
+          options: availableVarietals.map((v) => ({ value: `varietal:${v}`, label: v })),
+        });
+      }
+      groups.push(RATING_GROUP);
+      return groups;
+    }
+    if (activeTab === "whiskey") {
+      return [
+        {
+          key: "type",
+          label: "\u{1F943} Type",
+          options: WHISKEY_TYPES.map((t) => ({
+            value: `whiskey:${t}`,
+            label: `${WHISKEY_TYPE_EMOJIS[t] || "\u{1F943}"} ${t}`,
+          })),
+        },
+        RATING_GROUP,
+      ];
+    }
+    return [RATING_GROUP];
+  }, [activeTab, availableVarietals]);
+
   const filteredItems = useMemo(() => {
     let items = statusFiltered;
-    if (subTypeFilter !== "all") {
-      items = items.filter((i) => (i.subType || "wine") === subTypeFilter);
-    }
-    if (subTypeFilter === "wine" && wineTypeFilter !== "all") {
-      items = items.filter((i) => i.wineType === wineTypeFilter);
+    if (sourceFilter === "mine") items = items.filter((i) => !i._isShared);
+    else if (sourceFilter === "shared") items = items.filter((i) => i._isShared);
+    else if (sourceFilter === "recommended") items = items.filter((i) => i._isRecommended);
+
+    if (activeTab === "wine") items = items.filter((i) => (i.subType || "wine") === "wine");
+    else if (activeTab === "whiskey") items = items.filter((i) => i.subType === "whiskey");
+
+    if (subFilter !== "all") {
+      const [type, val] = subFilter.split(":");
+      if (type === "wine") {
+        items = items.filter((i) => i.wineType === val);
+      } else if (type === "whiskey") {
+        items = items.filter((i) => i.whiskyType === val);
+      } else if (type === "varietal") {
+        items = items.filter((i) => i.varietal === val);
+      } else if (type === "rating") {
+        items = items.filter((i) => {
+          const r = parseInt(i.rating, 10);
+          if (val === "unrated") return !r;
+          if (val === "5") return r === 5;
+          if (val === "4+") return r >= 4;
+          if (val === "3+") return r >= 3;
+          return true;
+        });
+      }
     }
     return items;
-  }, [statusFiltered, subTypeFilter, wineTypeFilter]);
+  }, [statusFiltered, sourceFilter, activeTab, subFilter]);
 
   const getItemIcon = (item) => {
-    return (item.subType || "wine") === "whiskey" ? "🥃" : "🍷";
+    return (item.subType || "wine") === "whiskey" ? "\u{1F943}" : "\u{1F377}";
+  };
+
+  const triedCount = cellarItems.filter((i) => i.status === "tried").length;
+  const totalBottles = cellarItems
+    .filter((i) => i.status === "cellar")
+    .reduce((sum, i) => sum + (Number(i.bottleCount) || 1), 0);
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    setSubFilter("all");
   };
 
   return (
     <>
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4 className="mb-0" style={{ fontWeight: 700 }}>
-          🍷 Cellar
-        </h4>
-        <Button variant="primary" size="sm" onClick={openForm}>
-          + Add Bottle
-        </Button>
-      </div>
-
-      <CellarStats items={cellarItems} />
-
-      <StatusToggle
+      <CategoryListHeader
+        title={"\u{1F377} Cellar"}
+        addLabel="+ Add Bottle"
+        onAdd={openForm}
+        stats={cellarItems.length > 0 ? [
+          ...(triedCount > 0 ? [{ value: triedCount, label: "enjoyed", color: "var(--color-cellar, #8B3A8F)" }] : []),
+          ...(totalBottles > 0 ? [{ value: totalBottles, label: "in cellar", color: "var(--color-cellar, #8B3A8F)" }] : []),
+          ...(cellarItems.filter((i) => i.status === "wishlist").length > 0
+            ? [{ value: cellarItems.filter((i) => i.status === "wishlist").length, label: "on wishlist" }]
+            : []),
+        ] : null}
         category="cellar"
-        options={cellarStatuses}
-        value={filterStatus}
-        onChange={setFilterStatus}
+        statusOptions={cellarStatuses}
+        filterStatus={filterStatus}
+        onStatusChange={setFilterStatus}
+        tabs={CELLAR_TABS}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        tabColor="var(--color-cellar, #8B3A8F)"
+        filterGroups={subFilterGroups}
+        filterValue={subFilter}
+        onFilterChange={setSubFilter}
+        filterColor="var(--color-cellar, #8B3A8F)"
+        sourceFilter={sourceFilter}
+        onSourceChange={setSourceFilter}
+        avatarUrl={profile?.avatar_url}
+        sharedCount={cellarItems.filter((i) => i._isShared).length}
+        recommendedCount={cellarItems.filter((i) => i._isRecommended).length}
       />
-
-      <SubTypeFilter value={subTypeFilter} onChange={setSubTypeFilter} />
-
-      {subTypeFilter === "wine" && (
-        <WineTypeFilter value={wineTypeFilter} onChange={setWineTypeFilter} />
-      )}
 
       {filteredItems.length === 0 && !loading && (
         <div className="empty-state">
-          <div className="empty-state-icon" style={{ backgroundColor: CELLAR_COLOR, color: "#fff" }}>
+          <div className="empty-state-icon" style={{ backgroundColor: "var(--color-cellar, #8B3A8F)", color: "#fff" }}>
             🍷
           </div>
           <div className="empty-state-title">
@@ -276,6 +213,7 @@ function CellarList() {
         schema={cellarSchema}
         onEdit={startEditing}
         onDelete={deleteItem}
+        onViewDetail={setViewDetailItem}
         renderCompactExtra={(item) => {
           const isWhiskey = item.subType === "whiskey";
           const parts = isWhiskey
@@ -320,6 +258,17 @@ function CellarList() {
         onSave={handleSnapSave}
         itemTitle={snapPromptTitle}
       />
+
+      {viewDetailItem && (
+        <EntryDetailPanel
+          item={viewDetailItem}
+          category="cellar"
+          schema={cellarSchema}
+          onClose={() => setViewDetailItem(null)}
+          onSave={() => setViewDetailItem(null)}
+          onDelete={(id) => { deleteItem(id); setViewDetailItem(null); }}
+        />
+      )}
     </>
   );
 }

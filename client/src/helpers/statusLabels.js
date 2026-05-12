@@ -27,7 +27,7 @@ const statusLabels = {
     wishlist: "Wishlist",
   },
   activities: {
-    done: "Done",
+    done: "Accomplished",
     wishlist: "Wishlist",
   },
   cellar: {

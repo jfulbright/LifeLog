@@ -34,21 +34,24 @@ const overlayService = {
   async saveOverlay(entryId, overlayData) {
     const userId = await getCurrentUserId();
 
+    const payload = {
+      entry_id: entryId,
+      user_id: userId,
+      snapshot1: overlayData.snapshot1 || "",
+      snapshot2: overlayData.snapshot2 || "",
+      snapshot3: overlayData.snapshot3 || "",
+      rating: overlayData.rating || null,
+      photos: overlayData.photos || [],
+      updated_at: new Date().toISOString(),
+    };
+
+    if (overlayData.why_notes !== undefined) {
+      payload.why_notes = overlayData.why_notes;
+    }
+
     const { data, error } = await supabase
       .from("overlays")
-      .upsert(
-        {
-          entry_id: entryId,
-          user_id: userId,
-          snapshot1: overlayData.snapshot1 || "",
-          snapshot2: overlayData.snapshot2 || "",
-          snapshot3: overlayData.snapshot3 || "",
-          rating: overlayData.rating || null,
-          photos: overlayData.photos || [],
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "entry_id,user_id" }
-      )
+      .upsert(payload, { onConflict: "entry_id,user_id" })
       .select()
       .single();
 

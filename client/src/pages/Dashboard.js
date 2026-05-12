@@ -8,6 +8,26 @@ import profileService from "../services/profileService";
 import { computeTravelStats } from "../services/travelStats";
 import { codeToFlag } from "../data/countries";
 import { useAuth } from "../contexts/AuthContext";
+import EntryDetailPanel from "../components/shared/EntryDetailPanel";
+import eventSchema from "../features/events/eventSchema";
+import travelSchema from "../features/travel/travelSchema";
+import carSchema from "../features/cars/carSchema";
+import homeSchema from "../features/homes/homeSchema";
+import activitySchema from "../features/activities/activitySchema";
+import cellarSchema from "../features/cellar/cellarSchema";
+import kidsSchema from "../features/kids/kidsSchema";
+import movieSchema from "../features/movies/movieSchema";
+
+const SCHEMA_MAP = {
+  events: eventSchema,
+  travel: travelSchema,
+  cars: carSchema,
+  homes: homeSchema,
+  activities: activitySchema,
+  cellar: cellarSchema,
+  kids: kidsSchema,
+  movies: movieSchema,
+};
 
 const CATEGORY_KEYS = ["events", "travel", "activities", "movies", "cellar", "cars", "homes", "kids"];
 
@@ -81,6 +101,7 @@ function Dashboard() {
   const [profile, setProfile] = useState(null);
   const [allData, setAllData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [detailEntry, setDetailEntry] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -118,6 +139,7 @@ function Dashboard() {
         const snap = getSnapshotTeaser(item);
         if (!snap) return null;
         return {
+          id: item.id,
           category: cat.key,
           label: cat.label,
           title:
@@ -126,6 +148,7 @@ function Dashboard() {
           snapshot: snap,
           date: item.startDate || item.createdAt || "",
           color: cat.meta.color || "var(--color-primary)",
+          rawItem: item,
         };
       })
     )
@@ -276,12 +299,14 @@ function Dashboard() {
             {recentSnaps.map((snap, i) => (
               <div
                 key={i}
+                onClick={() => snap.id && setDetailEntry(snap)}
                 style={{
                   padding: "0.75rem 1rem",
                   background: "var(--color-surface)",
                   border: "1px solid var(--color-border)",
                   borderLeft: `3px solid ${snap.color}`,
                   borderRadius: "var(--card-radius, 8px)",
+                  cursor: "pointer",
                 }}
               >
                 <div style={{ fontStyle: "italic", fontSize: "var(--font-size-sm)", color: "var(--color-text-primary)" }}>
@@ -307,6 +332,22 @@ function Dashboard() {
             Pick a category to add your first entry. Your stats will build from here.
           </div>
         </div>
+      )}
+
+      {detailEntry && (
+        <EntryDetailPanel
+          item={detailEntry.rawItem}
+          category={detailEntry.category}
+          schema={SCHEMA_MAP[detailEntry.category] || []}
+          onClose={() => setDetailEntry(null)}
+          onSave={(updatedData) => {
+            dataService.saveItems(detailEntry.category, [updatedData]);
+            setDetailEntry(null);
+          }}
+          onDelete={(id) => {
+            setDetailEntry(null);
+          }}
+        />
       )}
     </div>
   );

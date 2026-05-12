@@ -319,7 +319,7 @@ const kidsSchema = [
     type: "visible-to",
     optional: true,
     section: "Social",
-    order: 62,
+    order: 65,
     fullWidth: true,
   },
   {
@@ -328,7 +328,7 @@ const kidsSchema = [
     type: "recommend",
     optional: true,
     section: "Social",
-    order: 64,
+    order: 61,
   },
 
   // Tags + hidden fields

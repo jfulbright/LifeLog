@@ -1,9 +1,9 @@
 export async function fetchSetlists(artist, year, country, state) {
   const queryParams = new URLSearchParams();
-  if (artist)  queryParams.append("artistName",  artist);
-  if (year)    queryParams.append("year",         year);
-  if (country) queryParams.append("countryCode",  country);
-  if (state)   queryParams.append("stateCode",    state);
+  if (artist) queryParams.append("artistName", artist);
+  if (year) queryParams.append("year", year);
+  if (country) queryParams.append("countryCode", country);
+  if (state) queryParams.append("stateCode", state);
 
   const serverUrl = process.env.REACT_APP_SERVER_URL || "http://localhost:5050";
   const response = await fetch(

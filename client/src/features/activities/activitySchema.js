@@ -128,7 +128,7 @@ const activityFields = [
   // Reflection fields (visible when status = "done")
   ...getReflectionFields("done"),
 
-  // Planning (wishlist only)
+  // Planning (wishlist only) -- appears early so target timeframe is prominent
   {
     name: "targetMonth",
     label: "Target Month",
@@ -137,7 +137,7 @@ const activityFields = [
     optional: true,
     visibleWhen: { status: "wishlist" },
     section: "Planning",
-    order: 35,
+    order: 14,
   },
   {
     name: "targetYear",
@@ -148,7 +148,7 @@ const activityFields = [
     inputMode: "numeric",
     visibleWhen: { status: "wishlist" },
     section: "Planning",
-    order: 36,
+    order: 15,
   },
   {
     name: "wishlistReason",
@@ -157,8 +157,8 @@ const activityFields = [
     placeholder: "What draws you to this?",
     optional: true,
     visibleWhen: { status: "wishlist" },
-    section: "Planning",
-    order: 37,
+    section: "Details",
+    order: 21,
     fullWidth: true,
   },
 
@@ -169,7 +169,7 @@ const activityFields = [
     type: "visible-to",
     optional: true,
     section: "Social",
-    order: 62,
+    order: 65,
     fullWidth: true,
   },
   {
@@ -178,7 +178,7 @@ const activityFields = [
     type: "recommend",
     optional: true,
     section: "Social",
-    order: 64,
+    order: 61,
   },
 
   // Details
