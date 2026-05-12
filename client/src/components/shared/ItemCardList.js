@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Badge, Button } from "react-bootstrap";
+import { Badge, Button, Form } from "react-bootstrap";
 import { isFieldVisible, getAllSnapshots, getItemPhotos } from "../../helpers/operator";
 import { getStatusLabel } from "../../helpers/statusLabels";
 import { getCategoryMeta } from "../../helpers/categoryMeta";
 import { useAppData } from "../../contexts/AppDataContext";
 import { RING_META } from "../../helpers/ringMeta";
 import dataService from "../../services/dataService";
+import overlayService from "../../services/overlayService";
 import PhotoGrid from "./PhotoGrid";
 import PrivacyIndicator from "./PrivacyIndicator";
 
@@ -254,6 +255,171 @@ function CoParticipantOverlays({ itemId, contacts }) {
     </div>
   );
 }
+/**
+ * Inline overlay form for shared items. Allows adding personal snaps/notes.
+ */
+function SharedOverlayForm({ itemId, itemStatus }) {
+  const [overlay, setOverlay] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  const isWishlist = itemStatus === "wishlist";
+
+  useEffect(() => {
+    overlayService.getMyOverlay(itemId).then((o) => {
+      if (o) setOverlay(o);
+    }).catch(() => {});
+  }, [itemId]);
+
+  const [snap1, setSnap1] = useState("");
+  const [snap2, setSnap2] = useState("");
+  const [snap3, setSnap3] = useState("");
+  const [notes, setNotes] = useState("");
+
+  useEffect(() => {
+    if (overlay) {
+      setSnap1(overlay.snapshot1 || "");
+      setSnap2(overlay.snapshot2 || "");
+      setSnap3(overlay.snapshot3 || "");
+      setNotes(overlay.notes || "");
+    }
+  }, [overlay]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await overlayService.saveOverlay(itemId, {
+        snapshot1: isWishlist ? notes : snap1,
+        snapshot2: snap2,
+        snapshot3: snap3,
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      console.error("[SharedOverlayForm] save failed:", err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const hasContent = isWishlist ? notes : (snap1 || snap2 || snap3);
+
+  return (
+    <div style={{
+      marginTop: "0.75rem",
+      padding: "0.75rem",
+      background: "linear-gradient(135deg, #F5EEF8 0%, #EAF8FE 100%)",
+      borderRadius: 8,
+      border: "1px solid var(--color-border)",
+    }}>
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        style={{
+          background: "none",
+          border: "none",
+          padding: 0,
+          cursor: "pointer",
+          fontWeight: 700,
+          fontSize: "var(--font-size-sm)",
+          color: "var(--color-primary)",
+          display: "flex",
+          alignItems: "center",
+          gap: "0.5rem",
+          width: "100%",
+        }}
+      >
+        {isWishlist ? "💭 Add your thoughts" : "✨ Add your memories"}
+        {hasContent && !expanded && (
+          <span style={{ fontSize: "var(--font-size-xs)", color: "var(--color-success)", fontWeight: 600 }}>
+            (saved)
+          </span>
+        )}
+        <span style={{ marginLeft: "auto", fontSize: "var(--font-size-xs)" }}>
+          {expanded ? "▲" : "▼"}
+        </span>
+      </button>
+
+      {expanded && (
+        <div style={{ marginTop: "0.75rem" }}>
+          {isWishlist ? (
+            <Form.Group>
+              <Form.Label style={{ fontSize: "var(--font-size-xs)", fontWeight: 600 }}>
+                Why I'm interested
+              </Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={2}
+                maxLength={280}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="What excites you about this?"
+                style={{ fontSize: "var(--font-size-sm)" }}
+              />
+            </Form.Group>
+          ) : (
+            <>
+              <Form.Group className="mb-2">
+                <Form.Label style={{ fontSize: "var(--font-size-xs)", fontWeight: 600 }}>
+                  Snap 1
+                </Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={1}
+                  maxLength={140}
+                  value={snap1}
+                  onChange={(e) => setSnap1(e.target.value)}
+                  placeholder="A quick memory..."
+                  style={{ fontSize: "var(--font-size-sm)" }}
+                />
+              </Form.Group>
+              <Form.Group className="mb-2">
+                <Form.Label style={{ fontSize: "var(--font-size-xs)", fontWeight: 600 }}>
+                  Snap 2
+                </Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={1}
+                  maxLength={140}
+                  value={snap2}
+                  onChange={(e) => setSnap2(e.target.value)}
+                  placeholder="A small detail..."
+                  style={{ fontSize: "var(--font-size-sm)" }}
+                />
+              </Form.Group>
+              <Form.Group className="mb-2">
+                <Form.Label style={{ fontSize: "var(--font-size-xs)", fontWeight: 600 }}>
+                  Snap 3
+                </Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={1}
+                  maxLength={140}
+                  value={snap3}
+                  onChange={(e) => setSnap3(e.target.value)}
+                  placeholder="How it made you feel..."
+                  style={{ fontSize: "var(--font-size-sm)" }}
+                />
+              </Form.Group>
+            </>
+          )}
+          <div className="d-flex align-items-center gap-2 mt-2">
+            <Button size="sm" variant="primary" onClick={handleSave} disabled={saving}>
+              {saving ? "Saving..." : "Save"}
+            </Button>
+            {saved && (
+              <span style={{ fontSize: "var(--font-size-xs)", color: "var(--color-success)", fontWeight: 600 }}>
+                Saved!
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ItemCardList({
   category = "",
   title,
@@ -495,6 +661,11 @@ function ItemCardList({
 
                       <SharingInfo item={item} contacts={contacts} />
                       <CoParticipantOverlays itemId={itemId} contacts={contacts} />
+
+                      {/* Inline overlay form for shared items */}
+                      {item._isShared && (
+                        <SharedOverlayForm itemId={itemId} itemStatus={item.status} />
+                      )}
 
                       {renderItemExtras && renderItemExtras(item)}
 
