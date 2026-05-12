@@ -52,7 +52,7 @@ function SharedEntryCard({ entry, tag, contacts, onAccept, onDecline, onViewOver
     .map((r) => RING_META[r]?.label)
     .filter(Boolean);
 
-  const tagStatus = tag?.status || "pending";
+  const tagStatus = entry._collabStatus || tag?.status || "pending";
 
   return (
     <div
@@ -149,10 +149,10 @@ function SharedEntryCard({ entry, tag, contacts, onAccept, onDecline, onViewOver
           <span style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)", flex: 1 }}>
             Accept to add your own snapshots and rating 📸
           </span>
-          <Button variant="primary" size="sm" onClick={() => onAccept(tag)}>
+          <Button variant="primary" size="sm" onClick={() => onAccept(entry)}>
             Accept
           </Button>
-          <Button variant="outline-secondary" size="sm" onClick={() => onDecline(tag)}>
+          <Button variant="outline-secondary" size="sm" onClick={() => onDecline(entry)}>
             Decline
           </Button>
         </div>

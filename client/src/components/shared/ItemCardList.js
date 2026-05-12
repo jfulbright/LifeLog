@@ -330,7 +330,7 @@ function ItemCardList({
                 <div className="item-card-header">
                   {/* Thumbnail: first photo → photoLink → category icon */}
                   {(() => {
-                    const thumbSrc = item.photo1 || item.photoLink;
+                    const thumbSrc = item.photo1 || item.posterUrl || item.photoLink;
                     return (
                       <div
                         className="item-card-thumb"
