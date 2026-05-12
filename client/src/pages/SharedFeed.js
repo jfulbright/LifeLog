@@ -48,9 +48,12 @@ function formatDateRange(entry) {
 
 function SharedEntryCard({ entry, tag, contacts, onAccept, onDecline, onViewOverlays }) {
   const meta = categoryMeta[entry._category] || {};
-  const ringLabels = (entry.visibilityRings || [])
-    .map((r) => RING_META[r]?.label)
-    .filter(Boolean);
+
+  // Find who shared this with us
+  const sharedByContact = entry._ownerId
+    ? contacts.find((c) => c.linkedUserId === entry._ownerId)
+    : null;
+  const sharedByName = sharedByContact?.displayName || "Someone";
 
   const tagStatus = entry._collabStatus || tag?.status || "pending";
 
@@ -100,17 +103,9 @@ function SharedEntryCard({ entry, tag, contacts, onAccept, onDecline, onViewOver
 
           <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)", marginTop: "0.25rem", display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
             {formatDateRange(entry) && <span>📅 {formatDateRange(entry)}</span>}
-            {ringLabels.length > 0 && (
-              <span>
-                Shared with{" "}
-                {ringLabels.map((l, i) => (
-                  <span key={l}>
-                    {i > 0 ? ", " : ""}
-                    <strong>{l}</strong>
-                  </span>
-                ))}
-              </span>
-            )}
+            <span>
+              Shared by <strong>{sharedByName}</strong>
+            </span>
           </div>
 
           {entry.snapshot1 && (

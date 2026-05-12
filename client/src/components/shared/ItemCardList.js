@@ -370,6 +370,11 @@ function ItemCardList({
                         {getSecondaryLabel(item)}
                       </p>
                     )}
+                    {item._isShared && (
+                      <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-info)", fontWeight: 600, marginTop: "0.15rem" }}>
+                        🤝 Shared with you
+                      </div>
+                    )}
                     {item[meta.dateField] && (
                       <div className="item-card-date">
                         {formatDisplayDate(item[meta.dateField])}
@@ -495,7 +500,7 @@ function ItemCardList({
 
                       {(onEdit || onDelete) && (
                         <div className="mt-3 d-flex gap-2">
-                          {onEdit && (
+                          {onEdit && !item._isShared && (
                             <Button
                               size="sm"
                               variant="outline-primary"
@@ -504,7 +509,7 @@ function ItemCardList({
                               Edit
                             </Button>
                           )}
-                          {onDelete && (
+                          {onDelete && !item._isShared && (
                             <Button
                               size="sm"
                               variant="outline-danger"

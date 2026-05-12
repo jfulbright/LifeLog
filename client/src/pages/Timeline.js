@@ -84,7 +84,7 @@ function Timeline() {
       const rows = await Promise.all(
         categories.map(async (cat) => {
           const meta = categoryMeta[cat.key] || {};
-          const items = await dataService.getItems(cat.key);
+          const items = await dataService.getItemsWithShared(cat.key);
           return items.map((item) => {
             let date = item.startDate || item.createdAt || "";
             if (!item.startDate && item.status === "wishlist" && item.targetYear) {

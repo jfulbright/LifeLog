@@ -89,7 +89,7 @@ function Dashboard() {
         profileService.getMyProfile().catch(() => null),
         ...categories.map(async (cat) => ({
           ...cat,
-          items: await dataService.getItems(cat.key),
+          items: await dataService.getItemsWithShared(cat.key),
           meta: categoryMeta[cat.key] || {},
         })),
       ]);

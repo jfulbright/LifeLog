@@ -426,6 +426,48 @@ const dataService = {
     );
     return updated;
   },
+
+  /**
+   * Get items for a category merged with accepted shared entries from collaborators.
+   * Shared entries get _isShared=true and _sharedBy set to the owner's user ID.
+   */
+  async getItemsWithShared(category) {
+    const ownItems = await dataService.getItems(category);
+
+    try {
+      const userId = await getCurrentUserId();
+      const { data: collabs } = await supabase
+        .from("collaborators")
+        .select("entry_id, owner_id")
+        .eq("collaborator_user_id", userId)
+        .neq("owner_id", userId)
+        .eq("status", "accepted")
+        .eq("entry_category", category);
+
+      if (!collabs?.length) return ownItems;
+
+      const entryIds = collabs.map((c) => c.entry_id);
+      const { data: rows } = await supabase
+        .from("items")
+        .select("*")
+        .in("id", entryIds);
+
+      const sharedItems = (rows || []).map((row) => {
+        const collab = collabs.find((c) => c.entry_id === row.id);
+        return {
+          ...row.data,
+          id: row.id,
+          _isShared: true,
+          _sharedBy: collab?.owner_id,
+          _category: row.category,
+        };
+      });
+
+      return [...ownItems, ...sharedItems];
+    } catch {
+      return ownItems;
+    }
+  },
 };
 
 export default dataService;

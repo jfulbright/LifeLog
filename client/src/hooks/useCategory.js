@@ -47,15 +47,14 @@ export default function useCategory(category, { migrate, normalize, schema } = {
     let cancelled = false;
     async function load() {
       try {
-        let loaded = await dataService.getItems(category);
+        let loaded = await dataService.getItemsWithShared(category);
         if (migrate) loaded = loaded.map(migrate);
-        // One-time migration: assign stable UUIDs to any items that lack one
         loaded = loaded.map((item) =>
           item.id ? item : { ...item, id: crypto.randomUUID() }
         );
         if (!cancelled) {
           isReady.current = true;
-          skipNextSave.current = true; // the setItems below is a load, not a mutation
+          skipNextSave.current = true;
           setItems(loaded);
           setLoading(false);
         }
@@ -73,14 +72,16 @@ export default function useCategory(category, { migrate, normalize, schema } = {
   }, [category]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Persist after every mutation — skips pre-load renders and the first post-load echo
+  // Only saves OWN items (not shared items from collaborators)
   useEffect(() => {
     if (!isReady.current) return;
     if (skipNextSave.current) {
       skipNextSave.current = false;
       return;
     }
+    const ownItems = items.filter((i) => !i._isShared);
     dataService
-      .saveItems(category, items)
+      .saveItems(category, ownItems)
       .then(() => window.dispatchEvent(new Event("data-changed")))
       .catch((err) => console.error("[useCategory] save failed:", err));
   }, [category, items]);
