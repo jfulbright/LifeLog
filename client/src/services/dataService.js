@@ -22,7 +22,7 @@ export const STORAGE_KEYS = {
 };
 
 // Category keys that are stored in Supabase (not localStorage)
-const SUPABASE_CATEGORIES = new Set(["events", "concerts", "travel", "cars", "homes", "activities", "cellar", "kids"]);
+const SUPABASE_CATEGORIES = new Set(["events", "concerts", "travel", "cars", "homes", "activities", "cellar", "kids", "movies"]);
 
 // ── Auth helper ────────────────────────────────────────────────────────────────
 
@@ -205,7 +205,7 @@ const dataService = {
   },
 
   async getAllItems() {
-    const categoryKeys = ["events", "concerts", "travel", "cars", "homes", "activities", "cellar", "kids"];
+    const categoryKeys = ["events", "concerts", "travel", "cars", "homes", "activities", "cellar", "kids", "movies"];
     const groups = await Promise.all(
       categoryKeys.map(async (category) => {
         const items = await dataService.getItems(category);
@@ -237,7 +237,7 @@ const dataService = {
   },
 
   async getCounts() {
-    const categoryKeys = ["events", "concerts", "travel", "cars", "homes", "activities", "cellar", "kids"];
+    const categoryKeys = ["events", "concerts", "travel", "cars", "homes", "activities", "cellar", "kids", "movies"];
     const entries = await Promise.all(
       categoryKeys.map(async (category) => [
         category,

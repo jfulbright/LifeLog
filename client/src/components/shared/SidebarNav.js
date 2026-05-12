@@ -13,6 +13,7 @@ const categoryItems = [
   { path: "/events", key: "events", label: "Events" },
   { path: "/travel", key: "travel", label: "Travel" },
   { path: "/activities", key: "activities", label: "Activities" },
+  { path: "/movies", key: "movies", label: "Movies" },
   { path: "/cellar", key: "cellar", label: "Cellar" },
   { path: "/cars", key: "cars", label: "Cars" },
   { path: "/homes", key: "homes", label: "Homes" },

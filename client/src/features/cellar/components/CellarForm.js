@@ -5,7 +5,6 @@ import WhiskeySearch from "../../../components/shared/WhiskeySearch";
 import LabelScanButton from "../../../components/shared/LabelScanButton";
 import cellarSchema from "../cellarSchema";
 
-const CELLAR_COLOR = "var(--color-cellar, #8B3A8F)";
 const WINE_COLOR = "#722F37";
 const WHISKEY_COLOR = "#B5651D";
 

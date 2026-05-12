@@ -39,6 +39,10 @@ const statusLabels = {
     happened: "Happened",
     upcoming: "Upcoming",
   },
+  movies: {
+    watched: "Watched",
+    watchlist: "Watchlist",
+  },
 };
 
 export default statusLabels;

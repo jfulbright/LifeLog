@@ -36,6 +36,7 @@
 | **VinoFYI** | Wine, winery, grape, and region search | Server proxy (`GET /api/wine/*`) |
 | **Open Food Facts** | Barcode/UPC wine bottle lookup | Direct client fetch to `world.openfoodfacts.org` |
 | **NHTSA VIN Decoder** | Decode VIN to car make, model, year, trim, engine | Direct client fetch to `vpic.nhtsa.dot.gov` |
+| **TMDB (The Movie Database)** | Movie search by title, metadata, posters | Direct client-side fetch (Bearer token auth, no proxy needed) |
 | **Google OAuth** | "Sign in with Google" | Via Supabase Auth provider |
 
 ---
@@ -103,6 +104,8 @@ REACT_APP_SUPABASE_ANON_KEY=<supabase anon/public key>
 REACT_APP_SERVER_URL=<express server URL, e.g. http://localhost:5050>
 REACT_APP_SITE_URL=<app URL, e.g. http://localhost:3000>
 REACT_APP_MAPBOX_TOKEN=<mapbox geocoding token>
+REACT_APP_TMDB_ACCESS_TOKEN=<TMDB v4 read access token>
+REACT_APP_TMDB_API_KEY=<TMDB v3 API key (fallback)>
 ```
 
 ### Server (`server/.env`)
@@ -133,6 +136,7 @@ GOOGLE_CLIENT_SECRET=<Google OAuth client secret>
 | **Homes** | Owned/rented with different field visibility, location with full address |
 | **Activities** | General experiences with city autocomplete |
 | **Wines** | Label scanning (barcode + OCR), VinoFYI search, tasting notes |
+| **Movies** | TMDB search integration, watched/watchlist status, full social (companions, visibility, recommendations) |
 
 ---
 
@@ -170,6 +174,7 @@ Direct client-side APIs (no proxy needed):
   - Mapbox Geocoding (public token)
   - NHTSA VIN Decoder (public, no key)
   - Open Food Facts (public, no key)
+  - TMDB Movie Search (Bearer token, read-only)
 ```
 
 ---

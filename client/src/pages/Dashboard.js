@@ -9,7 +9,7 @@ import { computeTravelStats } from "../services/travelStats";
 import { codeToFlag } from "../data/countries";
 import { useAuth } from "../contexts/AuthContext";
 
-const CATEGORY_KEYS = ["events", "travel", "activities", "cellar", "cars", "homes", "kids"];
+const CATEGORY_KEYS = ["events", "travel", "activities", "movies", "cellar", "cars", "homes", "kids"];
 
 const categories = CATEGORY_KEYS.map((key) => ({
   key,
