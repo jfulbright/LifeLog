@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { Button, Form } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-import { isFieldVisible, getItemPhotos } from "../../helpers/operator";
+import { isFieldVisible } from "../../helpers/operator";
 import { RING_META } from "../../helpers/ringMeta";
-import dataService from "../../services/dataService";
 import overlayService from "../../services/overlayService";
+import {
+  normalizeSocialContributions,
+  hasContributionContent,
+} from "../../helpers/socialContent";
 import PhotoGrid from "./PhotoGrid";
+import PhotoUploadField from "./PhotoUploadField";
 
 function CompanionsDisplay({ companions, contacts }) {
   if (!Array.isArray(companions) || companions.length === 0) return null;
@@ -164,20 +168,26 @@ function SharingInfo({ item, contacts, navigate }) {
   );
 }
 
-function CoParticipantOverlays({ itemId, contacts }) {
-  const [overlays, setOverlays] = useState([]);
+function SocialMemoriesSection({ item, contacts, refreshKey }) {
+  const [contributions, setContributions] = useState(item._socialContributions || []);
 
   useEffect(() => {
-    dataService.getOverlaysForEntry(itemId).then(setOverlays);
-  }, [itemId]);
+    let cancelled = false;
+    overlayService.getOverlaysForEntry(item.id).then((overlays) => {
+      if (!cancelled) {
+        setContributions(normalizeSocialContributions(item, overlays, contacts));
+      }
+    }).catch(() => {
+      if (!cancelled) setContributions(item._socialContributions || []);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [item, contacts, refreshKey]);
 
-  const overlaysWithContent = overlays.filter((o) => {
-    const hasSnaps = [o.snapshot1, o.snapshot2, o.snapshot3].some(Boolean);
-    const hasPhotos = [o.photo1, o.photo2, o.photo3].some(Boolean);
-    return hasSnaps || hasPhotos || o.rating;
-  });
+  const visibleContributions = contributions.filter(hasContributionContent);
 
-  if (overlaysWithContent.length === 0) return null;
+  if (visibleContributions.length === 0) return null;
 
   return (
     <div
@@ -197,19 +207,18 @@ function CoParticipantOverlays({ itemId, contacts }) {
           marginBottom: "0.625rem",
         }}
       >
-        👥 What others captured
+        Shared memories
       </div>
-      {overlaysWithContent.map((overlay) => {
-        const contact = contacts.find((c) => c.id === overlay.contactId);
-        const snaps = [overlay.snapshot1, overlay.snapshot2, overlay.snapshot3].filter(Boolean);
-        const photos = [overlay.photo1, overlay.photo2, overlay.photo3].filter(Boolean);
+      {visibleContributions.map((contribution) => {
         return (
           <div
-            key={overlay.id}
+            key={`${contribution.userId || "owner"}-${contribution.isOwner ? "owner" : "overlay"}`}
             style={{
               marginBottom: "0.75rem",
               paddingLeft: "0.75rem",
-              borderLeft: "2px solid var(--color-border)",
+              borderLeft: contribution.isOwner
+                ? "2px solid var(--color-primary)"
+                : "2px solid var(--color-border)",
             }}
           >
             <div
@@ -223,15 +232,31 @@ function CoParticipantOverlays({ itemId, contacts }) {
                 gap: "0.5rem",
               }}
             >
-              {contact ? contact.displayName : "Someone"}
-              {overlay.rating && (
+              {contribution.displayName}
+              {contribution.isOwner && (
+                <span style={{ fontSize: "0.7rem", color: "var(--color-text-tertiary)", fontWeight: 700 }}>
+                  Owner
+                </span>
+              )}
+              {contribution.rating && (
                 <span style={{ color: "#f5a623", letterSpacing: "0.05em" }}>
-                  {"★".repeat(parseInt(overlay.rating))}
-                  {"☆".repeat(5 - parseInt(overlay.rating))}
+                  {"★".repeat(parseInt(contribution.rating, 10))}
+                  {"☆".repeat(5 - parseInt(contribution.rating, 10))}
                 </span>
               )}
             </div>
-            {snaps.map((snap, i) => (
+            {contribution.whyNotes && (
+              <div
+                style={{
+                  fontSize: "var(--font-size-sm)",
+                  color: "var(--color-text-secondary)",
+                  marginBottom: "0.375rem",
+                }}
+              >
+                {contribution.whyNotes}
+              </div>
+            )}
+            {contribution.snaps.map((snap, i) => (
               <div
                 key={i}
                 style={{
@@ -244,9 +269,9 @@ function CoParticipantOverlays({ itemId, contacts }) {
                 &ldquo;{snap}&rdquo;
               </div>
             ))}
-            {photos.length > 0 && (
+            {contribution.photos.length > 0 && (
               <div style={{ marginTop: "0.375rem" }}>
-                <PhotoGrid photos={photos} height={100} />
+                <PhotoGrid photos={contribution.photos} height={100} />
               </div>
             )}
           </div>
@@ -256,13 +281,11 @@ function CoParticipantOverlays({ itemId, contacts }) {
   );
 }
 
-function SharedOverlayForm({ itemId, itemStatus }) {
+function SharedOverlayForm({ itemId, onSaved }) {
   const [overlay, setOverlay] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [expanded, setExpanded] = useState(false);
-
-  const isWishlist = itemStatus === "wishlist";
 
   useEffect(() => {
     overlayService.getMyOverlay(itemId).then((o) => {
@@ -274,24 +297,41 @@ function SharedOverlayForm({ itemId, itemStatus }) {
   const [snap2, setSnap2] = useState("");
   const [snap3, setSnap3] = useState("");
   const [notes, setNotes] = useState("");
+  const [rating, setRating] = useState("");
+  const [photos, setPhotos] = useState([]);
 
   useEffect(() => {
     if (overlay) {
       setSnap1(overlay.snapshot1 || "");
       setSnap2(overlay.snapshot2 || "");
       setSnap3(overlay.snapshot3 || "");
-      setNotes(overlay.notes || "");
+      setNotes(overlay.why_notes || "");
+      setRating(overlay.rating ? String(overlay.rating) : "");
+      setPhotos(Array.isArray(overlay.photos) ? overlay.photos.filter(Boolean) : []);
     }
   }, [overlay]);
+
+  const setPhotoAt = (index, url) => {
+    setPhotos((prev) => {
+      const next = [...prev];
+      next[index] = url;
+      return next;
+    });
+  };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await overlayService.saveOverlay(itemId, {
-        snapshot1: isWishlist ? notes : snap1,
+      const savedOverlay = await overlayService.saveOverlay(itemId, {
+        why_notes: notes,
+        snapshot1: snap1,
         snapshot2: snap2,
         snapshot3: snap3,
+        rating: rating ? parseInt(rating, 10) : null,
+        photos: photos.filter(Boolean),
       });
+      setOverlay(savedOverlay);
+      if (onSaved) onSaved();
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
@@ -301,7 +341,7 @@ function SharedOverlayForm({ itemId, itemStatus }) {
     }
   };
 
-  const hasContent = isWishlist ? notes : (snap1 || snap2 || snap3);
+  const hasContent = notes || snap1 || snap2 || snap3 || rating || photos.some(Boolean);
 
   return (
     <div style={{
@@ -328,7 +368,7 @@ function SharedOverlayForm({ itemId, itemStatus }) {
           width: "100%",
         }}
       >
-        {isWishlist ? "💭 Add your thoughts" : "✨ Add your memories"}
+        Add your perspective
         {hasContent && !expanded && (
           <span style={{ fontSize: "var(--font-size-xs)", color: "var(--color-success)", fontWeight: 600 }}>
             (saved)
@@ -341,8 +381,8 @@ function SharedOverlayForm({ itemId, itemStatus }) {
 
       {expanded && (
         <div style={{ marginTop: "0.75rem" }}>
-          {isWishlist ? (
-            <Form.Group>
+          <>
+            <Form.Group className="mb-2">
               <Form.Label style={{ fontSize: "var(--font-size-xs)", fontWeight: 600 }}>
                 Why I'm interested
               </Form.Label>
@@ -356,52 +396,67 @@ function SharedOverlayForm({ itemId, itemStatus }) {
                 style={{ fontSize: "var(--font-size-sm)" }}
               />
             </Form.Group>
-          ) : (
-            <>
-              <Form.Group className="mb-2">
+            {[
+              { label: "Snap 1", value: snap1, setter: setSnap1, placeholder: "A quick memory..." },
+              { label: "Snap 2", value: snap2, setter: setSnap2, placeholder: "A small detail..." },
+              { label: "Snap 3", value: snap3, setter: setSnap3, placeholder: "How it made you feel..." },
+            ].map((field) => (
+              <Form.Group className="mb-2" key={field.label}>
                 <Form.Label style={{ fontSize: "var(--font-size-xs)", fontWeight: 600 }}>
-                  Snap 1
+                  {field.label}
                 </Form.Label>
                 <Form.Control
                   as="textarea"
                   rows={1}
                   maxLength={140}
-                  value={snap1}
-                  onChange={(e) => setSnap1(e.target.value)}
-                  placeholder="A quick memory..."
+                  value={field.value}
+                  onChange={(e) => field.setter(e.target.value)}
+                  placeholder={field.placeholder}
                   style={{ fontSize: "var(--font-size-sm)" }}
                 />
               </Form.Group>
-              <Form.Group className="mb-2">
-                <Form.Label style={{ fontSize: "var(--font-size-xs)", fontWeight: 600 }}>
-                  Snap 2
-                </Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={1}
-                  maxLength={140}
-                  value={snap2}
-                  onChange={(e) => setSnap2(e.target.value)}
-                  placeholder="A small detail..."
-                  style={{ fontSize: "var(--font-size-sm)" }}
-                />
-              </Form.Group>
-              <Form.Group className="mb-2">
-                <Form.Label style={{ fontSize: "var(--font-size-xs)", fontWeight: 600 }}>
-                  Snap 3
-                </Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={1}
-                  maxLength={140}
-                  value={snap3}
-                  onChange={(e) => setSnap3(e.target.value)}
-                  placeholder="How it made you feel..."
-                  style={{ fontSize: "var(--font-size-sm)" }}
-                />
-              </Form.Group>
-            </>
-          )}
+            ))}
+            <Form.Group className="mb-2">
+              <Form.Label style={{ fontSize: "var(--font-size-xs)", fontWeight: 600 }}>
+                Rating
+              </Form.Label>
+              <div className="d-flex gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setRating(String(star))}
+                    className="btn btn-link p-0 text-decoration-none"
+                    style={{
+                      fontSize: "1.25rem",
+                      lineHeight: 1,
+                      color: star <= parseInt(rating || "0", 10) ? "#f5a623" : "#ccc",
+                    }}
+                    aria-label={`${star} star${star > 1 ? "s" : ""}`}
+                  >
+                    {star <= parseInt(rating || "0", 10) ? "★" : "☆"}
+                  </button>
+                ))}
+              </div>
+            </Form.Group>
+            <div className="mb-2">
+              <div style={{ fontSize: "var(--font-size-xs)", fontWeight: 600, marginBottom: "0.375rem" }}>
+                Photos
+              </div>
+              <div className="row g-2">
+                {[0, 1, 2].map((index) => (
+                  <div className="col-4" key={index}>
+                    <PhotoUploadField
+                      field={{ name: `overlayPhoto${index + 1}`, label: `Photo ${index + 1}` }}
+                      value={photos[index] || ""}
+                      onChange={(url) => setPhotoAt(index, url)}
+                      itemId={itemId}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
           <div className="d-flex align-items-center gap-2 mt-2">
             <Button size="sm" variant="primary" onClick={handleSave} disabled={saving}>
               {saving ? "Saving..." : "Save"}
@@ -430,6 +485,7 @@ function ItemDetailContent({
 }) {
   const navigate = useNavigate();
   const itemId = item.id;
+  const [overlayRefreshKey, setOverlayRefreshKey] = useState(0);
 
   return (
     <>
@@ -437,40 +493,11 @@ function ItemDetailContent({
         if (field.hidden || !isFieldVisible(field, item)) return null;
         if (headerFieldNames.has(field.name)) return null;
         if (field.type === "photo") return null;
+        if (field.renderAs === "stars") return null;
+        if (/^snapshot\d$/.test(field.name)) return null;
 
         const value = item[field.name];
         if (!value || (Array.isArray(value) && value.length === 0)) return null;
-
-        if (field.renderAs === "stars") {
-          const numVal = parseInt(value, 10) || 0;
-          return (
-            <div key={field.name} className="item-card-detail-row">
-              <div className="item-card-detail-label">{field.label}</div>
-              <div className="item-card-detail-value" style={{ color: "#f5a623", letterSpacing: "0.1em" }}>
-                {[1, 2, 3, 4, 5].map((s) => (
-                  <span key={s}>{s <= numVal ? "\u2605" : "\u2606"}</span>
-                ))}
-              </div>
-            </div>
-          );
-        }
-
-        if (/^snapshot\d$/.test(field.name) && typeof value === "string") {
-          return (
-            <div
-              key={field.name}
-              className="item-card-snapshot"
-              style={{
-                marginBottom: "0.5rem",
-                fontStyle: "italic",
-                fontSize: "var(--font-size-sm, 0.875rem)",
-                color: "var(--text-secondary, #6c757d)",
-              }}
-            >
-              &#10024; {value}
-            </div>
-          );
-        }
 
         return (
           <div key={field.name} className="item-card-detail-row">
@@ -502,17 +529,18 @@ function ItemDetailContent({
         );
       })}
 
-      {getItemPhotos(item).length > 0 && (
-        <div style={{ marginTop: "0.75rem" }}>
-          <PhotoGrid photos={getItemPhotos(item)} height={140} />
-        </div>
-      )}
-
       <SharingInfo item={item} contacts={contacts} navigate={navigate} />
-      <CoParticipantOverlays itemId={itemId} contacts={contacts} />
+      <SocialMemoriesSection
+        item={item}
+        contacts={contacts}
+        refreshKey={overlayRefreshKey}
+      />
 
       {item._isShared && (
-        <SharedOverlayForm itemId={itemId} itemStatus={item.status} />
+        <SharedOverlayForm
+          itemId={itemId}
+          onSaved={() => setOverlayRefreshKey((key) => key + 1)}
+        />
       )}
 
       {renderItemExtras && renderItemExtras(item)}

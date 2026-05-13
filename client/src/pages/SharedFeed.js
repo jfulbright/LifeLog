@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Button, Badge } from "react-bootstrap";
-import dataService from "../services/dataService";
 import collaboratorService from "../services/collaboratorService";
 import overlayService from "../services/overlayService";
 import { useAppData } from "../contexts/AppDataContext";
-import { RING_META, RING_LEVELS } from "../helpers/ringMeta";
 import categoryMeta from "../helpers/categoryMeta";
 
 /**
@@ -242,30 +240,50 @@ function StatusBadge({ status }) {
   );
 }
 
-// ── Overlay Modal (Phase 7c preview) ─────────────────────────────────────────
+// ── Overlay Modal ────────────────────────────────────────────────────────────
 
 function OverlayPanel({ entry, tag, overlays, contacts, onClose, onSave }) {
   const { contacts: allContacts } = useAppData();
-  const myOverlay = overlays.find((o) => o.contactId === tag?.contactId) || {};
-  const othersOverlays = overlays.filter((o) => o.contactId !== tag?.contactId);
+  const [myOverlay, setMyOverlay] = useState({});
+  const [othersOverlays, setOthersOverlays] = useState([]);
 
-  const [snap1, setSnap1] = useState(myOverlay.snapshot1 || "");
-  const [snap2, setSnap2] = useState(myOverlay.snapshot2 || "");
-  const [snap3, setSnap3] = useState(myOverlay.snapshot3 || "");
-  const [rating, setRating] = useState(myOverlay.rating || "");
+  const [snap1, setSnap1] = useState("");
+  const [snap2, setSnap2] = useState("");
+  const [snap3, setSnap3] = useState("");
+  const [rating, setRating] = useState("");
   const [saving, setSaving] = useState(false);
 
   const title = getEntryDisplayTitle(entry);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      overlayService.getMyOverlay(entry.id).catch(() => null),
+      overlayService.getOverlaysForEntry(entry.id).catch(() => []),
+    ]).then(([mine, all]) => {
+      if (cancelled) return;
+      const mineOverlay = mine || {};
+      setMyOverlay(mineOverlay);
+      setOthersOverlays((all || []).filter((overlay) => overlay.user_id !== mineOverlay.user_id));
+      setSnap1(mineOverlay.snapshot1 || "");
+      setSnap2(mineOverlay.snapshot2 || "");
+      setSnap3(mineOverlay.snapshot3 || "");
+      setRating(mineOverlay.rating ? String(mineOverlay.rating) : "");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [entry.id]);
 
   const handleSave = async () => {
     setSaving(true);
     await onSave({
       entryId: entry.id,
-      contactId: tag?.contactId || "self",
       snapshot1: snap1,
       snapshot2: snap2,
       snapshot3: snap3,
-      rating,
+      rating: rating ? parseInt(rating, 10) : null,
+      photos: Array.isArray(myOverlay.photos) ? myOverlay.photos : [],
     });
     setSaving(false);
   };
@@ -351,7 +369,7 @@ function OverlayPanel({ entry, tag, overlays, contacts, onClose, onSave }) {
           <div style={{ marginTop: "1.5rem", paddingTop: "1rem", borderTop: "1px solid var(--color-border)" }}>
             <div style={{ fontWeight: 700, fontSize: "var(--font-size-sm)", marginBottom: "0.75rem" }}>What others thought</div>
             {othersOverlays.map((overlay) => {
-              const contact = allContacts.find((c) => c.id === overlay.contactId);
+              const contact = allContacts.find((c) => c.linkedUserId === overlay.user_id);
               const snaps = [overlay.snapshot1, overlay.snapshot2, overlay.snapshot3].filter(Boolean);
               if (!snaps.length) return null;
               return (
@@ -384,10 +402,8 @@ function OverlayPanel({ entry, tag, overlays, contacts, onClose, onSave }) {
 function SharedFeed() {
   const { contacts, refreshNotifications } = useAppData();
   const [allItems, setAllItems] = useState([]);
-  const [entryTags, setEntryTags] = useState([]);
   const [overlays, setOverlays] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filterRing, setFilterRing] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [overlayTarget, setOverlayTarget] = useState(null);
   const [editTarget, setEditTarget] = useState(null);
@@ -395,42 +411,28 @@ function SharedFeed() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      // Try real multi-user collaborator queries first
       const collabs = await collaboratorService.getIncomingCollaborations();
-      if (collabs.length > 0 || true) {
-        // Fetch entry data for each collaboration
-        const enriched = await Promise.all(
-          collabs.map(async (collab) => {
-            const { data: row } = await (await import("../services/supabaseClient")).supabase
-              .from("items")
-              .select("data, category")
-              .eq("id", collab.entry_id)
-              .single();
-            return {
-              ...collab,
-              entry: row?.data || null,
-              _category: row?.category || collab.entry_category,
-            };
-          })
-        );
-        setAllItems(enriched.filter((e) => e.entry));
-        setEntryTags([]);
-        setOverlays([]);
-        setLoading(false);
-        return;
-      }
-    } catch {
-      // Fall back to localStorage-based approach if collaborators table isn't ready
+      const enriched = await Promise.all(
+        collabs.map(async (collab) => {
+          const { data: row } = await (await import("../services/supabaseClient")).supabase
+            .from("items")
+            .select("data, category")
+            .eq("id", collab.entry_id)
+            .single();
+          return {
+            ...collab,
+            entry: row?.data || null,
+            _category: row?.category || collab.entry_category,
+          };
+        })
+      );
+      setAllItems(enriched.filter((e) => e.entry));
+      setOverlays([]);
+    } catch (err) {
+      console.error("[SharedFeed] load failed:", err);
+      setAllItems([]);
+      setOverlays([]);
     }
-
-    const [items, tags, personalOverlays] = await Promise.all([
-      dataService.getAllItems(),
-      dataService.getEntryTags(),
-      dataService.getPersonalOverlays(),
-    ]);
-    setAllItems(items);
-    setEntryTags(tags);
-    setOverlays(personalOverlays);
     setLoading(false);
   }, []);
 
@@ -438,59 +440,29 @@ function SharedFeed() {
     load();
   }, [load]);
 
-  // Determine if we're in new (collaborator) mode or legacy mode
-  const isCollaboratorMode = allItems.length > 0 && allItems[0]?.entry_id;
-
-  const sharedEntries = isCollaboratorMode
-    ? allItems.map((collab) => ({
+  const sharedEntries = allItems.map((collab) => ({
         ...collab.entry,
         _category: collab._category,
         _collabId: collab.id,
         _collabStatus: collab.status,
         _ownerId: collab.owner_id,
         id: collab.entry_id,
-      }))
-    : allItems.filter(
-        (item) =>
-          (item.visibilityRings && item.visibilityRings.length > 0) ||
-          (item.taggedContactIds && item.taggedContactIds.length > 0)
-      );
+      }));
 
   const filteredEntries = sharedEntries.filter((item) => {
-    if (isCollaboratorMode) {
-      if (filterStatus !== "all" && item._collabStatus !== filterStatus) return false;
-      return true;
-    }
-    if (filterRing !== "all") {
-      const ringNum = parseInt(filterRing);
-      if (!(item.visibilityRings || []).includes(ringNum)) return false;
-    }
-    if (filterStatus !== "all") {
-      const tag = entryTags.find((t) => t.entryId === item.id);
-      if (!tag || tag.status !== filterStatus) return false;
-    }
+    if (filterStatus !== "all" && item._collabStatus !== filterStatus) return false;
     return true;
   });
 
   const handleAccept = async (item) => {
-    if (isCollaboratorMode) {
-      await collaboratorService.acceptCollaboration(item._collabId);
-    } else {
-      const tag = entryTags.find((t) => t.entryId === item.id);
-      if (tag) await dataService.updateEntryTag(tag.id, { status: "accepted" });
-    }
+    await collaboratorService.acceptCollaboration(item._collabId);
     await load();
     refreshNotifications();
     window.dispatchEvent(new Event("data-changed"));
   };
 
   const handleDecline = async (item) => {
-    if (isCollaboratorMode) {
-      await collaboratorService.declineCollaboration(item._collabId);
-    } else {
-      const tag = entryTags.find((t) => t.entryId === item.id);
-      if (tag) await dataService.updateEntryTag(tag.id, { status: "declined" });
-    }
+    await collaboratorService.declineCollaboration(item._collabId);
     await load();
     refreshNotifications();
     window.dispatchEvent(new Event("data-changed"));
@@ -506,28 +478,20 @@ function SharedFeed() {
 
   const handleLeaveShare = async (entry) => {
     if (!window.confirm("This will remove this shared experience from your account. The owner will still have it. Continue?")) return;
-    if (isCollaboratorMode) {
-      await collaboratorService.declineCollaboration(entry._collabId);
-    }
+    await collaboratorService.declineCollaboration(entry._collabId);
     await load();
     refreshNotifications();
     window.dispatchEvent(new Event("data-changed"));
   };
 
   const handleSaveOverlay = async (overlayData) => {
-    try {
-      await overlayService.saveOverlay(overlayData.entryId, overlayData);
-    } catch {
-      await dataService.savePersonalOverlay(overlayData);
-    }
+    await overlayService.saveOverlay(overlayData.entryId, overlayData);
     await load();
     setOverlayTarget(null);
     window.dispatchEvent(new Event("data-changed"));
   };
 
-  const pendingCount = isCollaboratorMode
-    ? allItems.filter((c) => c.status === "pending").length
-    : entryTags.filter((t) => t.status === "pending").length;
+  const pendingCount = allItems.filter((c) => c.status === "pending").length;
 
   return (
     <div>
@@ -567,32 +531,6 @@ function SharedFeed() {
       {/* Filters */}
       <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
         <div>
-          <div style={{ fontSize: "var(--font-size-xs)", fontWeight: 700, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.25rem" }}>Ring</div>
-          <div className="status-toggle">
-            <button
-              type="button"
-              className={`btn btn-sm ${filterRing === "all" ? "active" : ""}`}
-              onClick={() => setFilterRing("all")}
-            >
-              All
-            </button>
-            {RING_LEVELS.map((level) => {
-              const meta = RING_META[level];
-              return (
-                <button
-                  key={level}
-                  type="button"
-                  className={`btn btn-sm ${filterRing === String(level) ? "active" : ""}`}
-                  onClick={() => setFilterRing(String(level))}
-                >
-                  {meta.emoji} {meta.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div>
           <div style={{ fontSize: "var(--font-size-xs)", fontWeight: 700, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.25rem" }}>Status</div>
           <div className="status-toggle">
             {["all", "pending", "accepted", "declined"].map((s) => (
@@ -622,12 +560,11 @@ function SharedFeed() {
         </div>
       ) : (
         filteredEntries.map((item) => {
-          const tag = entryTags.find((t) => t.entryId === item.id);
           return (
             <SharedEntryCard
               key={item.id}
               entry={item}
-              tag={tag}
+              tag={null}
               contacts={contacts}
               onAccept={handleAccept}
               onDecline={handleDecline}
@@ -643,7 +580,7 @@ function SharedFeed() {
         <OverlayPanel
           entry={overlayTarget.entry}
           tag={overlayTarget.tag}
-          overlays={overlays.filter((o) => o.entryId === overlayTarget.entry.id)}
+          overlays={overlays.filter((o) => o.entry_id === overlayTarget.entry.id)}
           contacts={contacts}
           onClose={() => setOverlayTarget(null)}
           onSave={handleSaveOverlay}
@@ -658,9 +595,12 @@ function SharedFeed() {
           onSave={async (updatedData) => {
             try {
               const { supabase } = await import("../services/supabaseClient");
+              const cleanData = Object.fromEntries(
+                Object.entries(updatedData).filter(([key]) => !key.startsWith("_"))
+              );
               await supabase
                 .from("items")
-                .update({ data: updatedData })
+                .update({ data: cleanData })
                 .eq("id", editTarget.id);
               await load();
               setEditTarget(null);

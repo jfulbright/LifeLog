@@ -2,6 +2,11 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import categoryMeta from "../helpers/categoryMeta";
 import { getAllSnapshots, getItemPhotos } from "../helpers/operator";
+import {
+  enrichItemsWithSocialContent,
+  getAllSocialSnaps,
+  getAllSocialPhotos,
+} from "../helpers/socialContent";
 import dataService from "../services/dataService";
 import SourceFilterPills from "../components/shared/SourceFilterPills";
 import StatsStrip from "../components/shared/StatsStrip";
@@ -58,7 +63,7 @@ function Snaps() {
   const [allPhotos, setAllPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [detailEntry, setDetailEntry] = useState(null);
-  const { profile } = useAppData();
+  const { profile, contacts } = useAppData();
 
   useEffect(() => {
     let cancelled = false;
@@ -67,7 +72,8 @@ function Snaps() {
       const groups = await Promise.all(
         categories.map(async (cat) => {
           const meta = categoryMeta[cat.key] || {};
-          const items = await dataService.getItemsWithShared(cat.key);
+          const rawItems = await dataService.getItemsWithShared(cat.key);
+          const items = await enrichItemsWithSocialContent(rawItems, contacts);
 
           const snaps = [];
           const photos = [];
@@ -99,6 +105,25 @@ function Snaps() {
                 key: `${cat.key}-snap-${item.id || title}-${i}`,
               });
             });
+            getAllSocialSnaps(item)
+              .filter(({ contribution }) => !contribution.isOwner)
+              .forEach(({ text, contribution, index }) => {
+                snaps.push({
+                  kind: "snap",
+                  text,
+                  title,
+                  itemId: item.id,
+                  category: cat.key,
+                  label: cat.label,
+                  icon: meta.icon,
+                  color: meta.color,
+                  date,
+                  isShared: true,
+                  rawItem: item,
+                  author: contribution.displayName,
+                  key: `${cat.key}-overlay-snap-${item.id || title}-${contribution.userId || "user"}-${index}`,
+                });
+              });
 
             // Photos
             getItemPhotos(item).forEach((url, i) => {
@@ -117,6 +142,25 @@ function Snaps() {
                 key: `${cat.key}-photo-${item.id || title}-${i}`,
               });
             });
+            getAllSocialPhotos(item)
+              .filter(({ contribution }) => !contribution.isOwner)
+              .forEach(({ url, contribution, index }) => {
+                photos.push({
+                  kind: "photo",
+                  url,
+                  title,
+                  itemId: item.id,
+                  category: cat.key,
+                  label: cat.label,
+                  icon: meta.icon,
+                  color: meta.color,
+                  date,
+                  isShared: true,
+                  rawItem: item,
+                  author: contribution.displayName,
+                  key: `${cat.key}-overlay-photo-${item.id || title}-${contribution.userId || "user"}-${index}`,
+                });
+              });
           });
 
           return { snaps, photos };
@@ -132,7 +176,7 @@ function Snaps() {
 
     load();
     return () => { cancelled = true; };
-  }, []);
+  }, [contacts]);
 
   const filterByCategory = (items) =>
     activeCategory === "all" ? items : items.filter((i) => i.category === activeCategory);
@@ -318,6 +362,12 @@ function SnapCard({ item, onViewDetail }) {
       <div className="snap-card-source">
         <span className="snap-card-icon" aria-hidden="true">{item.icon}</span>
         <span>{item.title}</span>
+        {item.author && (
+          <>
+            <span className="snap-card-divider">&middot;</span>
+            <span>{item.author}</span>
+          </>
+        )}
         <span className="snap-card-divider">&middot;</span>
         <span>{item.label}</span>
         {item.date && (
@@ -346,6 +396,12 @@ function PhotoCard({ item, compact = false, onViewDetail }) {
       <div className="memories-photo-caption">
         <span className="memories-photo-caption-icon" aria-hidden="true">{item.icon}</span>
         <span className="memories-photo-caption-title">{item.title}</span>
+        {item.author && (
+          <>
+            <span className="snap-card-divider">&middot;</span>
+            <span>{item.author}</span>
+          </>
+        )}
         {item.date && (
           <>
             <span className="snap-card-divider">&middot;</span>

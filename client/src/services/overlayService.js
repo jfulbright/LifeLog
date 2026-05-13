@@ -37,16 +37,16 @@ const overlayService = {
     const payload = {
       entry_id: entryId,
       user_id: userId,
-      snapshot1: overlayData.snapshot1 || "",
-      snapshot2: overlayData.snapshot2 || "",
-      snapshot3: overlayData.snapshot3 || "",
-      rating: overlayData.rating || null,
-      photos: overlayData.photos || [],
       updated_at: new Date().toISOString(),
     };
 
+    if (overlayData.snapshot1 !== undefined) payload.snapshot1 = overlayData.snapshot1 || "";
+    if (overlayData.snapshot2 !== undefined) payload.snapshot2 = overlayData.snapshot2 || "";
+    if (overlayData.snapshot3 !== undefined) payload.snapshot3 = overlayData.snapshot3 || "";
+    if (overlayData.rating !== undefined) payload.rating = overlayData.rating || null;
+    if (overlayData.photos !== undefined) payload.photos = overlayData.photos || [];
     if (overlayData.why_notes !== undefined) {
-      payload.why_notes = overlayData.why_notes;
+      payload.why_notes = overlayData.why_notes || "";
     }
 
     const { data, error } = await supabase
@@ -67,6 +67,22 @@ const overlayService = {
       .from("overlays")
       .select("*")
       .eq("entry_id", entryId);
+
+    if (error) return [];
+    return data || [];
+  },
+
+  /**
+   * Bulk-load overlays for multiple entries.
+   */
+  async getOverlaysForEntries(entryIds) {
+    const ids = [...new Set((entryIds || []).filter(Boolean))];
+    if (ids.length === 0) return [];
+
+    const { data, error } = await supabase
+      .from("overlays")
+      .select("*")
+      .in("entry_id", ids);
 
     if (error) return [];
     return data || [];

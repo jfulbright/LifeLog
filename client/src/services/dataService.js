@@ -1,14 +1,12 @@
 /**
  * Data service abstraction layer.
- * Phase 6: Supabase implementation — all category items read/write to PostgreSQL.
- *          Contacts, entryTags, and personalOverlays remain in localStorage
- *          until Phase 7 adds multi-user social features.
- * Phase 7: swap contacts/entryTags/personalOverlays internals — no consumer changes needed.
+ * Supabase implementation -- all active category and social data read/write to PostgreSQL.
+ * localStorage is retained only as a read-only migration source for legacy data.
  */
 
 import { supabase } from "../services/supabaseClient";
 
-// ── localStorage keys (contacts + Phase 7 social data) ────────────────────────
+// ── Legacy localStorage keys used only by migration/import paths ──────────────
 
 export const STORAGE_KEYS = {
   events: "events",
@@ -41,10 +39,17 @@ async function getCurrentUserId() {
  * Common searchable/filterable fields are promoted to columns;
  * all other fields live in the `data` JSONB column.
  */
+function stripTransientFields(item) {
+  return Object.fromEntries(
+    Object.entries(item || {}).filter(([key]) => !key.startsWith("_"))
+  );
+}
+
 function itemToRow(item, category, userId) {
   // Strip transient UI-only form fields that must not be persisted to Supabase
   // eslint-disable-next-line no-unused-vars
-  const { shareWithCompanionIds, visibilityControl, _taggedCompanions, _recommendedCompanions, ...cleanItem } = item;
+  const { shareWithCompanionIds, visibilityControl, ...rawItem } = item;
+  const cleanItem = stripTransientFields(rawItem);
   return {
     id: cleanItem.id,
     user_id: userId,
@@ -57,8 +62,14 @@ function itemToRow(item, category, userId) {
 }
 
 /** Map a Supabase row back to the app item shape (data column contains everything). */
-function rowToItem(row) {
-  return row.data;
+function rowToItem(row, currentUserId) {
+  return {
+    ...row.data,
+    id: row.id,
+    _category: row.category,
+    _ownerId: row.user_id,
+    _currentUserId: currentUserId,
+  };
 }
 
 // ── Category Items (Supabase) ──────────────────────────────────────────────────
@@ -85,7 +96,7 @@ const dataService = {
         .order("start_date", { ascending: false, nullsFirst: false });
 
       if (error) throw error;
-      return (data || []).map(rowToItem);
+      return (data || []).map((row) => rowToItem(row, userId));
     } catch (err) {
       console.error(`[dataService] getItems(${category}) failed:`, err);
       return [];
@@ -101,16 +112,8 @@ const dataService = {
    */
   async saveItems(category, items) {
     if (!SUPABASE_CATEGORIES.has(category)) {
-      try {
-        localStorage.setItem(
-          STORAGE_KEYS[category] || category,
-          JSON.stringify(items)
-        );
-        return;
-      } catch (err) {
-        console.error(`[dataService] saveItems(${category}) failed:`, err);
-        throw err;
-      }
+      console.warn(`[dataService] saveItems(${category}) skipped: localStorage writes are disabled.`);
+      return;
     }
 
     try {
@@ -247,7 +250,7 @@ const dataService = {
     return Object.fromEntries(entries);
   },
 
-  // ── Contacts (localStorage — Phase 7 will move to Supabase) ────────────────
+  // ── Legacy Contacts (read-only migration fallback) ─────────────────────────
 
   async getContacts() {
     try {
@@ -260,56 +263,18 @@ const dataService = {
   },
 
   async addContact(contact) {
-    const contacts = await dataService.getContacts();
-    const emailLower = (contact.email || "").trim().toLowerCase();
-    const duplicate = contacts.find(
-      (c) => (c.email || "").toLowerCase() === emailLower
-    );
-    if (duplicate) {
-      throw new Error(`A contact with email "${contact.email}" already exists.`);
-    }
-    const newContact = {
-      id: crypto.randomUUID(),
-      email: emailLower,
-      displayName: contact.displayName || "",
-      ringLevel: contact.ringLevel || 3,
-      inviteStatus: "local_only",
-      linkedUserId: null,
-      createdAt: new Date().toISOString(),
-    };
-    const updated = [...contacts, newContact];
-    localStorage.setItem(STORAGE_KEYS.contacts, JSON.stringify(updated));
-    window.dispatchEvent(new Event("data-changed"));
-    return newContact;
+    throw new Error("localStorage contact writes are disabled. Use contactsService instead.");
   },
 
   async updateContact(id, patch) {
-    const contacts = await dataService.getContacts();
-    if (patch.email) {
-      const emailLower = patch.email.trim().toLowerCase();
-      const duplicate = contacts.find(
-        (c) => c.id !== id && (c.email || "").toLowerCase() === emailLower
-      );
-      if (duplicate) {
-        throw new Error(`A contact with email "${patch.email}" already exists.`);
-      }
-      patch = { ...patch, email: emailLower };
-    }
-    const updated = contacts.map((c) => (c.id === id ? { ...c, ...patch } : c));
-    localStorage.setItem(STORAGE_KEYS.contacts, JSON.stringify(updated));
-    window.dispatchEvent(new Event("data-changed"));
-    return updated;
+    throw new Error("localStorage contact writes are disabled. Use contactsService instead.");
   },
 
   async deleteContact(id) {
-    const contacts = await dataService.getContacts();
-    const updated = contacts.filter((c) => c.id !== id);
-    localStorage.setItem(STORAGE_KEYS.contacts, JSON.stringify(updated));
-    window.dispatchEvent(new Event("data-changed"));
-    return updated;
+    throw new Error("localStorage contact writes are disabled. Use contactsService instead.");
   },
 
-  // ── Entry Tags (localStorage — Phase 7) ────────────────────────────────────
+  // ── Legacy Entry Tags (read-only migration fallback) ───────────────────────
 
   async getEntryTags() {
     try {
@@ -327,34 +292,18 @@ const dataService = {
   },
 
   async addEntryTag(tag) {
-    const tags = await dataService.getEntryTags();
-    const newTag = {
-      id: crypto.randomUUID(),
-      entryId: tag.entryId,
-      contactId: tag.contactId,
-      taggedAt: new Date().toISOString(),
-      status: "pending",
-    };
-    const updated = [...tags, newTag];
-    localStorage.setItem(STORAGE_KEYS.entryTags, JSON.stringify(updated));
-    return newTag;
+    throw new Error("localStorage entry tag writes are disabled. Use collaboratorService instead.");
   },
 
   async updateEntryTag(id, patch) {
-    const tags = await dataService.getEntryTags();
-    const updated = tags.map((t) => (t.id === id ? { ...t, ...patch } : t));
-    localStorage.setItem(STORAGE_KEYS.entryTags, JSON.stringify(updated));
-    return updated;
+    throw new Error("localStorage entry tag writes are disabled. Use collaboratorService instead.");
   },
 
   async deleteEntryTagsForEntry(entryId) {
-    const tags = await dataService.getEntryTags();
-    const updated = tags.filter((t) => t.entryId !== entryId);
-    localStorage.setItem(STORAGE_KEYS.entryTags, JSON.stringify(updated));
-    return updated;
+    throw new Error("localStorage entry tag writes are disabled. Use collaboratorService instead.");
   },
 
-  // ── Personal Overlays (localStorage — Phase 7) ─────────────────────────────
+  // ── Legacy Personal Overlays (read-only migration fallback) ────────────────
 
   async getPersonalOverlays() {
     try {
@@ -372,59 +321,11 @@ const dataService = {
   },
 
   async savePersonalOverlay(overlay) {
-    const overlays = await dataService.getPersonalOverlays();
-    const existing = overlays.find(
-      (o) => o.entryId === overlay.entryId && o.contactId === overlay.contactId
-    );
-    let updated;
-    if (existing) {
-      updated = overlays.map((o) =>
-        o.id === existing.id
-          ? {
-              ...o,
-              snapshot1: overlay.snapshot1 ?? o.snapshot1,
-              snapshot2: overlay.snapshot2 ?? o.snapshot2,
-              snapshot3: overlay.snapshot3 ?? o.snapshot3,
-              rating: overlay.rating ?? o.rating,
-              photo1: overlay.photo1 ?? o.photo1,
-              photo2: overlay.photo2 ?? o.photo2,
-              photo3: overlay.photo3 ?? o.photo3,
-              updatedAt: new Date().toISOString(),
-            }
-          : o
-      );
-    } else {
-      const newOverlay = {
-        id: crypto.randomUUID(),
-        entryId: overlay.entryId,
-        contactId: overlay.contactId,
-        snapshot1: overlay.snapshot1 || "",
-        snapshot2: overlay.snapshot2 || "",
-        snapshot3: overlay.snapshot3 || "",
-        rating: overlay.rating || "",
-        photo1: overlay.photo1 || "",
-        photo2: overlay.photo2 || "",
-        photo3: overlay.photo3 || "",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      updated = [...overlays, newOverlay];
-    }
-    localStorage.setItem(
-      STORAGE_KEYS.personalOverlays,
-      JSON.stringify(updated)
-    );
-    return updated;
+    throw new Error("localStorage overlay writes are disabled. Use overlayService instead.");
   },
 
   async deleteOverlaysForEntry(entryId) {
-    const overlays = await dataService.getPersonalOverlays();
-    const updated = overlays.filter((o) => o.entryId !== entryId);
-    localStorage.setItem(
-      STORAGE_KEYS.personalOverlays,
-      JSON.stringify(updated)
-    );
-    return updated;
+    throw new Error("localStorage overlay writes are disabled. Use overlayService instead.");
   },
 
   /**
@@ -459,7 +360,9 @@ const dataService = {
           id: row.id,
           _isShared: true,
           _sharedBy: collab?.owner_id,
+          _ownerId: collab?.owner_id || row.user_id,
           _category: row.category,
+          _currentUserId: userId,
         };
       });
 

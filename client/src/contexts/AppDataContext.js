@@ -41,14 +41,8 @@ export function AppDataProvider({ children }) {
   const [pendingCollaborations, setPendingCollaborations] = useState(0);
 
   const refreshContacts = useCallback(async () => {
-    try {
-      const data = await contactsService.getContacts();
-      setContacts(data);
-    } catch {
-      // Fall back to localStorage if Supabase contacts table doesn't exist yet
-      const data = await dataService.getContacts();
-      setContacts(data);
-    }
+    const data = await contactsService.getContacts();
+    setContacts(data);
   }, []);
 
   const refreshCounts = useCallback(async () => {
@@ -61,11 +55,10 @@ export function AppDataProvider({ children }) {
       const count = await collaboratorService.getPendingCount();
       setPendingCollaborations(count);
       setNotifications(count > 0 ? Array(count).fill({ status: "pending" }) : []);
-    } catch {
-      const tags = await dataService.getEntryTags();
-      const pending = tags.filter((t) => t.status === "pending");
-      setNotifications(pending);
-      setPendingCollaborations(pending.length);
+    } catch (err) {
+      console.error("[AppDataContext] refreshNotifications failed:", err);
+      setNotifications([]);
+      setPendingCollaborations(0);
     }
   }, []);
 

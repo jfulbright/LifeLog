@@ -3,11 +3,13 @@ import { Link } from "react-router-dom";
 import { Row, Col } from "react-bootstrap";
 import categoryMeta from "../helpers/categoryMeta";
 import { getSnapshotTeaser } from "../helpers/operator";
+import { enrichItemsWithSocialContent, getAllSocialSnaps } from "../helpers/socialContent";
 import dataService from "../services/dataService";
 import profileService from "../services/profileService";
 import { computeTravelStats } from "../services/travelStats";
 import { codeToFlag } from "../data/countries";
 import { useAuth } from "../contexts/AuthContext";
+import { useAppData } from "../contexts/AppDataContext";
 import EntryDetailPanel from "../components/shared/EntryDetailPanel";
 import eventSchema from "../features/events/eventSchema";
 import travelSchema from "../features/travel/travelSchema";
@@ -98,6 +100,7 @@ function CategoryStatCard({ cat, items }) {
 
 function Dashboard() {
   const { user } = useAuth();
+  const { contacts } = useAppData();
   const [profile, setProfile] = useState(null);
   const [allData, setAllData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -108,11 +111,14 @@ function Dashboard() {
     async function load() {
       const [prof, ...catData] = await Promise.all([
         profileService.getMyProfile().catch(() => null),
-        ...categories.map(async (cat) => ({
-          ...cat,
-          items: await dataService.getItemsWithShared(cat.key),
-          meta: categoryMeta[cat.key] || {},
-        })),
+        ...categories.map(async (cat) => {
+          const items = await dataService.getItemsWithShared(cat.key);
+          return {
+            ...cat,
+            items: await enrichItemsWithSocialContent(items, contacts),
+            meta: categoryMeta[cat.key] || {},
+          };
+        }),
       ]);
       if (!cancelled) {
         setProfile(prof);
@@ -124,7 +130,7 @@ function Dashboard() {
     const refresh = () => load();
     window.addEventListener("data-changed", refresh);
     return () => { cancelled = true; window.removeEventListener("data-changed", refresh); };
-  }, []);
+  }, [contacts]);
 
   if (loading) return null;
 
@@ -135,9 +141,18 @@ function Dashboard() {
 
   const recentSnaps = allData
     .flatMap((cat) =>
-      cat.items.map((item) => {
-        const snap = getSnapshotTeaser(item);
-        if (!snap) return null;
+      cat.items.flatMap((item) => {
+        const ownSnap = getSnapshotTeaser(item);
+        const socialSnaps = getAllSocialSnaps(item).filter(({ contribution }) => !contribution.isOwner);
+        const snapItems = [
+          ...(ownSnap ? [{ text: ownSnap, displayName: null, source: "owner" }] : []),
+          ...socialSnaps.map(({ text, contribution }) => ({
+            text,
+            displayName: contribution.displayName,
+            source: "overlay",
+          })),
+        ];
+        if (snapItems.length === 0) return [];
         return {
           id: item.id,
           category: cat.key,
@@ -145,7 +160,8 @@ function Dashboard() {
           title:
             (cat.meta.getPrimaryDisplay ? cat.meta.getPrimaryDisplay(item) : null) ||
             item[cat.meta.primaryField] || item.title || item.artist || "Untitled",
-          snapshot: snap,
+          snapshot: snapItems[0].text,
+          displayName: snapItems[0].displayName,
           date: item.startDate || item.createdAt || "",
           color: cat.meta.color || "var(--color-primary)",
           rawItem: item,
@@ -313,7 +329,7 @@ function Dashboard() {
                   &ldquo;{snap.snapshot}&rdquo;
                 </div>
                 <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)", marginTop: "0.25rem" }}>
-                  {snap.title} &middot; {snap.label}
+                  {snap.title} &middot; {snap.label}{snap.displayName ? ` &middot; ${snap.displayName}` : ""}
                 </div>
               </div>
             ))}

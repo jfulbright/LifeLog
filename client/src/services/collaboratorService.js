@@ -166,8 +166,11 @@ const collaboratorService = {
       const collab = collabs.find((c) => c.entry_id === row.id);
       return {
         ...row.data,
+        id: row.id,
         _category: row.category,
+        _isShared: true,
         _sharedBy: collab?.owner_id,
+        _ownerId: collab?.owner_id,
         _sharedAt: collab?.invited_at,
       };
     });

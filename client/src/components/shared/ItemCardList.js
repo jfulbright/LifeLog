@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Badge } from "react-bootstrap";
 import { getAllSnapshots } from "../../helpers/operator";
+import { getSocialPreview } from "../../helpers/socialContent";
 import { getStatusLabel } from "../../helpers/statusLabels";
 import { getCategoryMeta } from "../../helpers/categoryMeta";
 import { useAppData } from "../../contexts/AppDataContext";
@@ -162,7 +163,7 @@ function ItemCardList({
                     )}
                     {item._isShared && (
                       <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-info)", fontWeight: 600, marginTop: "0.15rem" }}>
-                        🤝 Shared with you
+                        🤝 Shared with you{item._ownerName ? ` by ${item._ownerName}` : ""}
                       </div>
                     )}
                     {!item._isShared && item.shareWithCompanionIds?.length > 0 && (
@@ -188,6 +189,16 @@ function ItemCardList({
                     &#10024; &ldquo;{snap}&rdquo;
                   </div>
                 ))}
+                {getSocialPreview(item) && (
+                  <div className="snapshot-teaser">
+                    🤝 &ldquo;{getSocialPreview(item)}&rdquo;
+                  </div>
+                )}
+                {item._shareeContributionCount > 0 && (
+                  <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)", fontWeight: 600, marginTop: "0.35rem" }}>
+                    {item._shareeContributionCount} collaborator contribution{item._shareeContributionCount === 1 ? "" : "s"}
+                  </div>
+                )}
 
                 {/* Expand/collapse toggle */}
                 <button

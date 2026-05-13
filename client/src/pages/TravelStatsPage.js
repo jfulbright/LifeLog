@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Row, Col, Badge } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import dataService from "../services/dataService";
+import contactsService from "../services/contactsService";
 import { computeTravelStats } from "../services/travelStats";
 import WorldMapView from "../features/travel/components/WorldMapView";
 import { codeToFlag, CONTINENT_LABELS, getCountryName } from "../data/countries";
@@ -90,14 +91,19 @@ function SectionHeader({ children, emoji }) {
 const RING_LABELS = { 1: "Partner", 2: "Immediate Family", 3: "Extended Family", 4: "Friends" };
 const RING_COLORS = { 1: "#4A154B", 2: "#2EB67D", 3: "#8B6914", 4: "#36C5F0" };
 
-function CircleStats({ items, contacts, entryTags }) {
+function CircleStats({ items, contacts }) {
   const hasContacts = contacts.length > 0;
 
   // Build a map: entryId → set of contactIds who are tagged on it
   const tagsByEntry = {};
-  entryTags.forEach(({ entryId, contactId }) => {
-    if (!tagsByEntry[entryId]) tagsByEntry[entryId] = new Set();
-    tagsByEntry[entryId].add(contactId);
+  items.forEach((item) => {
+    const ids = [
+      ...(item.shareWithCompanionIds || []),
+      ...(item.companions || [])
+        .filter((companion) => companion?.type === "contact")
+        .map((companion) => companion.contactId),
+    ].filter(Boolean);
+    if (ids.length > 0) tagsByEntry[item.id] = new Set(ids);
   });
 
   // Find contacts who appear on at least one travel entry
@@ -269,19 +275,16 @@ function CircleStats({ items, contacts, entryTags }) {
 function TravelStatsPage() {
   const [items, setItems] = useState([]);
   const [contacts, setContacts] = useState([]);
-  const [entryTags, setEntryTags] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCountry, setSelectedCountry] = useState(null);
 
   useEffect(() => {
     Promise.all([
       dataService.getItems("travel"),
-      dataService.getContacts(),
-      dataService.getEntryTags(),
-    ]).then(([travelData, contactData, tagData]) => {
+      contactsService.getContacts(),
+    ]).then(([travelData, contactData]) => {
       setItems(travelData);
       setContacts(contactData);
-      setEntryTags(tagData);
       setLoading(false);
     });
   }, []);
@@ -601,7 +604,7 @@ function TravelStatsPage() {
           )}
 
           {/* Circle Stats */}
-          <CircleStats items={items} contacts={contacts} entryTags={entryTags} />
+          <CircleStats items={items} contacts={contacts} />
         </>
       )}
     </div>

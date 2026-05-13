@@ -17,6 +17,8 @@ import homeSchema from "../features/homes/homeSchema";
 import activitySchema from "../features/activities/activitySchema";
 import cellarSchema from "../features/cellar/cellarSchema";
 import kidsSchema from "../features/kids/kidsSchema";
+import movieSchema from "../features/movies/movieSchema";
+import { enrichItemsWithSocialContent, getSocialPreview } from "../helpers/socialContent";
 
 const SCHEMA_MAP = {
   events: eventSchema,
@@ -26,9 +28,10 @@ const SCHEMA_MAP = {
   activities: activitySchema,
   cellar: cellarSchema,
   kids: kidsSchema,
+  movies: movieSchema,
 };
 
-const CATEGORY_KEYS = ["events", "travel", "cars", "homes", "activities", "cellar", "kids"];
+const CATEGORY_KEYS = ["events", "travel", "cars", "homes", "activities", "cellar", "kids", "movies"];
 
 const categories = CATEGORY_KEYS.map((key) => ({
   key,
@@ -47,7 +50,7 @@ function Timeline() {
   const [allEntries, setAllEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [detailEntry, setDetailEntry] = useState(null);
-  const { profile } = useAppData();
+  const { profile, contacts } = useAppData();
 
   useEffect(() => {
     let cancelled = false;
@@ -55,7 +58,8 @@ function Timeline() {
       const rows = await Promise.all(
         categories.map(async (cat) => {
           const meta = categoryMeta[cat.key] || {};
-          const items = await dataService.getItemsWithShared(cat.key);
+          const rawItems = await dataService.getItemsWithShared(cat.key);
+          const items = await enrichItemsWithSocialContent(rawItems, contacts);
           return items.map((item) => {
             let date = item.startDate || item.createdAt || "";
             if (!item.startDate && item.status === "wishlist" && item.targetYear) {
@@ -88,6 +92,7 @@ function Timeline() {
               isShared: isEntryShared(item),
               rawItem: item,
               snapshot: getSnapshotTeaser(item),
+              socialPreview: getSocialPreview(item),
             };
           });
         })
@@ -103,7 +108,7 @@ function Timeline() {
     }
     load();
     return () => { cancelled = true; };
-  }, []);
+  }, [contacts]);
 
   const years = [
     ...new Set(
@@ -297,6 +302,11 @@ function Timeline() {
                       {entry.snapshot && (
                         <div className="timeline-snapshot">
                           &#10024; &ldquo;{entry.snapshot}&rdquo;
+                        </div>
+                      )}
+                      {entry.socialPreview && (
+                        <div className="timeline-snapshot">
+                          🤝 &ldquo;{entry.socialPreview}&rdquo;
                         </div>
                       )}
                     </div>

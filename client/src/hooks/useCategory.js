@@ -5,6 +5,8 @@ import collaboratorService from "../services/collaboratorService";
 import contactsService from "../services/contactsService";
 import recommendationService from "../services/recommendationService";
 import { hasAnySnapshot } from "../helpers/operator";
+import { enrichItemsWithSocialContent } from "../helpers/socialContent";
+import { useAppData } from "../contexts/AppDataContext";
 
 const EXPERIENCED_STATUSES = new Set([
   "attended",
@@ -24,6 +26,7 @@ const EXPERIENCED_STATUSES = new Set([
  * @param {Array} [options.schema] - Optional schema array to derive default values from
  */
 export default function useCategory(category, { migrate, normalize, schema } = {}) {
+  const { contacts } = useAppData();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -57,6 +60,7 @@ export default function useCategory(category, { migrate, normalize, schema } = {
         loaded = loaded.map((item) =>
           item.id ? item : { ...item, id: crypto.randomUUID() }
         );
+        loaded = await enrichItemsWithSocialContent(loaded, contacts);
         if (!cancelled) {
           isReady.current = true;
           skipNextSave.current = true;
@@ -74,7 +78,7 @@ export default function useCategory(category, { migrate, normalize, schema } = {
     return () => {
       cancelled = true;
     };
-  }, [category]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [category, contacts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-open edit form when navigated with ?edit=<itemId>
   useEffect(() => {
