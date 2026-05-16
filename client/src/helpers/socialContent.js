@@ -94,8 +94,35 @@ export async function enrichItemsWithSocialContent(items, contacts = []) {
   if (list.length === 0) return [];
 
   const overlays = await overlayService.getOverlaysForEntries(list.map((item) => item.id));
+
+  // Resolve unknown overlay authors via profile lookup
+  const unknownUserIds = overlays
+    .map((o) => o.user_id)
+    .filter((uid) => uid && !contacts.find((c) => c.linkedUserId === uid));
+  const uniqueUnknownIds = [...new Set(unknownUserIds)];
+
+  let profileNames = {};
+  if (uniqueUnknownIds.length > 0) {
+    try {
+      const { supabase } = await import("../services/supabaseClient");
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .in("id", uniqueUnknownIds);
+      if (profiles) {
+        profiles.forEach((p) => { profileNames[p.id] = p.display_name; });
+      }
+    } catch {}
+  }
+
+  // Attach profile names to overlays for display fallback
+  const enrichedOverlays = overlays.map((o) => ({
+    ...o,
+    _profileName: profileNames[o.user_id] || null,
+  }));
+
   return list.map((item) => {
-    const socialContributions = normalizeSocialContributions(item, overlays, contacts);
+    const socialContributions = normalizeSocialContributions(item, enrichedOverlays, contacts);
     const mine = socialContributions.find((contribution) => contribution.isMine && !contribution.isOwner);
     const shareeCount = socialContributions.filter((contribution) => !contribution.isOwner).length;
 

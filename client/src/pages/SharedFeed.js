@@ -630,6 +630,7 @@ function SharedEditPanel({ entry, contacts, onClose, onSave }) {
     const updated = {
       ...formData,
       last_edited_at: now,
+      last_edited_by: "collaborator",
     };
     await onSave(updated);
     setSaving(false);
