@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Button, Badge } from "react-bootstrap";
+import { Link } from "react-router-dom";
 import collaboratorService from "../services/collaboratorService";
 import overlayService from "../services/overlayService";
+import OverlayForm from "../components/shared/OverlayForm";
 import { useAppData } from "../contexts/AppDataContext";
 import categoryMeta from "../helpers/categoryMeta";
 
@@ -185,32 +187,24 @@ function SharedEntryCard({ entry, tag, contacts, onAccept, onDecline, onViewOver
       )}
 
       {tagStatus === "accepted" && (
-        <div
-          style={{
-            marginTop: "0.875rem",
-            paddingTop: "0.75rem",
-            borderTop: "1px solid var(--color-border)",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <Button
-            variant="outline-danger"
-            size="sm"
-            onClick={() => onLeaveShare && onLeaveShare(entry)}
-            style={{ fontSize: "var(--font-size-xs)" }}
-          >
-            Leave Share
-          </Button>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <Button variant="outline-primary" size="sm" onClick={() => onEditShared && onEditShared(entry)}>
-              Edit
-            </Button>
-            <Button variant="primary" size="sm" onClick={() => onViewOverlays(entry, tag)}>
-              Add Memories
+        <div style={{ marginTop: "0.875rem", paddingTop: "0.75rem", borderTop: "1px solid var(--color-border)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+            <Link
+              to={`/${entry._category || "travel"}`}
+              style={{ fontSize: "var(--font-size-xs)", color: "var(--color-primary)", fontWeight: 600, textDecoration: "none" }}
+            >
+              View in {(entry._category || "category").charAt(0).toUpperCase() + (entry._category || "").slice(1)} &rarr;
+            </Link>
+            <Button
+              variant="outline-danger"
+              size="sm"
+              onClick={() => onLeaveShare && onLeaveShare(entry)}
+              style={{ fontSize: "var(--font-size-xs)" }}
+            >
+              Leave
             </Button>
           </div>
+          <OverlayForm entryId={entry.id} entryStatus={entry.status} onSaved={() => {}} />
         </div>
       )}
     </div>

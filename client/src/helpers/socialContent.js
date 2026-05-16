@@ -53,7 +53,7 @@ export function buildOverlayContribution(overlay, item, contacts = []) {
   return {
     entryId: overlay?.entry_id || item?.id,
     userId: overlay?.user_id || null,
-    displayName: isMine ? "You" : contact?.displayName || "Collaborator",
+    displayName: isMine ? "You" : contact?.displayName || overlay?._profileName || "A collaborator",
     isOwner: false,
     isMine: !!isMine,
     snaps: getSnaps(overlay),
