@@ -90,6 +90,13 @@ const movieSchema = [
   // Social (Companions + Visibility + Recommend)
   getCompanionsField("watched"),
   {
+    name: "visibilityRings",
+    type: "hidden",
+    defaultValue: [1, 2, 3, 4],
+    section: "Hidden",
+    order: 64,
+  },
+  {
     name: "visibilityControl",
     type: "visible-to",
     optional: true,

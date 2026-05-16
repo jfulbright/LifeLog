@@ -2,6 +2,8 @@ import React, { useState, useMemo } from "react";
 import { Button } from "react-bootstrap";
 import movieSchema from "../movieSchema";
 import MovieForm from "./MovieForm";
+import MovieDetailExtras from "./MovieDetailExtras";
+import MovieSocialFeed from "./MovieSocialFeed";
 import ItemCardList from "../../../components/shared/ItemCardList";
 import FormPanel from "../../../components/shared/FormPanel";
 import SaveToast from "../../../components/shared/SaveToast";
@@ -62,7 +64,7 @@ function MovieList() {
 
   const [movieFilter, setMovieFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
-  const { profile } = useAppData();
+  const { profile, contacts } = useAppData();
 
   const movieStatuses = getStatusFilterOptions("movies");
 
@@ -105,6 +107,16 @@ function MovieList() {
       });
     }
     groups.push(RATING_GROUP);
+    groups.push({
+      key: "ring",
+      label: "\u{1F48E} From Rings",
+      options: [
+        { value: "ring:partner", label: "\u{1F48E} Partner loved" },
+        { value: "ring:family", label: "\u{1F3E0} Family loved" },
+        { value: "ring:friends", label: "\u{1F465} Friends loved" },
+        { value: "ring:unwatched", label: "\u{1F3AF} Not yet watched (rec'd)" },
+      ],
+    });
     return groups;
   }, [availableGenres, availableDecades]);
 
@@ -131,6 +143,20 @@ function MovieList() {
     if (type === "rating") {
       return sourceFiltered.filter((m) => matchesRating(m.rating, val));
     }
+    if (type === "ring") {
+      if (val === "partner") {
+        return sourceFiltered.filter((m) => m._isShared && m._sharedByRing === 1 && parseInt(m.rating, 10) >= 4);
+      }
+      if (val === "family") {
+        return sourceFiltered.filter((m) => m._isShared && (m._sharedByRing === 2 || m._sharedByRing === 3) && parseInt(m.rating, 10) >= 4);
+      }
+      if (val === "friends") {
+        return sourceFiltered.filter((m) => m._isShared && m._sharedByRing === 4 && parseInt(m.rating, 10) >= 4);
+      }
+      if (val === "unwatched") {
+        return sourceFiltered.filter((m) => m._isRecommended && m.status !== "watched");
+      }
+    }
     return sourceFiltered;
   }, [sourceFiltered, movieFilter]);
 
@@ -152,6 +178,7 @@ function MovieList() {
         statusOptions={movieStatuses}
         filterStatus={filterStatus}
         onStatusChange={setFilterStatus}
+        renderExtraFilters={() => <MovieSocialFeed movies={movies} />}
         filterGroups={movieFilterGroups}
         filterValue={movieFilter}
         onFilterChange={setMovieFilter}
@@ -207,6 +234,8 @@ function MovieList() {
           setFormData={setFormData}
           onSubmit={handleSubmit}
           onCancel={closeForm}
+          contacts={contacts}
+          ownMovies={movies}
         />
       </FormPanel>
 
@@ -231,6 +260,7 @@ function MovieList() {
           onClose={() => setViewDetailItem(null)}
           onSave={() => setViewDetailItem(null)}
           onDelete={(id) => { deleteItem(id); setViewDetailItem(null); }}
+          renderItemExtras={(item) => <MovieDetailExtras item={item} />}
         />
       )}
     </>

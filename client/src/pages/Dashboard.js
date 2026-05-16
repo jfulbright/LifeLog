@@ -61,7 +61,7 @@ function CategoryStatCard({ cat, items }) {
 
   return (
     <Link
-      to={cat.key === "travel" ? "/travel/stats" : `/${cat.key}`}
+      to={cat.key === "travel" ? "/travel/stats" : cat.key === "movies" ? "/movies/stats" : `/${cat.key}`}
       className="text-decoration-none"
       style={{ display: "block" }}
     >

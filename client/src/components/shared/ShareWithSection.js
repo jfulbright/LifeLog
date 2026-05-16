@@ -29,6 +29,12 @@ function ShareWithSection({ formData, setFormData }) {
     setFormData((prev) => ({ ...prev, visibilityRings: next }));
   };
 
+  const allSelected = RING_LEVELS.every((l) => visibilityRings.includes(l));
+  const toggleAll = () => {
+    const next = allSelected ? [] : [...RING_LEVELS];
+    setFormData((prev) => ({ ...prev, visibilityRings: next }));
+  };
+
   return (
     <div className="share-with-section">
       <h6 className="form-section-heading">Who can see this</h6>
@@ -59,6 +65,27 @@ function ShareWithSection({ formData, setFormData }) {
             My People
           </div>
           <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={toggleAll}
+              aria-pressed={allSelected}
+              style={{
+                background: allSelected ? "var(--color-primary)" : "var(--color-surface)",
+                color: allSelected ? "#fff" : "var(--color-text-secondary)",
+                border: `2px solid ${allSelected ? "var(--color-primary)" : "var(--color-border)"}`,
+                borderRadius: 20,
+                padding: "0.375rem 1rem",
+                fontWeight: allSelected ? 700 : 500,
+                fontSize: "var(--font-size-sm)",
+                cursor: "pointer",
+                transition: "all 150ms ease",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.375rem",
+              }}
+            >
+              🌐 Everyone
+            </button>
             {RING_LEVELS.map((level) => {
               const meta = RING_META[level];
               const active = visibilityRings.includes(level);

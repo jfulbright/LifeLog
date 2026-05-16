@@ -9,6 +9,7 @@ import ActivityList from "./features/activities/components/ActivityList";
 import CellarList from "./features/cellar/components/CellarList";
 import KidsList from "./features/kids/components/KidsList";
 import MovieList from "./features/movies/components/MovieList";
+import MovieStatsPage from "./features/movies/components/MovieStatsPage";
 import Dashboard from "./pages/Dashboard";
 import Timeline from "./pages/Timeline";
 import Snaps from "./pages/Snaps";
@@ -126,6 +127,7 @@ function AppShell() {
             <Route path="/cellar" element={<CellarList />} />
             <Route path="/kids" element={<KidsList />} />
             <Route path="/movies" element={<MovieList />} />
+            <Route path="/movies/stats" element={<MovieStatsPage />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/shared" element={<SharedFeed />} />
             <Route path="/people" element={<MyPeople />} />
