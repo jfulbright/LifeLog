@@ -280,7 +280,7 @@ function TravelStatsPage() {
 
   useEffect(() => {
     Promise.all([
-      dataService.getItems("travel"),
+      dataService.getItemsWithShared("travel"),
       contactsService.getContacts(),
     ]).then(([travelData, contactData]) => {
       setItems(travelData);
