@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from "react";
-import { Button } from "react-bootstrap";
+import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { Button, Spinner } from "react-bootstrap";
 import movieSchema from "../movieSchema";
 import MovieForm from "./MovieForm";
 import MovieDetailExtras from "./MovieDetailExtras";
 import MovieSocialFeed from "./MovieSocialFeed";
+import MovieResultCard from "./MovieResultCard";
 import ItemCardList from "../../../components/shared/ItemCardList";
 import FormPanel from "../../../components/shared/FormPanel";
 import SaveToast from "../../../components/shared/SaveToast";
@@ -13,6 +14,7 @@ import CategoryListHeader from "../../../components/shared/CategoryListHeader";
 import { RATING_GROUP } from "../../../components/shared/GroupedDropdownFilter";
 import useCategory from "../../../hooks/useCategory";
 import { useAppData } from "../../../contexts/AppDataContext";
+import { searchMovies } from "../api/movieApi";
 import {
   getStatusFilterOptions,
   filterByStatus,
@@ -64,7 +66,78 @@ function MovieList() {
 
   const [movieFilter, setMovieFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
-  const { profile, contacts } = useAppData();
+  const { profile } = useAppData();
+
+  // Inline TMDB search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchActive, setSearchActive] = useState(false);
+
+  const handleSearch = useCallback(async () => {
+    if (!searchQuery.trim()) return;
+    setSearchLoading(true);
+    setSearchActive(true);
+    try {
+      const results = await searchMovies(searchQuery);
+      setSearchResults(results);
+    } catch (err) {
+      console.error("TMDB search failed:", err);
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [searchQuery]);
+
+  const clearSearch = useCallback(() => {
+    setSearchQuery("");
+    setSearchResults([]);
+    setSearchActive(false);
+  }, []);
+
+  // Quick-add: save directly without opening FormPanel
+  const pendingQuickAdd = useRef(false);
+
+  const handleQuickAdd = useCallback((movie, status) => {
+    const { _socialSource, _sharedByName, _sharedByRing, _sharedByContactId, _sharedByUserId,
+      _socialRating, _recId, _recommendedBy, _recommenderAvatar, _recommenderRing,
+      _recommendedAt, _consensusCount, _tasteScore, _suggestedGenre, ...clean } = movie;
+    const data = {
+      ...clean,
+      status: status || "watchlist",
+      startDate: status === "watched" ? new Date().toISOString().slice(0, 10) : "",
+    };
+    pendingQuickAdd.current = true;
+    setFormData(data);
+  }, [setFormData]);
+
+  useEffect(() => {
+    if (pendingQuickAdd.current && formData?.title) {
+      pendingQuickAdd.current = false;
+      handleSubmit();
+    }
+  }, [formData, handleSubmit]);
+
+  // Build a lookup of user's movies by tmdbId for status badges on search results
+  const moviesByTmdbId = useMemo(() => {
+    const map = {};
+    movies.forEach((m) => {
+      if (m.tmdbId) map[m.tmdbId] = m;
+    });
+    return map;
+  }, [movies]);
+
+  // Social enrichment lookup for search results
+  const socialByTmdbId = useMemo(() => {
+    const shared = movies.filter((m) => m._isShared && m.tmdbId);
+    const map = {};
+    shared.forEach((m) => {
+      if (!map[m.tmdbId] || (m._socialRating || 0) > (map[m.tmdbId]._socialRating || 0)) {
+        map[m.tmdbId] = m;
+      }
+    });
+    return map;
+  }, [movies]);
 
   const movieStatuses = getStatusFilterOptions("movies");
 
@@ -190,39 +263,148 @@ function MovieList() {
         recommendedCount={movies.filter((i) => i._isRecommended).length}
       />
 
-      {filteredMovies.length === 0 && !showForm && !loading && (
-        <div className="empty-state">
-          <div
-            className="empty-state-icon"
-            style={{ backgroundColor: "var(--color-movies, #E91E63)", color: "#fff" }}
-          >
-            {"\u{1F3AC}"}
-          </div>
-          <div className="empty-state-title">
-            {movies.length === 0 ? "No movies yet" : "No matches"}
-          </div>
-          <div className="empty-state-text">
-            {movies.length === 0
-              ? "Search TMDB or add one manually to start tracking your movie life."
-              : "No movies match this filter."}
-          </div>
-          {movies.length === 0 && (
-            <Button variant="primary" onClick={openForm}>
-              Add Your First Movie
+      {/* Inline TMDB Search Bar */}
+      <div style={{ marginBottom: "1rem" }}>
+        <div className="d-flex gap-2">
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Search TMDB to add a movie..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            style={{ borderRadius: 20, paddingLeft: "1rem" }}
+          />
+          {searchActive ? (
+            <Button
+              variant="outline-secondary"
+              size="sm"
+              onClick={clearSearch}
+              style={{ borderRadius: 20, whiteSpace: "nowrap" }}
+            >
+              Clear
+            </Button>
+          ) : (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleSearch}
+              disabled={searchLoading || !searchQuery.trim()}
+              style={{ borderRadius: 20, whiteSpace: "nowrap" }}
+            >
+              {searchLoading ? <Spinner animation="border" size="sm" /> : "Search"}
             </Button>
           )}
         </div>
-      )}
+      </div>
 
-      <ItemCardList
-        category="movies"
-        title={sectionTitle}
-        items={filteredMovies}
-        schema={movieSchema}
-        onEdit={startEditing}
-        onDelete={deleteItem}
-        onViewDetail={setViewDetailItem}
-      />
+      {/* Search Results (replaces library when active) */}
+      {searchActive ? (
+        <div>
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <h6 style={{
+              fontSize: "var(--font-size-sm)",
+              fontWeight: 600,
+              color: "var(--color-text-secondary)",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              margin: 0,
+            }}>
+              {searchLoading ? "Searching..." : `${searchResults.length} results`}
+            </h6>
+          </div>
+          {searchResults.map((movie) => {
+            const existing = moviesByTmdbId[movie.tmdbId];
+            const socialMatch = socialByTmdbId[movie.tmdbId];
+            const badge = socialMatch
+              ? {
+                  text: `${socialMatch._sharedByName || "Someone in your circles"} rated ${"★".repeat(parseInt(socialMatch.rating, 10) || 0)}`,
+                  ringLevel: socialMatch._sharedByRing,
+                }
+              : null;
+
+            const statusBadge = existing
+              ? existing.status === "watched"
+                ? `Watched${existing.rating ? ` - ${"★".repeat(parseInt(existing.rating, 10))}` : ""}`
+                : "On your watchlist"
+              : null;
+
+            return (
+              <MovieResultCard
+                key={movie.tmdbId}
+                movie={movie}
+                socialBadge={badge}
+                onSelect={handleQuickAdd}
+                actions={existing ? (
+                  <Button
+                    size="sm"
+                    variant="outline-secondary"
+                    onClick={() => setViewDetailItem(existing)}
+                  >
+                    {statusBadge}
+                  </Button>
+                ) : undefined}
+              />
+            );
+          })}
+          {!searchLoading && searchResults.length === 0 && (
+            <div style={{ textAlign: "center", color: "var(--color-text-tertiary)", padding: "2rem 0" }}>
+              No results found. Try a different title.
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
+          {filteredMovies.length === 0 && !showForm && !loading && (
+            <div className="empty-state">
+              <div
+                className="empty-state-icon"
+                style={{ backgroundColor: "var(--color-movies, #E91E63)", color: "#fff" }}
+              >
+                {"\u{1F3AC}"}
+              </div>
+              <div className="empty-state-title">
+                {movies.length === 0 ? "No movies yet" : "No matches"}
+              </div>
+              <div className="empty-state-text">
+                {movies.length === 0
+                  ? "Search TMDB above or add one manually to start tracking your movie life."
+                  : "No movies match this filter."}
+              </div>
+              {movies.length === 0 && (
+                <Button variant="primary" onClick={openForm}>
+                  Add Your First Movie
+                </Button>
+              )}
+            </div>
+          )}
+
+          <ItemCardList
+            category="movies"
+            title={sectionTitle}
+            items={filteredMovies}
+            schema={movieSchema}
+            onEdit={startEditing}
+            onDelete={deleteItem}
+            onViewDetail={setViewDetailItem}
+            renderCompactExtra={(item) => {
+              const social = item.tmdbId && socialByTmdbId[item.tmdbId];
+              if (!social || social.id === item.id) return null;
+              const stars = parseInt(social._socialRating || social.rating, 10);
+              return (
+                <div style={{
+                  fontSize: "var(--font-size-xs)",
+                  fontWeight: 600,
+                  color: "var(--color-text-tertiary)",
+                  marginTop: "0.2rem",
+                }}>
+                  {social._sharedByName || "Someone in your circles"} rated {"★".repeat(stars || 0)}
+                </div>
+              );
+            }}
+          />
+        </>
+      )}
 
       <FormPanel
         show={showForm}
@@ -234,8 +416,6 @@ function MovieList() {
           setFormData={setFormData}
           onSubmit={handleSubmit}
           onCancel={closeForm}
-          contacts={contacts}
-          ownMovies={movies}
         />
       </FormPanel>
 
