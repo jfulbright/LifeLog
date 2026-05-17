@@ -16,10 +16,17 @@ function getStatusBadgeVariant(status) {
     case "attended":
     case "visited":
     case "owned":
+    case "watched":
+    case "done":
+    case "tried":
+    case "happened":
       return "success";
     case "wishlist":
+    case "watchlist":
+    case "upcoming":
       return "warning";
     case "rented":
+    case "cellar":
       return "info";
     default:
       return "secondary";

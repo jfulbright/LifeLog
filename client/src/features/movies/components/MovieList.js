@@ -139,6 +139,21 @@ function MovieList() {
     return map;
   }, [movies]);
 
+  // Apply genre/decade filters to search results (rating/ring don't apply to TMDB data)
+  const filteredSearchResults = useMemo(() => {
+    if (movieFilter === "all") return searchResults;
+    const [type, val] = movieFilter.split(":");
+    if (type === "genre") {
+      return searchResults.filter((m) =>
+        (m.genre || "").split(",").map((g) => g.trim()).includes(val)
+      );
+    }
+    if (type === "decade") {
+      return searchResults.filter((m) => getDecade(m.year) === val);
+    }
+    return searchResults;
+  }, [searchResults, movieFilter]);
+
   const movieStatuses = getStatusFilterOptions("movies");
 
   const availableGenres = useMemo(() => {
@@ -310,10 +325,10 @@ function MovieList() {
               letterSpacing: "0.05em",
               margin: 0,
             }}>
-              {searchLoading ? "Searching..." : `${searchResults.length} results`}
+              {searchLoading ? "Searching..." : `${filteredSearchResults.length} results`}
             </h6>
           </div>
-          {searchResults.map((movie) => {
+          {filteredSearchResults.map((movie) => {
             const existing = moviesByTmdbId[movie.tmdbId];
             const socialMatch = socialByTmdbId[movie.tmdbId];
             const badge = socialMatch
@@ -347,9 +362,11 @@ function MovieList() {
               />
             );
           })}
-          {!searchLoading && searchResults.length === 0 && (
+          {!searchLoading && filteredSearchResults.length === 0 && (
             <div style={{ textAlign: "center", color: "var(--color-text-tertiary)", padding: "2rem 0" }}>
-              No results found. Try a different title.
+              {searchResults.length === 0
+                ? "No results found. Try a different title."
+                : "No results match the active filter."}
             </div>
           )}
         </div>
@@ -422,7 +439,7 @@ function MovieList() {
       <SaveToast
         show={showToast}
         onClose={() => setShowToast(false)}
-        message="Movie saved \u{1F3AC}"
+        message="Movie saved 🎬"
       />
 
       <SnapCaptureModal
