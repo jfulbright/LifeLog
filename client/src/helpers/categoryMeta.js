@@ -20,7 +20,9 @@ const categoryMeta = {
         case "comedy": return item.comedian || "";
         case "festival": return item.festivalName || "";
         case "other": return item.eventName || "";
-        default: return item.artist || item.teams || item.showName || "";
+        default:
+          return item.artist || item.teams || item.showName || item.comedian
+            || item.festivalName || item.eventName || item.eventDescription || "";
       }
     },
   },

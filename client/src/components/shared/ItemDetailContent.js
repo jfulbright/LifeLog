@@ -4,12 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { isFieldVisible } from "../../helpers/operator";
 import { RING_META } from "../../helpers/ringMeta";
 import overlayService from "../../services/overlayService";
-import {
-  normalizeSocialContributions,
-  hasContributionContent,
-} from "../../helpers/socialContent";
-import PhotoGrid from "./PhotoGrid";
+import { useSocialData } from "../../contexts/SocialDataContext";
 import PhotoUploadField from "./PhotoUploadField";
+import SocialMemoriesCard from "./SocialMemoriesCard";
 
 function CompanionsDisplay({ companions, contacts }) {
   if (!Array.isArray(companions) || companions.length === 0) return null;
@@ -169,116 +166,7 @@ function SharingInfo({ item, contacts, navigate }) {
 }
 
 function SocialMemoriesSection({ item, contacts, refreshKey }) {
-  const [contributions, setContributions] = useState(item._socialContributions || []);
-
-  useEffect(() => {
-    let cancelled = false;
-    overlayService.getOverlaysForEntry(item.id).then((overlays) => {
-      if (!cancelled) {
-        setContributions(normalizeSocialContributions(item, overlays, contacts));
-      }
-    }).catch(() => {
-      if (!cancelled) setContributions(item._socialContributions || []);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [item, contacts, refreshKey]);
-
-  const visibleContributions = contributions.filter(hasContributionContent);
-
-  if (visibleContributions.length === 0) return null;
-
-  return (
-    <div
-      style={{
-        marginTop: "0.75rem",
-        paddingTop: "0.75rem",
-        borderTop: "1px solid var(--color-border)",
-      }}
-    >
-      <div
-        style={{
-          fontWeight: 700,
-          fontSize: "var(--font-size-xs)",
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-          color: "var(--color-text-secondary)",
-          marginBottom: "0.625rem",
-        }}
-      >
-        Shared memories
-      </div>
-      {visibleContributions.map((contribution) => {
-        return (
-          <div
-            key={`${contribution.userId || "owner"}-${contribution.isOwner ? "owner" : "overlay"}`}
-            style={{
-              marginBottom: "0.75rem",
-              paddingLeft: "0.75rem",
-              borderLeft: contribution.isOwner
-                ? "2px solid var(--color-primary)"
-                : "2px solid var(--color-border)",
-            }}
-          >
-            <div
-              style={{
-                fontWeight: 600,
-                fontSize: "var(--font-size-xs)",
-                color: "var(--color-text-secondary)",
-                marginBottom: "0.375rem",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-              }}
-            >
-              {contribution.displayName}
-              {contribution.isOwner && (
-                <span style={{ fontSize: "0.7rem", color: "var(--color-text-tertiary)", fontWeight: 700 }}>
-                  Owner
-                </span>
-              )}
-              {contribution.rating && (
-                <span style={{ color: "#f5a623", letterSpacing: "0.05em" }}>
-                  {"★".repeat(parseInt(contribution.rating, 10))}
-                  {"☆".repeat(5 - parseInt(contribution.rating, 10))}
-                </span>
-              )}
-            </div>
-            {contribution.whyNotes && (
-              <div
-                style={{
-                  fontSize: "var(--font-size-sm)",
-                  color: "var(--color-text-secondary)",
-                  marginBottom: "0.375rem",
-                }}
-              >
-                {contribution.whyNotes}
-              </div>
-            )}
-            {contribution.snaps.map((snap, i) => (
-              <div
-                key={i}
-                style={{
-                  fontStyle: "italic",
-                  fontSize: "var(--font-size-sm)",
-                  color: "var(--color-text-secondary)",
-                  marginBottom: "0.2rem",
-                }}
-              >
-                &ldquo;{snap}&rdquo;
-              </div>
-            ))}
-            {contribution.photos.length > 0 && (
-              <div style={{ marginTop: "0.375rem" }}>
-                <PhotoGrid photos={contribution.photos} height={100} />
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
+  return <SocialMemoriesCard item={item} contacts={contacts} refreshKey={refreshKey} />;
 }
 
 function SharedOverlayForm({ itemId, onSaved }) {
@@ -484,8 +372,10 @@ function ItemDetailContent({
   renderItemExtras,
 }) {
   const navigate = useNavigate();
+  const { mutationVersion, incrementVersion } = useSocialData();
   const itemId = item.id;
   const [overlayRefreshKey, setOverlayRefreshKey] = useState(0);
+  const refreshKey = overlayRefreshKey + mutationVersion;
 
   return (
     <>
@@ -533,13 +423,13 @@ function ItemDetailContent({
       <SocialMemoriesSection
         item={item}
         contacts={contacts}
-        refreshKey={overlayRefreshKey}
+        refreshKey={refreshKey}
       />
 
       {item._isShared && (
         <SharedOverlayForm
           itemId={itemId}
-          onSaved={() => setOverlayRefreshKey((key) => key + 1)}
+          onSaved={() => { setOverlayRefreshKey((key) => key + 1); incrementVersion(); }}
         />
       )}
 

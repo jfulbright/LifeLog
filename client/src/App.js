@@ -25,6 +25,7 @@ import ResetPassword from "./pages/ResetPassword";
 import SidebarNav from "./components/shared/SidebarNav";
 import MigrationBanner from "./components/auth/MigrationBanner";
 import { AppDataProvider, useAppData } from "./contexts/AppDataContext";
+import { SocialDataProvider } from "./contexts/SocialDataContext";
 import { useAuth } from "./contexts/AuthContext";
 import "App.css";
 
@@ -166,7 +167,9 @@ function App() {
 
   return (
     <AppDataProvider>
-      <AppShell />
+      <SocialDataProvider>
+        <AppShell />
+      </SocialDataProvider>
     </AppDataProvider>
   );
 }

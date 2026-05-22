@@ -421,6 +421,7 @@ const cellarSchema = [
   getCompanionsField("tried"),
   {
     name: "visibilityControl",
+    label: "🔒 Who can see this",
     type: "visible-to",
     optional: true,
     section: "Social",
@@ -429,11 +430,12 @@ const cellarSchema = [
   },
   {
     name: "recommendation",
-    label: "Recommend this",
+    label: "⭐ Recommend to",
     type: "recommend",
     optional: true,
     section: "Social",
     order: 61,
+    fullWidth: true,
   },
 
   // ── Label Photo ───────────────────────────────────────────────────────────

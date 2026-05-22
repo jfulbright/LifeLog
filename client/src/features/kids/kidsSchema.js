@@ -316,6 +316,7 @@ const kidsSchema = [
   getCompanionsField("happened"),
   {
     name: "visibilityControl",
+    label: "🔒 Who can see this",
     type: "visible-to",
     optional: true,
     section: "Social",
@@ -324,11 +325,12 @@ const kidsSchema = [
   },
   {
     name: "recommendation",
-    label: "Recommend",
+    label: "⭐ Recommend to",
     type: "recommend",
     optional: true,
     section: "Social",
     order: 61,
+    fullWidth: true,
   },
 
   // Tags + hidden fields

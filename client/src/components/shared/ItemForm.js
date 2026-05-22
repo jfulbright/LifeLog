@@ -8,9 +8,7 @@ import {
 import StateDropdown from "./StateDropdown";
 import CountryDropdown from "./CountryDropdown";
 import CityAutocomplete from "./CityAutocomplete";
-import ContactPicker from "./ContactPicker";
-import RecommendSection from "./RecommendSection";
-import ShareWithSection from "./ShareWithSection";
+import PeopleField from "./PeopleField";
 import ShareWithCompanionsToggle from "./ShareWithCompanionsToggle";
 import LinkedTripPicker from "./LinkedTripPicker";
 import PhotoUploadField from "./PhotoUploadField";
@@ -99,13 +97,26 @@ function normalizeCompanions(value) {
   });
 }
 
-function ContactListRenderer({ field, value, onChange, readOnly }) {
+function ContactListRenderer({ field, formData, setFormData, readOnly }) {
+  if (readOnly) {
+    const companions = normalizeCompanions(formData.companions || []);
+    if (!companions.length) return null;
+    return (
+      <div className="contact-picker-chips-readonly">
+        {companions.map((entry, i) => (
+          <span key={i} className="companion-chip companion-chip--guest">
+            {entry.type === "contact" ? entry.displayName : entry.name}
+          </span>
+        ))}
+      </div>
+    );
+  }
   return (
-    <ContactPicker
-      value={value}
-      onChange={onChange}
-      placeholder={field.placeholder || "Add from your people or type a name"}
-      readOnly={readOnly}
+    <PeopleField
+      mode="companions"
+      formData={formData}
+      setFormData={setFormData}
+      placeholder={field.placeholder}
     />
   );
 }
@@ -304,7 +315,7 @@ function ItemForm({
   const renderField = (field) => {
     // Dynamic label for companions based on status
     const effectiveField = field.name === "companions"
-      ? { ...field, label: formData.status === "wishlist" ? "Plan with" : "Who was there?" }
+      ? { ...field, label: formData.status === "wishlist" ? "👥 Plan with" : "👥 Who was there?" }
       : field;
     const value = formData[effectiveField.name] ?? "";
     const hasError = !!validationErrors[effectiveField.name];
@@ -480,10 +491,8 @@ function ItemForm({
         inputElement = (
           <ContactListRenderer
             field={field}
-            value={normalizeCompanions(value)}
-            onChange={(newList) =>
-              setFormData((prev) => ({ ...prev, [field.name]: newList }))
-            }
+            formData={formData}
+            setFormData={setFormData}
             readOnly={isReadOnly}
           />
         );
@@ -602,13 +611,21 @@ function ItemForm({
 
       case "recommend":
         inputElement = (
-          <RecommendSection formData={formData} setFormData={setFormData} />
+          <PeopleField
+            mode="recommend"
+            formData={formData}
+            setFormData={setFormData}
+          />
         );
         break;
 
       case "visible-to":
         inputElement = (
-          <ShareWithSection formData={formData} setFormData={setFormData} />
+          <PeopleField
+            mode="visibility"
+            formData={formData}
+            setFormData={setFormData}
+          />
         );
         break;
 
@@ -646,7 +663,7 @@ function ItemForm({
         key={field.name}
         className={`mb-3${field.isSnapshot ? " snapshot-field-group" : ""}`}
       >
-        {field.type !== "recommend" && field.type !== "visible-to" && field.type !== "linked-trip" && field.type !== "photo" && (
+        {field.type !== "linked-trip" && field.type !== "photo" && (
           <Form.Label htmlFor={fieldId}>
             {effectiveField.label}
             {field.required && (
@@ -696,11 +713,10 @@ function ItemForm({
               </div>
             ) : isSocialSection ? (
               <div className="snap-section-banner" style={{ background: "linear-gradient(135deg, #F5EEF8 0%, #EAF8FE 100%)", borderColor: "var(--color-border)" }}>
-                <span className="snap-section-icon" aria-hidden="true">&#129309;</span>
                 <div>
-                  <div className="snap-section-title">Share</div>
+                  <div className="snap-section-title">My People</div>
                   <div className="snap-section-subtitle">
-                    Share experiences, control who can see, and recommend to others
+                    Share, recommend, and control visibility
                   </div>
                 </div>
               </div>
@@ -726,27 +742,6 @@ function ItemForm({
             <Row>
               {fields.map((field) => (
                 <React.Fragment key={field.name}>
-                  {isSocialSection && field.name === "companions" && (
-                    <Col md={12}>
-                      <div className="share-with-sublabel" style={{ marginTop: "0.25rem", marginBottom: "0.5rem" }}>
-                        🤝 Shared Experiences
-                      </div>
-                    </Col>
-                  )}
-                  {isSocialSection && field.type === "visible-to" && (
-                    <Col md={12}>
-                      <div className="share-with-sublabel" style={{ marginTop: "0.75rem", marginBottom: "0.5rem" }}>
-                        👥 Who can see this
-                      </div>
-                    </Col>
-                  )}
-                  {isSocialSection && field.type === "recommend" && (
-                    <Col md={12}>
-                      <div className="share-with-sublabel" style={{ marginTop: "0.75rem", marginBottom: "0.5rem" }}>
-                        ⭐ Recommendations
-                      </div>
-                    </Col>
-                  )}
                   <Col md={field.fullWidth ? 12 : (field.col || 6)}>
                     {renderField(field)}
                   </Col>

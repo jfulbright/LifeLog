@@ -37,7 +37,6 @@ function ShareWithSection({ formData, setFormData }) {
 
   return (
     <div className="share-with-section">
-      <h6 className="form-section-heading">Who can see this</h6>
       <button
         type="button"
         className="share-with-toggle"

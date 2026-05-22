@@ -115,15 +115,14 @@ export default function useCategory(category, { migrate, normalize, schema } = {
     async (e) => {
       if (e?.preventDefault) e.preventDefault();
 
-      // Strip transient sharing/recommendation fields
+      // Strip transient sharing fields (recommendations persist in item data)
       const {
         shareWithCompanionIds,
-        recommendedToRings,
-        recommendedToContacts,
         _recommendedCompanions,
         ...rawFormData
       } = formData;
       const data = normalize ? normalize(rawFormData) : rawFormData;
+      const { recommendedToRings, recommendedToContacts } = formData;
       let savedId;
 
       if (editIndex !== null) {

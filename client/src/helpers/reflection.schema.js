@@ -65,7 +65,7 @@ export function getReflectionFields(experiencedStatus) {
 export function getCompanionsField(experiencedStatus) {
   return {
     name: "companions",
-    label: "Who was there?",
+    label: "👥 Who was there?",
     type: "contact-list",
     placeholder: "Add from your people or type a name",
     optional: true,

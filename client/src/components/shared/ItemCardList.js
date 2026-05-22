@@ -79,6 +79,9 @@ function ItemCardList({
       item[meta.primaryField] ||
       item.artist ||
       item.title ||
+      item.teams ||
+      item.showName ||
+      item.eventName ||
       item.type ||
       item.make ||
       "Untitled"

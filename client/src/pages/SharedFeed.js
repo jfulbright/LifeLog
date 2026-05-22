@@ -5,6 +5,7 @@ import collaboratorService from "../services/collaboratorService";
 import overlayService from "../services/overlayService";
 import OverlayForm from "../components/shared/OverlayForm";
 import { useAppData } from "../contexts/AppDataContext";
+import { useSocialData } from "../contexts/SocialDataContext";
 import categoryMeta from "../helpers/categoryMeta";
 
 /**
@@ -66,7 +67,8 @@ function formatDateRange(entry) {
 
 // ── Shared Entry Card ─────────────────────────────────────────────────────────
 
-function SharedEntryCard({ entry, tag, contacts, onAccept, onDecline, onViewOverlays, onEditShared, onLeaveShare }) {
+function SharedEntryCard({ entry, tag, contacts, onAccept, onDecline, onViewOverlays, onEditShared, onLeaveShare, existingOverlay, onOverlaySaved }) {
+  const [showForm, setShowForm] = useState(false);
   const meta = categoryMeta[entry._category] || {};
 
   // Find who shared this with us
@@ -204,7 +206,39 @@ function SharedEntryCard({ entry, tag, contacts, onAccept, onDecline, onViewOver
               Leave
             </Button>
           </div>
-          <OverlayForm entryId={entry.id} entryStatus={entry.status} onSaved={() => {}} />
+
+          {existingOverlay && !showForm ? (
+            <div>
+              {existingOverlay.rating && (
+                <div style={{ marginBottom: "0.375rem", color: "#f5a623" }}>
+                  {"★".repeat(parseInt(existingOverlay.rating))}{"☆".repeat(5 - parseInt(existingOverlay.rating))}
+                </div>
+              )}
+              {[existingOverlay.snapshot1, existingOverlay.snapshot2, existingOverlay.snapshot3].filter(Boolean).map((snap, i) => (
+                <div key={i} style={{ fontSize: "var(--font-size-sm)", fontStyle: "italic", color: "var(--color-text-secondary)", borderLeft: "2px solid var(--color-border)", paddingLeft: "0.625rem", marginBottom: "0.375rem" }}>
+                  "{snap}"
+                </div>
+              ))}
+              <Button
+                variant="outline-primary"
+                size="sm"
+                onClick={() => setShowForm(true)}
+                style={{ fontSize: "var(--font-size-xs)", marginTop: "0.5rem" }}
+              >
+                Edit my snaps
+              </Button>
+            </div>
+          ) : (
+            <OverlayForm
+              entryId={entry.id}
+              entryStatus={entry.status}
+              initialOverlay={existingOverlay || undefined}
+              onSaved={() => {
+                setShowForm(false);
+                if (onOverlaySaved) onOverlaySaved(entry.id);
+              }}
+            />
+          )}
         </div>
       )}
     </div>
@@ -395,8 +429,9 @@ function OverlayPanel({ entry, tag, overlays, contacts, onClose, onSave }) {
 
 function SharedFeed() {
   const { contacts, refreshNotifications } = useAppData();
+  const { incrementVersion } = useSocialData();
   const [allItems, setAllItems] = useState([]);
-  const [overlays, setOverlays] = useState([]);
+  const [myOverlays, setMyOverlays] = useState({});
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("all");
   const [overlayTarget, setOverlayTarget] = useState(null);
@@ -420,12 +455,29 @@ function SharedFeed() {
           };
         })
       );
-      setAllItems(enriched.filter((e) => e.entry));
-      setOverlays([]);
+      const validItems = enriched.filter((e) => e.entry);
+      setAllItems(validItems);
+
+      const acceptedIds = validItems
+        .filter((c) => c.status === "accepted")
+        .map((c) => c.entry_id);
+      if (acceptedIds.length > 0) {
+        const { supabase: sb } = await import("../services/supabaseClient");
+        const { data: { session } } = await sb.auth.getSession();
+        const currentUserId = session?.user?.id;
+        const overlaysList = await overlayService.getOverlaysForEntries(acceptedIds);
+        const overlayMap = {};
+        (overlaysList || []).forEach((o) => {
+          if (o.user_id === currentUserId) overlayMap[o.entry_id] = o;
+        });
+        setMyOverlays(overlayMap);
+      } else {
+        setMyOverlays({});
+      }
     } catch (err) {
       console.error("[SharedFeed] load failed:", err);
       setAllItems([]);
-      setOverlays([]);
+      setMyOverlays({});
     }
     setLoading(false);
   }, []);
@@ -450,16 +502,16 @@ function SharedFeed() {
 
   const handleAccept = async (item) => {
     await collaboratorService.acceptCollaboration(item._collabId);
+    incrementVersion();
     await load();
     refreshNotifications();
-    window.dispatchEvent(new Event("data-changed"));
   };
 
   const handleDecline = async (item) => {
     await collaboratorService.declineCollaboration(item._collabId);
+    incrementVersion();
     await load();
     refreshNotifications();
-    window.dispatchEvent(new Event("data-changed"));
   };
 
   const handleViewOverlays = (entry, tag) => {
@@ -473,16 +525,16 @@ function SharedFeed() {
   const handleLeaveShare = async (entry) => {
     if (!window.confirm("This will remove this shared experience from your account. The owner will still have it. Continue?")) return;
     await collaboratorService.declineCollaboration(entry._collabId);
+    incrementVersion();
     await load();
     refreshNotifications();
-    window.dispatchEvent(new Event("data-changed"));
   };
 
   const handleSaveOverlay = async (overlayData) => {
     await overlayService.saveOverlay(overlayData.entryId, overlayData);
+    incrementVersion();
     await load();
     setOverlayTarget(null);
-    window.dispatchEvent(new Event("data-changed"));
   };
 
   const pendingCount = allItems.filter((c) => c.status === "pending").length;
@@ -565,6 +617,8 @@ function SharedFeed() {
               onViewOverlays={handleViewOverlays}
               onEditShared={handleEditShared}
               onLeaveShare={handleLeaveShare}
+              existingOverlay={myOverlays[item.id] || null}
+              onOverlaySaved={() => { incrementVersion(); load(); }}
             />
           );
         })
@@ -574,7 +628,7 @@ function SharedFeed() {
         <OverlayPanel
           entry={overlayTarget.entry}
           tag={overlayTarget.tag}
-          overlays={overlays.filter((o) => o.entry_id === overlayTarget.entry.id)}
+          overlays={[]}
           contacts={contacts}
           onClose={() => setOverlayTarget(null)}
           onSave={handleSaveOverlay}
@@ -596,9 +650,9 @@ function SharedFeed() {
                 .from("items")
                 .update({ data: cleanData })
                 .eq("id", editTarget.id);
+              incrementVersion();
               await load();
               setEditTarget(null);
-              window.dispatchEvent(new Event("data-changed"));
             } catch (err) {
               console.error("[SharedFeed] edit save failed:", err);
             }
