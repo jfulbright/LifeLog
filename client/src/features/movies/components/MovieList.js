@@ -59,7 +59,7 @@ function MovieList() {
     showForm, editIndex,
     filterStatus, setFilterStatus,
     showToast, setShowToast,
-    handleSubmit, startEditing, deleteItem, closeForm, openForm,
+    handleSubmit, startEditing, deleteItem, closeForm, openForm, saveDetailEdit,
     showSnapPrompt, snapPromptTitle, handleSnapSave, dismissSnapPrompt,
     viewDetailItem, setViewDetailItem,
   } = useCategory("movies", { normalize: (data) => ({ ...data, status: data.status || "watchlist", startDate: data.startDate || "" }), schema: movieSchema });
@@ -262,6 +262,7 @@ function MovieList() {
           { value: watchedCount, label: "watched", color: "var(--color-movies, #E91E63)" },
           { value: watchlistCount, label: "on watchlist", color: "var(--color-text-secondary)" },
         ] : null}
+        statsLink={{ to: "/movies/stats", color: "var(--color-movies, #E91E63)" }}
         category="movies"
         statusOptions={movieStatuses}
         filterStatus={filterStatus}
@@ -455,7 +456,7 @@ function MovieList() {
           category="movies"
           schema={movieSchema}
           onClose={() => setViewDetailItem(null)}
-          onSave={() => setViewDetailItem(null)}
+          onSave={(data) => { saveDetailEdit(data); setViewDetailItem(null); }}
           onDelete={(id) => { deleteItem(id); setViewDetailItem(null); }}
           renderItemExtras={(item) => <MovieDetailExtras item={item} />}
         />

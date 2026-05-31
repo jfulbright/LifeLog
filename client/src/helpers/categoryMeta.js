@@ -1,5 +1,20 @@
 import { getCountryName } from "../data/countries";
 
+const US_NAMES = new Set(["United States", "US", "USA", "United States of America"]);
+
+export function shouldShowCountry(country) {
+  if (!country) return false;
+  return !US_NAMES.has(country);
+}
+
+export function formatLocation(item, fields) {
+  const parts = (fields || ["venue", "city", "state"]).map((f) => item[f]).filter(Boolean);
+  if (item.country && shouldShowCountry(item.country)) {
+    parts.push(item.country);
+  }
+  return parts.join(", ");
+}
+
 /**
  * Centralized category display metadata.
  * Used by ItemCardList, Dashboard, Sidebar, and Timeline to render
@@ -13,16 +28,17 @@ const categoryMeta = {
     secondaryFields: ["venue", "city", "state"],
     dateField: "startDate",
     getPrimaryDisplay: (item) => {
-      switch (item.eventType) {
-        case "concert": return item.artist || "";
-        case "sports": return item.teams || "";
-        case "broadway": return item.showName || "";
-        case "comedy": return item.comedian || "";
-        case "festival": return item.festivalName || "";
-        case "other": return item.eventName || "";
+      const type = item.eventType || item.subType;
+      switch (type) {
+        case "concert": return item.artist || item.title || "";
+        case "sports": return item.teams || item.title || "";
+        case "broadway": return item.showName || item.title || "";
+        case "comedy": return item.comedian || item.title || "";
+        case "festival": return item.festivalName || item.title || "";
+        case "other": return item.eventName || item.title || "";
         default:
           return item.artist || item.teams || item.showName || item.comedian
-            || item.festivalName || item.eventName || item.eventDescription || "";
+            || item.festivalName || item.eventName || item.title || item.eventDescription || "";
       }
     },
   },
@@ -70,8 +86,9 @@ const categoryMeta = {
     icon: "\uD83C\uDFAC",
     color: "var(--color-movies)",
     primaryField: "title",
-    secondaryFields: ["year"],
+    secondaryFields: ["year", "genre"],
     dateField: "startDate",
+    extraHandledFields: ["overview", "director"],
   },
   activities: {
     icon: "\uD83C\uDFD4\uFE0F",
