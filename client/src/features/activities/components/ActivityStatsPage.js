@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React from "react";
 import { Row, Col } from "react-bootstrap";
 import { Link } from "react-router-dom";
-import dataService from "../../../services/dataService";
-import contactsService from "../../../services/contactsService";
 import { computeActivityStats } from "../../../services/activityStats";
 import { computeSocialActivityStats } from "../api/socialActivityApi";
+import useStatsPage from "../../../hooks/useStatsPage";
 import { StatsPageLayout, BarChart, HorizontalBar, SectionHeader } from "../../../components/shared/stats";
 import CircleStats from "../../../components/shared/stats/CircleStats";
 
@@ -13,41 +12,13 @@ const GROUP_LABELS = { snow: "Snow", bike: "Bike", water: "Water", land: "Land",
 const GROUP_COLORS = { snow: "#36C5F0", bike: "#2EB67D", water: "#4A90D9", land: "#8B6914", air: "#E91E63" };
 
 export default function ActivityStatsPage() {
-  const [activities, setActivities] = useState([]);
-  const [contacts, setContacts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [periodFilter, setPeriodFilter] = useState("year");
-  const [socialStats, setSocialStats] = useState(null);
-  const [socialLoading, setSocialLoading] = useState(false);
-
-  useEffect(() => {
-    Promise.all([
-      dataService.getItemsWithShared("activities"),
-      contactsService.getContacts(),
-    ]).then(([activityData, contactData]) => {
-      setActivities(activityData || []);
-      setContacts(contactData || []);
-      setLoading(false);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (activities.length === 0 || contacts.length === 0) return;
-    setSocialLoading(true);
-    computeSocialActivityStats(activities, contacts)
-      .then(setSocialStats)
-      .catch(() => setSocialStats(null))
-      .finally(() => setSocialLoading(false));
-  }, [activities, contacts]);
-
-  const stats = useMemo(() => computeActivityStats(activities, periodFilter), [activities, periodFilter]);
+  const { items: activities, contacts, loading, periodFilter, setPeriodFilter, stats, socialStats, socialLoading, hasLinkedContacts } = useStatsPage("activities", computeActivityStats, computeSocialActivityStats);
 
   if (loading) {
     return <div style={{ padding: "2rem", textAlign: "center", color: "var(--color-text-tertiary)" }}>Loading stats...</div>;
   }
 
   const hasData = stats.totalDone > 0;
-  const hasLinkedContacts = contacts.some((c) => c.linkedUserId || c.linked_user_id);
 
   return (
     <StatsPageLayout

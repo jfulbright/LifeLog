@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React from "react";
 import { Row, Col } from "react-bootstrap";
 import { Link } from "react-router-dom";
-import dataService from "../../../services/dataService";
-import contactsService from "../../../services/contactsService";
 import { computeMovieStats } from "../../../services/movieStats";
 import { computeSocialMovieStats } from "../../../services/socialMovieStats";
+import useStatsPage from "../../../hooks/useStatsPage";
 import { StatsPageLayout, BarChart, HorizontalBar, SectionHeader } from "../../../components/shared/stats";
 import CircleStats from "../../../components/shared/stats/CircleStats";
 
@@ -29,41 +28,13 @@ function AlignmentBar({ score, color }) {
 }
 
 export default function MovieStatsPage() {
-  const [movies, setMovies] = useState([]);
-  const [contacts, setContacts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [periodFilter, setPeriodFilter] = useState("year");
-  const [socialStats, setSocialStats] = useState(null);
-  const [socialLoading, setSocialLoading] = useState(false);
-
-  useEffect(() => {
-    Promise.all([
-      dataService.getItemsWithShared("movies"),
-      contactsService.getContacts(),
-    ]).then(([movieData, contactData]) => {
-      setMovies(movieData || []);
-      setContacts(contactData || []);
-      setLoading(false);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (movies.length === 0 || contacts.length === 0) return;
-    setSocialLoading(true);
-    computeSocialMovieStats(movies, contacts)
-      .then(setSocialStats)
-      .catch(() => setSocialStats(null))
-      .finally(() => setSocialLoading(false));
-  }, [movies, contacts]);
-
-  const stats = useMemo(() => computeMovieStats(movies, periodFilter), [movies, periodFilter]);
+  const { items: movies, contacts, loading, periodFilter, setPeriodFilter, stats, socialStats, socialLoading, hasLinkedContacts } = useStatsPage("movies", computeMovieStats, computeSocialMovieStats);
 
   if (loading) {
     return <div style={{ padding: "2rem", textAlign: "center", color: "var(--color-text-tertiary)" }}>Loading stats...</div>;
   }
 
   const hasData = stats.totalWatched > 0;
-  const hasLinkedContacts = contacts.some((c) => c.linkedUserId || c.linked_user_id);
 
   return (
     <StatsPageLayout
