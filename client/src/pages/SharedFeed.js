@@ -6,37 +6,8 @@ import overlayService from "../services/overlayService";
 import SharedMemoriesSection from "../components/shared/SharedMemoriesSection";
 import { useAppData } from "../contexts/AppDataContext";
 import { useSocialData } from "../contexts/SocialDataContext";
-import categoryMeta, { formatLocation } from "../helpers/categoryMeta";
+import categoryMeta, { getEntryTitle, getEntrySubtitle } from "../helpers/categoryMeta";
 import { formatDateRange } from "../helpers/dateUtils";
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function getEntryDisplayTitle(entry) {
-  const meta = categoryMeta[entry._category];
-  if (meta?.getPrimaryDisplay) {
-    const display = meta.getPrimaryDisplay(entry);
-    if (display) return display;
-  }
-  if (meta?.primaryField && entry[meta.primaryField]) {
-    return entry[meta.primaryField];
-  }
-  if (entry.artist) return entry.artist;
-  if (entry.title) return entry.title;
-  if (entry.activityType) return entry.activityType;
-  if (entry.wineName) return entry.wineName;
-  if (entry.whiskyName) return entry.whiskyName;
-  if (entry.make) return `${entry.make}${entry.model ? " " + entry.model : ""}`.trim();
-  return entry.type || "Entry";
-}
-
-function getEntrySubtitle(entry) {
-  const meta = categoryMeta[entry._category];
-  if (meta?.getSecondaryDisplay) {
-    const display = meta.getSecondaryDisplay(entry);
-    if (display) return display;
-  }
-  return formatLocation(entry, meta?.secondaryFields);
-}
 
 // ── Shared Entry Card ─────────────────────────────────────────────────────────
 
@@ -66,7 +37,7 @@ function SharedEntryCard({ entry, tag, contacts, onAccept, onDecline, onViewOver
       {/* Row 1: Title + visibility + status badges (right-aligned) */}
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
         <span style={{ fontWeight: 700, fontSize: "var(--font-size-base)", color: "var(--color-text-primary)" }}>
-          {getEntryDisplayTitle(entry)}
+          {getEntryTitle(entry._category, entry)}
         </span>
         {(entry.shareWithCompanionIds?.length > 0 || entry.visibilityRings?.length > 0) && (
           <span style={{ fontSize: "0.85rem" }}>👥</span>
@@ -90,9 +61,9 @@ function SharedEntryCard({ entry, tag, contacts, onAccept, onDecline, onViewOver
       </div>
 
       {/* Row 2: Location */}
-      {getEntrySubtitle(entry) && (
+      {getEntrySubtitle(entry._category, entry) && (
         <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", marginTop: "0.25rem" }}>
-          {getEntrySubtitle(entry)}
+          {getEntrySubtitle(entry._category, entry)}
         </div>
       )}
 
@@ -194,7 +165,7 @@ function OverlayPanel({ entry, tag, overlays, contacts, onClose, onSave }) {
   const [rating, setRating] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const title = getEntryDisplayTitle(entry);
+  const title = getEntryTitle(entry._category, entry);
 
   useEffect(() => {
     let cancelled = false;
@@ -595,7 +566,7 @@ function SharedEditPanel({ entry, contacts, onClose, onSave }) {
   }, [entry.id]);
 
   const meta = categoryMeta[entry._category] || {};
-  const title = getEntryDisplayTitle(entry);
+  const title = getEntryTitle(entry._category, entry);
 
   const handleSave = async () => {
     setSaving(true);

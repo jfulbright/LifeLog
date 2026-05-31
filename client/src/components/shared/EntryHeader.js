@@ -1,7 +1,7 @@
 import React from "react";
 import { Badge } from "react-bootstrap";
 import { getStatusLabel } from "../../helpers/statusLabels";
-import { getCategoryMeta } from "../../helpers/categoryMeta";
+import { getCategoryMeta, getEntryTitle, getEntrySubtitle } from "../../helpers/categoryMeta";
 import { formatDisplayDate } from "../../helpers/dateUtils";
 import PrivacyIndicator from "./PrivacyIndicator";
 
@@ -40,23 +40,8 @@ function getStatusBadgeVariant(status) {
 function EntryHeader({ item, category, schema, contacts, onClick }) {
   const meta = getCategoryMeta(category);
 
-  const getPrimaryLabel = () => {
-    if (meta.getPrimaryDisplay) return meta.getPrimaryDisplay(item) || "Untitled";
-    return (
-      item[meta.primaryField] || item.artist || item.title || item.teams ||
-      item.showName || item.eventName || item.type || item.make || "Untitled"
-    );
-  };
-
-  const getSecondaryLabel = () => {
-    if (meta.getSecondaryDisplay) return meta.getSecondaryDisplay(item);
-    const US_VARIANTS = new Set(["US", "USA", "United States", "United States of America", "us", "usa"]);
-    return meta.secondaryFields
-      .filter((f) => !(f === "country" && US_VARIANTS.has(item[f])))
-      .map((f) => item[f])
-      .filter(Boolean)
-      .join(", ");
-  };
+  const getPrimaryLabel = () => getEntryTitle(category, item);
+  const getSecondaryLabel = () => getEntrySubtitle(category, item);
 
   const typeValue = item.eventType || item.subType || item.activityType;
   const typeField = schema?.find((f) => f.name === "eventType" || f.name === "subType" || f.name === "activityType");

@@ -152,3 +152,25 @@ export function getCategoryMeta(category) {
     dateField: "startDate",
   };
 }
+
+export function getEntryTitle(category, item) {
+  const meta = getCategoryMeta(category);
+  if (meta.getPrimaryDisplay) {
+    const display = meta.getPrimaryDisplay(item);
+    if (display) return display;
+  }
+  if (meta.primaryField && item[meta.primaryField]) {
+    return item[meta.primaryField];
+  }
+  return item.artist || item.title || item.teams || item.showName
+    || item.eventName || item.type || item.make || "Untitled";
+}
+
+export function getEntrySubtitle(category, item) {
+  const meta = getCategoryMeta(category);
+  if (meta.getSecondaryDisplay) {
+    const display = meta.getSecondaryDisplay(item);
+    if (display) return display;
+  }
+  return formatLocation(item, meta.secondaryFields);
+}

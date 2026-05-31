@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Row, Col } from "react-bootstrap";
-import categoryMeta from "../helpers/categoryMeta";
+import categoryMeta, { getEntryTitle } from "../helpers/categoryMeta";
 import { getSnapshotTeaser } from "../helpers/operator";
 import { enrichItemsWithSocialContent, getAllSocialSnaps } from "../helpers/socialContent";
 import dataService from "../services/dataService";
@@ -157,9 +157,7 @@ function Dashboard() {
           id: item.id,
           category: cat.key,
           label: cat.label,
-          title:
-            (cat.meta.getPrimaryDisplay ? cat.meta.getPrimaryDisplay(item) : null) ||
-            item[cat.meta.primaryField] || item.title || item.artist || "Untitled",
+          title: getEntryTitle(cat.key, item),
           snapshot: snapItems[0].text,
           displayName: snapItems[0].displayName,
           date: item.startDate || item.createdAt || "",
