@@ -11,27 +11,7 @@ import { codeToFlag } from "../data/countries";
 import { useAuth } from "../contexts/AuthContext";
 import { useAppData } from "../contexts/AppDataContext";
 import EntryDetailPanel from "../components/shared/EntryDetailPanel";
-import eventSchema from "../features/events/eventSchema";
-import travelSchema from "../features/travel/travelSchema";
-import carSchema from "../features/cars/carSchema";
-import homeSchema from "../features/homes/homeSchema";
-import activitySchema from "../features/activities/activitySchema";
-import cellarSchema from "../features/cellar/cellarSchema";
-import kidsSchema from "../features/kids/kidsSchema";
-import movieSchema from "../features/movies/movieSchema";
-
-const SCHEMA_MAP = {
-  events: eventSchema,
-  travel: travelSchema,
-  cars: carSchema,
-  homes: homeSchema,
-  activities: activitySchema,
-  cellar: cellarSchema,
-  kids: kidsSchema,
-  movies: movieSchema,
-};
-
-const CATEGORY_KEYS = ["events", "travel", "activities", "movies", "cellar", "cars", "homes", "kids"];
+import { SCHEMA_MAP, CATEGORY_KEYS } from "../helpers/schemaRegistry";
 
 const categories = CATEGORY_KEYS.map((key) => ({
   key,

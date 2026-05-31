@@ -7,8 +7,7 @@ import categoryMeta from "../helpers/categoryMeta";
 import { RING_META } from "../helpers/ringMeta";
 import { getSnapshotTeaser } from "../helpers/operator";
 import { codeToFlag } from "../data/countries";
-
-const CATEGORY_KEYS = ["events", "travel", "activities", "cellar", "cars", "homes", "kids"];
+import { CATEGORY_KEYS } from "../helpers/schemaRegistry";
 
 function ContactProfile() {
   const { contactId } = useParams();

@@ -11,28 +11,8 @@ import SourceFilterPills from "../components/shared/SourceFilterPills";
 import EntryDetailPanel from "../components/shared/EntryDetailPanel";
 import StatsStrip from "../components/shared/StatsStrip";
 import { useAppData } from "../contexts/AppDataContext";
-import eventSchema from "../features/events/eventSchema";
-import travelSchema from "../features/travel/travelSchema";
-import carSchema from "../features/cars/carSchema";
-import homeSchema from "../features/homes/homeSchema";
-import activitySchema from "../features/activities/activitySchema";
-import cellarSchema from "../features/cellar/cellarSchema";
-import kidsSchema from "../features/kids/kidsSchema";
-import movieSchema from "../features/movies/movieSchema";
+import { SCHEMA_MAP, CATEGORY_KEYS } from "../helpers/schemaRegistry";
 import { enrichItemsWithSocialContent, getSocialPreview } from "../helpers/socialContent";
-
-const SCHEMA_MAP = {
-  events: eventSchema,
-  travel: travelSchema,
-  cars: carSchema,
-  homes: homeSchema,
-  activities: activitySchema,
-  cellar: cellarSchema,
-  kids: kidsSchema,
-  movies: movieSchema,
-};
-
-const CATEGORY_KEYS = ["events", "travel", "cars", "homes", "activities", "cellar", "kids", "movies"];
 
 const categories = CATEGORY_KEYS.map((key) => ({
   key,
