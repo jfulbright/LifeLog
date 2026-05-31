@@ -10,6 +10,7 @@ import WorldMapView from "../../../features/travel/components/WorldMapView";
 import PhotoGrid from "../../../components/shared/PhotoGrid";
 import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
 import CategoryListHeader from "../../../components/shared/CategoryListHeader";
+import StarRating from "../../../components/shared/StarRating";
 import travelSchema from "../../../features/travel/travelSchema";
 import useCategory from "../../../hooks/useCategory";
 import { formatDisplayDate, formatDateRange } from "../../../helpers/dateUtils";
@@ -323,9 +324,8 @@ function LinkedActivityRow({ activity }) {
             </div>
           )}
           {activity.rating && (
-            <div style={{ fontSize: "var(--font-size-xs)", color: "#f5a623", marginBottom: "0.2rem" }}>
-              {"★".repeat(parseInt(activity.rating, 10))}
-              {"☆".repeat(5 - parseInt(activity.rating, 10))}
+            <div style={{ marginBottom: "0.2rem" }}>
+              <StarRating rating={activity.rating} />
             </div>
           )}
           {snapshots.map((snap, i) => (

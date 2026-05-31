@@ -8,6 +8,7 @@ import { useAppData } from "../contexts/AppDataContext";
 import { useSocialData } from "../contexts/SocialDataContext";
 import categoryMeta, { getEntryTitle, getEntrySubtitle } from "../helpers/categoryMeta";
 import { formatDateRange } from "../helpers/dateUtils";
+import StarRating from "../components/shared/StarRating";
 
 // ── Shared Entry Card ─────────────────────────────────────────────────────────
 
@@ -259,18 +260,7 @@ function OverlayPanel({ entry, tag, overlays, contacts, onClose, onSave }) {
 
         <div style={{ marginBottom: "1rem" }}>
           <label style={{ display: "block", marginBottom: "0.375rem", fontSize: "var(--font-size-sm)", fontWeight: 600 }}>Rating</label>
-          <div className="d-flex gap-1">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                type="button"
-                onClick={() => setRating(String(star))}
-                style={{ background: "none", border: "none", fontSize: "1.5rem", cursor: "pointer", color: star <= parseInt(rating) ? "#f5a623" : "#ccc" }}
-              >
-                {star <= parseInt(rating) ? "★" : "☆"}
-              </button>
-            ))}
-          </div>
+          <StarRating rating={rating} size="1.5rem" interactive onChange={(val) => setRating(String(val))} />
         </div>
 
         <Button variant="primary" className="w-100" onClick={handleSave} disabled={saving}>
@@ -289,8 +279,8 @@ function OverlayPanel({ entry, tag, overlays, contacts, onClose, onSave }) {
                   <div style={{ fontWeight: 600, fontSize: "var(--font-size-sm)", marginBottom: "0.25rem" }}>
                     {contact ? contact.displayName : "Someone"}
                     {overlay.rating && (
-                      <span style={{ marginLeft: "0.5rem", color: "#f5a623", fontWeight: 400 }}>
-                        {"★".repeat(parseInt(overlay.rating))}{"☆".repeat(5 - parseInt(overlay.rating))}
+                      <span style={{ marginLeft: "0.5rem" }}>
+                        <StarRating rating={overlay.rating} />
                       </span>
                     )}
                   </div>

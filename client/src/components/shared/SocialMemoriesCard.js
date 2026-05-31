@@ -5,6 +5,7 @@ import {
   hasContributionContent,
 } from "../../helpers/socialContent";
 import PhotoGrid from "./PhotoGrid";
+import StarRating from "./StarRating";
 
 function ContributorAvatar({ avatarUrl, displayName }) {
   const letter = (displayName || "?").charAt(0).toUpperCase();
@@ -18,17 +19,6 @@ function ContributorAvatar({ avatarUrl, displayName }) {
   }
 
   return <div className="contributor-avatar">{letter}</div>;
-}
-
-function StarRating({ rating }) {
-  if (!rating) return null;
-  const filled = parseInt(rating, 10);
-  return (
-    <span style={{ color: "#f5a623", fontSize: "var(--font-size-xs)", letterSpacing: "0.02em" }}>
-      {"★".repeat(filled)}
-      {"☆".repeat(5 - filled)}
-    </span>
-  );
 }
 
 function ContributorTile({ contribution, onEdit }) {

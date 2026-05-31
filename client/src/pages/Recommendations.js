@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Button, Badge } from "react-bootstrap";
+import StarRating from "../components/shared/StarRating";
 import recommendationService from "../services/recommendationService";
 import profileService from "../services/profileService";
 import dataService from "../services/dataService";
@@ -264,8 +265,8 @@ function RecommendationCard({ rec, onAddToWishlist, onDismiss }) {
 
       {/* Rating */}
       {entry.rating && (
-        <div style={{ marginBottom: "0.75rem", color: "#f5a623", letterSpacing: "0.05em" }}>
-          {"★".repeat(parseInt(entry.rating))}{"☆".repeat(5 - parseInt(entry.rating))}
+        <div style={{ marginBottom: "0.75rem" }}>
+          <StarRating rating={entry.rating} />
         </div>
       )}
 
