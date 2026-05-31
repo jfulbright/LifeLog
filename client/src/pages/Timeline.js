@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Badge } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import categoryMeta from "../helpers/categoryMeta";
+import { formatDisplayDate } from "../helpers/dateUtils";
 import { getStatusLabel } from "../helpers/statusLabels";
 import { getSnapshotTeaser } from "../helpers/operator";
 import dataService from "../services/dataService";
@@ -294,7 +295,7 @@ function Timeline() {
                         <PrivacyIndicator item={entry.rawItem || entry} style={{ marginLeft: "0.4rem" }} />
                       </div>
                       <div className="timeline-entry-meta">
-                        {formatDate(entry.date)}
+                        {formatDisplayDate(entry.date)}
                         {entry.subtitle && ` \u2022 ${entry.subtitle}`}
                         {" \u2022 "}
                         {entry.label}
@@ -351,17 +352,6 @@ function Timeline() {
       )}
     </div>
   );
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return "";
-  const d = new Date(dateStr + "T00:00:00");
-  if (isNaN(d.getTime())) return dateStr;
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
 }
 
 export default Timeline;

@@ -12,6 +12,7 @@ import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
 import CategoryListHeader from "../../../components/shared/CategoryListHeader";
 import travelSchema from "../../../features/travel/travelSchema";
 import useCategory from "../../../hooks/useCategory";
+import { formatDisplayDate, formatDateRange } from "../../../helpers/dateUtils";
 import { useAppData } from "../../../contexts/AppDataContext";
 import { codeToFlag, getCountryName } from "../../../data/countries";
 import dataService from "../../../services/dataService";
@@ -68,19 +69,7 @@ function ItineraryHeader({ items, tripName, tripId, onAddStop, isCollapsed, onTo
     ? Math.round((new Date(lastDate + "T00:00:00") - new Date(firstDate + "T00:00:00")) / 86400000) + 1
     : null;
 
-  const formatDateRange = () => {
-    if (!firstDate) return null;
-    const s = new Date(firstDate + "T00:00:00");
-    const opts = { month: "short", day: "numeric" };
-    if (!lastDate || lastDate === firstDate) {
-      return s.toLocaleDateString("en-US", { ...opts, year: "numeric" });
-    }
-    const e = new Date(lastDate + "T00:00:00");
-    if (s.getFullYear() !== e.getFullYear()) {
-      return `${s.toLocaleDateString("en-US", { ...opts, year: "numeric" })} – ${e.toLocaleDateString("en-US", { ...opts, year: "numeric" })}`;
-    }
-    return `${s.toLocaleDateString("en-US", opts)} – ${e.toLocaleDateString("en-US", { ...opts, year: "numeric" })}`;
-  };
+  const tripDateRange = () => formatDateRange(firstDate, lastDate);
 
   const stops = sorted.map((item) => {
     const city = item.city || getCountryName(item.country) || "Stop";
@@ -88,7 +77,7 @@ function ItineraryHeader({ items, tripName, tripId, onAddStop, isCollapsed, onTo
     return `${flag} ${city}`;
   }).join(" → ");
 
-  const dateRange = formatDateRange();
+  const dateRange = tripDateRange();
 
   const handleRenameSubmit = () => {
     if (renameValue.trim()) onRename(tripId, renameValue.trim());
@@ -278,12 +267,6 @@ function ItineraryHeader({ items, tripName, tripId, onAddStop, isCollapsed, onTo
 function LinkedActivityRow({ activity }) {
   const [expanded, setExpanded] = useState(false);
 
-  const formatDate = (d) => {
-    if (!d) return null;
-    return new Date(d + "T00:00:00").toLocaleDateString("en-US", {
-      month: "short", day: "numeric", year: "numeric",
-    });
-  };
 
   const snapshots = [activity.snapshot1, activity.snapshot2, activity.snapshot3].filter(Boolean);
 
@@ -300,7 +283,7 @@ function LinkedActivityRow({ activity }) {
         )}
         {activity.startDate && (
           <span style={{ color: "var(--color-text-tertiary)", fontSize: "var(--font-size-xs)" }}>
-            {formatDate(activity.startDate)}
+            {formatDisplayDate(activity.startDate)}
           </span>
         )}
         <button
@@ -327,9 +310,9 @@ function LinkedActivityRow({ activity }) {
           {activity.startDate && (
             <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)", marginBottom: "0.2rem" }}>
               <span style={{ fontWeight: 600 }}>Date: </span>
-              {formatDate(activity.startDate)}
+              {formatDisplayDate(activity.startDate)}
               {activity.endDate && activity.endDate !== activity.startDate
-                ? ` – ${formatDate(activity.endDate)}`
+                ? ` – ${formatDisplayDate(activity.endDate)}`
                 : ""}
             </div>
           )}
@@ -375,12 +358,6 @@ function TripDetailPeek({ trip, linkedActivities, onEdit, onClose }) {
   const snapshots = [trip.snapshot1, trip.snapshot2, trip.snapshot3].filter(Boolean);
   const linked = linkedActivities.filter((a) => a.linkedTripId === trip.id);
 
-  const formatDate = (d) => {
-    if (!d) return null;
-    return new Date(d + "T00:00:00").toLocaleDateString("en-US", {
-      month: "short", day: "numeric", year: "numeric",
-    });
-  };
 
   const statusVariant = trip.status === "visited" ? "success" : trip.status === "wishlist" ? "primary" : "secondary";
 
@@ -410,8 +387,8 @@ function TripDetailPeek({ trip, linkedActivities, onEdit, onClose }) {
           )}
           {trip.startDate && (
             <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)", marginTop: "0.15rem" }}>
-              {formatDate(trip.startDate)}
-              {trip.endDate && trip.endDate !== trip.startDate ? ` – ${formatDate(trip.endDate)}` : ""}
+              {formatDisplayDate(trip.startDate)}
+              {trip.endDate && trip.endDate !== trip.startDate ? ` – ${formatDisplayDate(trip.endDate)}` : ""}
             </div>
           )}
         </div>

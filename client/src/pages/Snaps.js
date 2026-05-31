@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import categoryMeta from "../helpers/categoryMeta";
+import { formatDisplayDate } from "../helpers/dateUtils";
 import { getAllSnapshots, getItemPhotos } from "../helpers/operator";
 import {
   enrichItemsWithSocialContent,
@@ -43,17 +44,6 @@ const VIEW_TABS = [
   { id: "snaps", label: "✨ Snaps" },
   { id: "photos", label: "📷 Photos" },
 ];
-
-function formatDate(dateStr) {
-  if (!dateStr) return "";
-  const d = new Date(dateStr + "T00:00:00");
-  if (isNaN(d.getTime())) return dateStr;
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
 
 function Snaps() {
   const [activeView, setActiveView] = useState("all");
@@ -373,7 +363,7 @@ function SnapCard({ item, onViewDetail }) {
         {item.date && (
           <>
             <span className="snap-card-divider">&middot;</span>
-            <span>{formatDate(item.date)}</span>
+            <span>{formatDisplayDate(item.date)}</span>
           </>
         )}
       </div>
@@ -405,7 +395,7 @@ function PhotoCard({ item, compact = false, onViewDetail }) {
         {item.date && (
           <>
             <span className="snap-card-divider">&middot;</span>
-            <span>{formatDate(item.date)}</span>
+            <span>{formatDisplayDate(item.date)}</span>
           </>
         )}
       </div>

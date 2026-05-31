@@ -7,20 +7,7 @@ import SharedMemoriesSection from "../components/shared/SharedMemoriesSection";
 import { useAppData } from "../contexts/AppDataContext";
 import { useSocialData } from "../contexts/SocialDataContext";
 import categoryMeta, { formatLocation } from "../helpers/categoryMeta";
-
-/**
- * SharedFeed — Phase 7b
- *
- * Shows entries that have been shared with contacts (via ring visibility or
- * individual tags). Each entry appears with a status:
- *   - "pending"  → tagged but not yet accepted
- *   - "accepted" → accepted; user can add their own overlays (Phase 7c)
- *   - "declined" → declined; hidden from feed
- *
- * NOTE: Until Phase 6 auth is added, this simulates the tagged person's view
- * by showing entries you've shared outward. Once Phase 6 links real accounts,
- * the API will filter entries directed at the authenticated user.
- */
+import { formatDateRange } from "../helpers/dateUtils";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -49,19 +36,6 @@ function getEntrySubtitle(entry) {
     if (display) return display;
   }
   return formatLocation(entry, meta?.secondaryFields);
-}
-
-function formatDisplayDate(dateStr) {
-  if (!dateStr) return null;
-  const d = new Date(dateStr + "T00:00:00");
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
-
-function formatDateRange(entry) {
-  if (!entry.startDate) return null;
-  const start = formatDisplayDate(entry.startDate);
-  if (!entry.endDate || entry.startDate === entry.endDate) return start;
-  return `${start} — ${formatDisplayDate(entry.endDate)}`;
 }
 
 // ── Shared Entry Card ─────────────────────────────────────────────────────────
@@ -124,7 +98,7 @@ function SharedEntryCard({ entry, tag, contacts, onAccept, onDecline, onViewOver
 
       {/* Row 3: Date + Shared By */}
       <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)", marginTop: "0.375rem", display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
-        {formatDateRange(entry) && <span>{"📅"} {formatDateRange(entry)}</span>}
+        {formatDateRange(entry.startDate, entry.endDate) && <span>{"📅"} {formatDateRange(entry.startDate, entry.endDate)}</span>}
         <span>
           {"🤝"} Shared with you by <span style={{ color: "var(--color-primary)", fontWeight: 600 }}>{sharedByName}</span>
         </span>

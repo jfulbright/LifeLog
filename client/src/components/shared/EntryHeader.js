@@ -2,6 +2,7 @@ import React from "react";
 import { Badge } from "react-bootstrap";
 import { getStatusLabel } from "../../helpers/statusLabels";
 import { getCategoryMeta } from "../../helpers/categoryMeta";
+import { formatDisplayDate } from "../../helpers/dateUtils";
 import PrivacyIndicator from "./PrivacyIndicator";
 
 const EVENT_TYPE_EMOJI = {
@@ -34,13 +35,6 @@ function getStatusBadgeVariant(status) {
     default:
       return "secondary";
   }
-}
-
-function formatDisplayDate(dateStr) {
-  if (!dateStr) return "";
-  const d = new Date(dateStr + "T00:00:00");
-  if (isNaN(d.getTime())) return dateStr;
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function EntryHeader({ item, category, schema, contacts, onClick }) {
