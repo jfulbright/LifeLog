@@ -126,17 +126,18 @@ export default function useCategory(category, { migrate, normalize, schema } = {
       const { recommendedToRings, recommendedToContacts } = formData;
       let savedId;
 
-      // Shared item edit: direct Supabase update (bypasses batch-save pipeline)
+      // Shared item edit: merge only collaborator-safe fields into the existing JSONB
       if (editIndex !== null && formData._isShared) {
+        const { snapshot1, snapshot2, snapshot3, photo1, photo2, photo3, rating, ...safeData } = data;
         try {
-          await dataService.updateSharedItem(editIndex, data);
+          await dataService.updateSharedItem(editIndex, safeData);
         } catch (err) {
           console.error("[useCategory] shared item update failed:", err);
         }
         setItems((prev) =>
           prev.map((item) =>
             item.id === editIndex
-              ? { ...data, id: item.id, _isShared: true, _sharedBy: item._sharedBy, _ownerId: item._ownerId, _category: item._category, _currentUserId: item._currentUserId }
+              ? { ...item, ...safeData, _isShared: true }
               : item
           )
         );
@@ -145,7 +146,6 @@ export default function useCategory(category, { migrate, normalize, schema } = {
         setFormData({});
         setShowForm(false);
         setShowToast(true);
-        window.dispatchEvent(new Event("data-changed"));
         return;
       }
 
@@ -238,12 +238,27 @@ export default function useCategory(category, { migrate, normalize, schema } = {
   }, []);
 
   const startEditing = useCallback(
-    (id) => {
+    async (id) => {
       const item = items.find((i) => i.id === id);
       if (!item) return;
       setFormData(item);
       setEditIndex(id);
       setShowForm(true);
+
+      // Hydrate shareWithCompanionIds + status from existing collaborator records
+      if (!item._isShared) {
+        try {
+          const collabs = await collaboratorService.getCollaboratorsForOwnedEntry(id);
+          const shared = collabs.filter((c) => c.collaborator_contact_id);
+          if (shared.length > 0) {
+            const sharedContactIds = shared.map((c) => c.collaborator_contact_id);
+            const collaboratorStatuses = Object.fromEntries(
+              shared.map((c) => [c.collaborator_contact_id, c.status])
+            );
+            setFormData((prev) => ({ ...prev, shareWithCompanionIds: sharedContactIds, _collaboratorStatuses: collaboratorStatuses }));
+          }
+        } catch {}
+      }
     },
     [items]
   );
@@ -281,19 +296,22 @@ export default function useCategory(category, { migrate, normalize, schema } = {
       const data = normalize ? normalize(rawData) : rawData;
 
       if (updatedItem._isShared) {
+        const { snapshot1, snapshot2, snapshot3, photo1, photo2, photo3, rating, ...safeData } = data;
         try {
-          await dataService.updateSharedItem(id, data);
+          await dataService.updateSharedItem(id, safeData);
         } catch (err) {
           console.error("[useCategory] shared detail edit failed:", err);
         }
         setItems((prev) =>
           prev.map((item) =>
             item.id === id
-              ? { ...data, id, _isShared: true, _sharedBy: item._sharedBy, _ownerId: item._ownerId, _category: item._category, _currentUserId: item._currentUserId }
+              ? { ...item, ...safeData, _isShared: true }
               : item
           )
         );
         skipNextSave.current = true;
+        setShowToast(true);
+        return;
       } else {
         setItems((prev) =>
           prev.map((item) => (item.id === id ? { ...data, id } : item))

@@ -143,10 +143,11 @@ function EntryView({
               {collaborators.map((collab) => {
                 const contact = contacts.find((c) => c.id === collab.collaborator_contact_id || c.linkedUserId === collab.collaborator_user_id);
                 const ring = contact ? RING_META[contact.ringLevel] : null;
-                const name = contact?.displayName || "Collaborator";
+                const name = contact?.displayName || collab._profileName || "Collaborator";
+                const isPending = collab.status === "pending";
                 return (
-                  <span key={collab.id || collab.collaborator_user_id} style={{ background: ring ? ring.bgColor : "var(--color-surface-hover)", border: `1px solid ${ring ? ring.borderColor : "var(--color-border)"}`, borderRadius: 10, padding: "0.1rem 0.5rem", fontSize: "0.75rem", color: ring ? ring.color : "var(--color-text-secondary)", fontWeight: 600 }}>
-                    {ring ? ring.emoji + " " : ""}{name}
+                  <span key={collab.id || collab.collaborator_user_id} style={{ background: isPending ? "var(--color-warning-bg, #FFF3CD)" : ring ? ring.bgColor : "var(--color-surface-hover)", border: `1px solid ${isPending ? "var(--color-warning, #ECB22E)" : ring ? ring.borderColor : "var(--color-border)"}`, borderRadius: 10, padding: "0.1rem 0.5rem", fontSize: "0.75rem", color: isPending ? "var(--color-warning-text, #856404)" : ring ? ring.color : "var(--color-text-secondary)", fontWeight: 600, opacity: isPending ? 0.85 : 1 }}>
+                    {ring ? ring.emoji + " " : ""}{name}{collab._isOwner ? " (Owner)" : ""}{isPending ? " (Pending)" : ""}
                   </span>
                 );
               })}

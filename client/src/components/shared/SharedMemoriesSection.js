@@ -3,6 +3,18 @@ import { useSocialData } from "../../contexts/SocialDataContext";
 import SocialMemoriesCard from "./SocialMemoriesCard";
 import OverlayForm from "./OverlayForm";
 
+function contributionToOverlayShape(contribution) {
+  if (!contribution) return null;
+  return {
+    snapshot1: contribution.snaps?.[0] || "",
+    snapshot2: contribution.snaps?.[1] || "",
+    snapshot3: contribution.snaps?.[2] || "",
+    why_notes: contribution.whyNotes || "",
+    rating: contribution.rating || null,
+    photos: contribution.photos || [],
+  };
+}
+
 function SharedMemoriesSection({ item, contacts, onOverlaySaved, expanded = false }) {
   const { mutationVersion, incrementVersion } = useSocialData();
   const [showOverlayForm, setShowOverlayForm] = useState(false);
@@ -59,7 +71,7 @@ function SharedMemoriesSection({ item, contacts, onOverlaySaved, expanded = fals
             entryStatus={item.status}
             onSaved={handleSaved}
             onCancel={() => setShowOverlayForm(false)}
-            initialOverlay={item._myOverlayContribution}
+            initialOverlay={contributionToOverlayShape(item._myOverlayContribution)}
             showPhotos
           />
         </div>

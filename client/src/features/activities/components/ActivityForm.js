@@ -12,6 +12,7 @@ function ActivityForm({ formData, setFormData, onSubmit, onCancel }) {
       onCancel={onCancel}
       title="Add an Activity"
       buttonText="Activity"
+      hideSections={formData?._isShared ? ["Social", "Snapshots", "Photos"] : undefined}
     />
   );
 }

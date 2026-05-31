@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Button, Spinner, Alert } from "react-bootstrap";
 import ItemForm from "../../../components/shared/ItemForm";
+import ReadOnlySocialSection from "../../../components/shared/ReadOnlySocialSection";
+import { useAppData } from "../../../contexts/AppDataContext";
 import eventSchema, { EVENT_TYPES } from "../eventSchema";
 import { fetchSetlists } from "../api/concertApi";
 import CountryDropdown from "../../../components/shared/CountryDropdown";
@@ -18,7 +20,8 @@ function normalizeStateName(raw) {
   return stateNameToAbbr[raw.toLowerCase()] || raw;
 }
 
-function EventForm({ formData, setFormData, onSubmit, onCancel }) {
+function EventForm({ formData, setFormData, onSubmit, onCancel, isEditing }) {
+  const { contacts } = useAppData();
   const [search, setSearch] = useState({
     artist: "",
     year: "",
@@ -26,14 +29,12 @@ function EventForm({ formData, setFormData, onSubmit, onCancel }) {
     state: "",
   });
   const [results, setResults] = useState([]);
-  const [searchMode, setSearchMode] = useState(true);
+  const [searchMode, setSearchMode] = useState(!isEditing);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const eventType = formData?.eventType || "";
   const isConcert = eventType === "concert";
-  const isEditing = !!formData?.artist || !!formData?.teams || !!formData?.showName ||
-    !!formData?.comedian || !!formData?.festivalName || !!formData?.eventName;
 
   const handleSearch = async () => {
     setLoading(true);
@@ -77,7 +78,7 @@ function EventForm({ formData, setFormData, onSubmit, onCancel }) {
   };
 
   // If no event type selected yet, show type picker
-  if (!eventType && !isEditing) {
+  if (!eventType) {
     return (
       <div>
         <div
@@ -119,7 +120,7 @@ function EventForm({ formData, setFormData, onSubmit, onCancel }) {
   }
 
   // Concert type: show Setlist.fm search first (unless editing or manual)
-  if (isConcert && searchMode && !isEditing) {
+  if (isConcert && searchMode) {
     return (
       <div>
         <div className="d-flex justify-content-between align-items-center mb-3">
@@ -271,13 +272,29 @@ function EventForm({ formData, setFormData, onSubmit, onCancel }) {
   // Show the full form (for all types, or concert after search/manual)
   return (
     <div>
-      {isConcert && !isEditing && (
+      {isConcert && !isEditing && !formData?._isShared && (
         <button
           className="item-card-toggle mb-3"
           onClick={handleBackToSearch}
         >
           &#8592; Back to Search
         </button>
+      )}
+      {formData?._isShared && (
+        <>
+          <div style={{
+            background: "var(--color-surface, #f0f7ff)",
+            border: "1px solid var(--color-border, #e0e0e0)",
+            borderRadius: 8,
+            padding: "0.5rem 0.75rem",
+            marginBottom: "1rem",
+            fontSize: "var(--font-size-sm, 0.85rem)",
+            color: "var(--color-text-secondary, #696969)",
+          }}>
+            Editing shared entry — changes are visible to all collaborators
+          </div>
+          <ReadOnlySocialSection item={formData} contacts={contacts} />
+        </>
       )}
       <ItemForm
         schema={eventSchema}
@@ -286,6 +303,7 @@ function EventForm({ formData, setFormData, onSubmit, onCancel }) {
         onSubmit={onSubmit}
         title="Event"
         buttonText="Event"
+        hideSections={formData?._isShared ? ["Social", "Snapshots", "Photos"] : undefined}
       />
     </div>
   );

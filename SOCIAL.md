@@ -2,7 +2,7 @@
 
 > Behavioral reference for social sharing. Defines rules, flows, edge cases, and MVP decisions.
 > For data model and RLS policies, see [ARCHITECTURE.md](./ARCHITECTURE.md) §3.
-> Last updated: 2026-05-22
+> Last updated: 2026-05-31
 
 ---
 
@@ -49,15 +49,16 @@ These behavioral ground truths must not be violated without deliberate product d
 1. A contact exists in exactly **one ring** at a time.
 2. Ring changes are **never retroactive** — existing shares and recommendations persist regardless of ring reassignment.
 3. Every collaborator gets exactly **one overlay per entry** (DB unique constraint on `entry_id + user_id`).
-4. `can_edit` defaults to **true** for all collaborator rows — there is no per-collaborator permission UI yet.
-5. **Deferred sharing:** if a contact has no linked account, the collaborator row stores only `collaborator_contact_id`. Resolution happens automatically on signup via DB trigger.
-6. "Leave Share" reuses the **`declined` status** — there is no distinct "left" state.
-7. Edits to shared entries are **last-write-wins** — no conflict detection or notification.
-8. Changes to shared entries require **page reload** to appear (no real-time sync).
-9. The **owner sees all overlays** on their entries; collaborators see all overlays on entries they've accepted.
-10. A recommendation targets a **ring OR a user**, never both in the same row.
-11. Accepting a recommendation creates a **new entry** in the recipient's account (with `recommendedBy` provenance) — it does NOT create a collaboration. **⚠️ UNDER REVIEW** (see §9.3).
-12. A shared entry appears in the collaborator's category list **only after acceptance**.
+4. Every collaborator gets exactly **one row per entry** (partial unique indexes on `entry_id + collaborator_contact_id` and `entry_id + collaborator_user_id`). Sharing uses upsert with `ignoreDuplicates`.
+5. `can_edit` defaults to **true** for all collaborator rows — there is no per-collaborator permission UI yet.
+6. **Deferred sharing:** if a contact has no linked account, the collaborator row stores only `collaborator_contact_id`. Resolution happens automatically on signup via DB trigger.
+7. "Leave Share" reuses the **`declined` status** — there is no distinct "left" state.
+8. Edits to shared entries are **last-write-wins** — no conflict detection or notification.
+9. Changes to shared entries require **page reload** to appear (no real-time sync).
+10. The **owner sees all overlays** on their entries; collaborators see all overlays on entries they've accepted.
+11. A recommendation targets a **ring OR a user**, never both in the same row.
+12. Accepting a recommendation creates a **new entry** in the recipient's account (with `recommendedBy` provenance) — it does NOT create a collaboration. **⚠️ UNDER REVIEW** (see §9.3).
+13. A shared entry appears in the collaborator's category list **only after acceptance**.
 
 ---
 
@@ -87,8 +88,8 @@ User creates/edits entry
               │
               ├── ACCEPT → entry appears in their category list + timeline
               │   - Can add overlay (snaps, photos, rating, notes)
-              │   - Can edit structural fields via SharedEditPanel
-              │     (currently limited to city/dates/venue — not full schema)
+              │   - Can edit all structural fields via EntryDetailPanel
+              │     (full schema-driven ItemForm, minus Social section)
               │   - Cannot delete the entry
               │
               └── DECLINE → hidden from their feed
@@ -194,6 +195,7 @@ getAllSocialPhotos(item)     // flat array of all photos across contributors
 
 | Service | Responsibility | Key Methods |
 |---------|---------------|-------------|
+| `dataService` | Item CRUD + shared item updates | `getItemsWithShared()`, `saveItems()`, `updateSharedItem()` |
 | `collaboratorService` | Sharing entries, accepting/declining | `shareEntryWithContacts()`, `getIncomingCollaborations()`, `acceptCollaboration()` |
 | `overlayService` | Personal reflections on shared entries | `saveOverlay()`, `getOverlaysForEntry()`, `getMyOverlay()` |
 | `recommendationService` | Recommendations to rings/individuals | `createRecommendations()`, `getMyRecommendations()`, `acceptRecommendation()` |
@@ -213,6 +215,7 @@ getAllSocialPhotos(item)     // flat array of all photos across contributors
 |-----------|------|
 | `PeopleField` | Unified chip-input + inline dropdown for all social fields. Three modes: `companions` (contacts + freetext + rings), `recommend` (rings + contacts), `visibility` (rings only). |
 | `ShareWithCompanionsToggle` | Per-companion share toggle (active collaboration) |
+| `EntryDetailPanel` | Modal detail/edit view — collaborators edit via full schema-driven `ItemForm` (Social section hidden). Uses `useCategory.saveDetailEdit()` for persistence. |
 | `OverlayForm` | Unified status-aware overlay form (past: rating + snaps, wishlist: "why I'm interested") |
 | `SocialMemoriesCard` | Airbnb-reviews-style per-contributor display with collapse/expand |
 | `PrivacyIndicator` | Lock/people icon showing shared state on cards |
@@ -266,6 +269,7 @@ Each category schema declares social fields with specific types that ItemForm ma
 - `recommendedToRings` and `recommendedToContacts` persist in item JSONB data (not stripped on save)
 - `shareWithCompanionIds` and `_recommendedCompanions` are transient (stripped before save)
 - This ensures edit round-trips show previous selections
+- **Shared item edits use read-merge-write** — `updateSharedItem()` reads the existing JSONB, merges collaborator fields on top, preserving the owner's snapshots/photos/rating. No `data-changed` event is dispatched (avoids refetch race condition).
 
 ### Scroll fix
 
@@ -313,7 +317,7 @@ The dropdown is absolutely positioned and can clip below the viewport. On open, 
 
 | Decision | Rationale |
 |----------|-----------|
-| SharedEditPanel is generic (city/dates/venue only) | Collaborators primarily contribute overlays, not structural edits. Owners can fix category-specific fields. |
+| SharedFeed's inline SharedEditPanel is generic (city/dates/venue only) | Adequate for quick edits from the feed; full schema editing available via category list → EntryDetailPanel. |
 | No conflict handling (last-write-wins) | Concurrent edits unlikely at this scale. Data is correctable if it happens. |
 | "Leave Share" reuses declined status | No user-visible consequence at MVP. Can split later if needed. |
 | No real-time sync (reload required) | Acceptable. Users learn the pattern. Push is premature. |
@@ -334,7 +338,7 @@ The dropdown is absolutely positioned and can clip below the viewport. On open, 
 - Activity feed / collaboration history
 - Per-collaborator permission UI (granular `can_edit`)
 - Distinct "left" status (separate from "declined")
-- Category-aware SharedEditPanel (full schema-driven editing for collaborators)
+- Upgrade SharedFeed's inline SharedEditPanel to use schema-driven ItemForm (lower priority — full editing already available via category list)
 - Custom ring labels
 - Recommendation model decision (new entry vs. collaboration vs. hybrid)
 - Remove deprecated components (RecommendPicker, VisibilityPicker, ShareWithSection)

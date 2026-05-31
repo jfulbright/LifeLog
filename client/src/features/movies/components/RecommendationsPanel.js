@@ -24,7 +24,7 @@ function RecommendationsPanel({ ownMovies, onSelect }) {
     return () => { cancelled = true; };
   }, []);
 
-  const ownTmdbIds = new Set(ownMovies.filter((m) => m.status === "watched").map((m) => m.tmdbId).filter(Boolean));
+  const ownTmdbIds = new Set(ownMovies.map((m) => m.tmdbId).filter(Boolean));
 
   const filtered = recs
     .filter((r) => {

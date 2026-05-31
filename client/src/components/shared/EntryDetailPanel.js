@@ -5,6 +5,7 @@ import { useAppData } from "../../contexts/AppDataContext";
 import ItemForm from "./ItemForm";
 import EntryHeader from "./EntryHeader";
 import EntryView from "./EntryView";
+import ReadOnlySocialSection from "./ReadOnlySocialSection";
 
 function EntryDetailPanel({ item, category, schema, onClose, onSave, onDelete, renderItemExtras }) {
   const [mode, setMode] = useState("view");
@@ -65,17 +66,20 @@ function EntryDetailPanel({ item, category, schema, onClose, onSave, onDelete, r
         ) : (
           <>
             {item._isShared && (
-              <div style={{
-                background: "var(--color-surface, #f0f7ff)",
-                border: "1px solid var(--color-border, #e0e0e0)",
-                borderRadius: 8,
-                padding: "0.5rem 0.75rem",
-                marginBottom: "1rem",
-                fontSize: "var(--font-size-sm, 0.85rem)",
-                color: "var(--color-text-secondary, #696969)",
-              }}>
-                Editing shared entry — changes are visible to all collaborators
-              </div>
+              <>
+                <div style={{
+                  background: "var(--color-surface, #f0f7ff)",
+                  border: "1px solid var(--color-border, #e0e0e0)",
+                  borderRadius: 8,
+                  padding: "0.5rem 0.75rem",
+                  marginBottom: "1rem",
+                  fontSize: "var(--font-size-sm, 0.85rem)",
+                  color: "var(--color-text-secondary, #696969)",
+                }}>
+                  Editing shared entry — changes are visible to all collaborators
+                </div>
+                <ReadOnlySocialSection item={item} contacts={contacts} />
+              </>
             )}
             <ItemForm
               schema={schema}
@@ -85,7 +89,7 @@ function EntryDetailPanel({ item, category, schema, onClose, onSave, onDelete, r
               onCancel={() => setMode("view")}
               title=""
               buttonText={category.charAt(0).toUpperCase() + category.slice(1)}
-              hideSections={item._isShared ? ["Social"] : undefined}
+              hideSections={item._isShared ? ["Social", "Snapshots", "Photos"] : undefined}
             />
           </>
         )}

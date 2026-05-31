@@ -755,6 +755,7 @@ function ItemForm({
                       <ShareWithCompanionsToggle
                         companions={normalizeCompanions(formData.companions || [])}
                         value={formData.shareWithCompanionIds || []}
+                        statuses={formData._collaboratorStatuses}
                         onChange={(ids) =>
                           setFormData((prev) => ({
                             ...prev,

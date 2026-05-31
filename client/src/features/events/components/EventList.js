@@ -220,6 +220,7 @@ function EventList() {
           setFormData={setFormData}
           onSubmit={handleSubmit}
           onCancel={closeForm}
+          isEditing={editIndex !== null}
         />
       </FormPanel>
 

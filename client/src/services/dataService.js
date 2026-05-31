@@ -170,12 +170,22 @@ const dataService = {
     const cleanItem = stripTransientFields(item);
     const userId = await getCurrentUserId();
     const now = new Date().toISOString();
-    const dataWithMeta = { ...cleanItem, last_edited_at: now, last_edited_by: userId };
+
+    // Read existing data first to merge (preserves owner's snapshots/photos/rating)
+    const { data: existing, error: readError } = await supabase
+      .from("items")
+      .select("data")
+      .eq("id", id)
+      .single();
+
+    if (readError) throw readError;
+
+    const mergedData = { ...(existing?.data || {}), ...cleanItem, last_edited_at: now, last_edited_by: userId };
 
     const { error } = await supabase
       .from("items")
       .update({
-        data: dataWithMeta,
+        data: mergedData,
         status: cleanItem.status || null,
         start_date: cleanItem.startDate || null,
         updated_at: now,
@@ -183,7 +193,7 @@ const dataService = {
       .eq("id", id);
 
     if (error) throw error;
-    return dataWithMeta;
+    return mergedData;
   },
 
   async deleteItem(category, id) {

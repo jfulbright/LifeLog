@@ -1433,6 +1433,14 @@ a:hover {
   color: var(--color-text-tertiary);
   font-style: italic;
 }
+.share-companion-status--pending {
+  color: var(--color-warning-text, #856404);
+  font-style: normal;
+}
+.share-companion-status--accepted {
+  color: var(--color-success, #2EB67D);
+  font-style: normal;
+}
 
 /* ===== PeopleField Dropdown ===== */
 .people-field-dropdown {

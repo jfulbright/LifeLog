@@ -94,6 +94,21 @@ function EntryHeader({ item, category, schema, contacts, onClick }) {
               </span>
             </span>
           )}
+          {!item._isShared && item.recommendedBy && typeof item.recommendedBy === "object" && (
+            <span style={{ fontWeight: 600 }}>
+              {"⭐"} Recommended by{" "}
+              <span style={{ color: "var(--color-primary)" }}>
+                {(() => {
+                  if (Array.isArray(item.recommendedBy)) {
+                    const names = item.recommendedBy.map((r) => r.displayName || "Someone");
+                    if (names.length <= 2) return names.join(", ");
+                    return `${names.slice(0, 2).join(", ")} and ${names.length - 2} other${names.length - 2 > 1 ? "s" : ""}`;
+                  }
+                  return item.recommendedBy.displayName || "Someone";
+                })()}
+              </span>
+            </span>
+          )}
         </div>
       </div>
     </div>

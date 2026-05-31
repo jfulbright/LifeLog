@@ -11,6 +11,7 @@ function MovieForm({ formData, setFormData, onSubmit, onCancel }) {
       onSubmit={onSubmit}
       title="Movie"
       buttonText="Save Movie"
+      hideSections={formData?._isShared ? ["Social", "Snapshots", "Photos"] : undefined}
     />
   );
 }

@@ -105,7 +105,7 @@ Every table has RLS enabled. Summary:
 | profiles | Own + linked contacts | Own only |
 | contacts | Own only | Own only |
 | invites | Anyone (by token) | Own only |
-| collaborators | Own rows + rows where you're the collaborator | Owner manages all; collaborator updates own status |
+| collaborators | Own rows + peer rows on shared entries (via `get_my_shared_entry_ids()` SECURITY DEFINER fn) | Owner manages all; collaborator updates own status |
 | overlays | Own + overlays on entries you collaborate on | Own only |
 | recommendations | Own + directed to you (including ring-based) | Own only |
 
@@ -219,6 +219,7 @@ Central CRUD abstraction over Supabase:
 
 - `getItems(category)` / `getItemsWithShared(category)` — loads own + shared entries
 - `saveItems(category, items)` — full-sync upsert + orphan deletion
+- `updateSharedItem(id, item)` — read-merge-write for collaborator edits (preserves owner's snapshots/photos/rating)
 - `addItem` / `updateItem` / `deleteItem` — convenience wrappers
 - `deleteItemPhotos(userId, itemId)` — storage cleanup on delete
 - `getAllItems()` / `getCounts()` — cross-category aggregation

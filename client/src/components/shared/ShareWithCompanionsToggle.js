@@ -13,7 +13,7 @@ import { useAppData } from "../../contexts/AppDataContext";
  * Contacts without a linkedUserId are shown but labeled "Not on LifeLog yet"
  * — toggling them still creates a pending entryTag that activates when they join.
  */
-function ShareWithCompanionsToggle({ companions, value, onChange }) {
+function ShareWithCompanionsToggle({ companions, value, onChange, statuses }) {
   const { contacts } = useAppData();
 
   const contactCompanions = companions.filter((c) => c.type === "contact");
@@ -48,6 +48,7 @@ function ShareWithCompanionsToggle({ companions, value, onChange }) {
           const contact = contacts.find((c) => c.id === companion.contactId);
           const isLinked = !!contact?.linkedUserId;
           const isShared = value.includes(companion.contactId);
+          const collabStatus = statuses?.[companion.contactId];
 
           return (
             <div key={companion.contactId} className="share-companion-row">
@@ -55,7 +56,17 @@ function ShareWithCompanionsToggle({ companions, value, onChange }) {
                 <span className="share-companion-name">
                   {companion.displayName}
                 </span>
-                {!isLinked && (
+                {isShared && collabStatus === "pending" && (
+                  <span className="share-companion-status share-companion-status--pending">
+                    Pending — waiting for them to accept
+                  </span>
+                )}
+                {isShared && collabStatus === "accepted" && (
+                  <span className="share-companion-status share-companion-status--accepted">
+                    Collaborating
+                  </span>
+                )}
+                {!isShared && !isLinked && (
                   <span className="share-companion-status">
                     Not on LifeLog yet — will notify when they join
                   </span>
