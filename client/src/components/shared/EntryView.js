@@ -6,67 +6,11 @@ import { RING_META } from "../../helpers/ringMeta";
 import { renderFieldValue } from "../../helpers/renderFieldValue";
 import collaboratorService from "../../services/collaboratorService";
 import PhotoGrid from "./PhotoGrid";
+import PeoplePills from "./PeoplePills";
+import SharingInfo from "./SharingInfo";
 import SharedMemoriesSection from "./SharedMemoriesSection";
 
 const SOCIAL_FIELD_NAMES = new Set(["companions", "visibilityControl", "recommendation"]);
-
-function PeoplePills({ people, contacts }) {
-  if (!Array.isArray(people) || people.length === 0) return null;
-  return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem" }}>
-      {people.map((entry, i) => {
-        if (typeof entry === "string") {
-          return (
-            <span key={i} style={{ background: "var(--color-surface-hover)", border: "1px solid var(--color-border)", borderRadius: 10, padding: "0.1rem 0.5rem", fontSize: "0.75rem", fontWeight: 600, color: "var(--color-text-secondary)" }}>
-              {entry}
-            </span>
-          );
-        }
-        if (entry.type === "contact") {
-          const contact = contacts.find((c) => c.id === entry.contactId);
-          const ring = contact ? RING_META[contact.ringLevel] : null;
-          return (
-            <span key={i} style={{ background: ring ? ring.bgColor : "var(--color-surface-hover)", border: `1px solid ${ring ? ring.borderColor : "var(--color-border)"}`, borderRadius: 10, padding: "0.1rem 0.5rem", fontSize: "0.75rem", color: ring ? ring.color : "var(--color-text-primary)", fontWeight: 600 }}>
-              {ring ? ring.emoji + " " : ""}{entry.displayName}
-            </span>
-          );
-        }
-        return (
-          <span key={i} style={{ background: "var(--color-surface-hover)", border: "1px solid var(--color-border)", borderRadius: 10, padding: "0.1rem 0.5rem", fontSize: "0.75rem", fontWeight: 600 }}>
-            {entry.name}
-          </span>
-        );
-      })}
-    </div>
-  );
-}
-
-
-function SharingInfo({ item, contacts, navigate }) {
-  const rings = item.visibilityRings || [];
-  if (rings.length === 0) return null;
-
-  const ringLabels = rings.map((r) => RING_META[r]).filter(Boolean);
-  if (ringLabels.length === 0) return null;
-
-  const pillClick = navigate ? () => navigate("/people") : undefined;
-  const pillStyle = navigate ? { cursor: "pointer" } : {};
-
-  return (
-    <div style={{ marginBottom: "0.5rem" }}>
-      <div style={{ fontSize: "var(--font-size-xs)", fontWeight: 600, color: "var(--color-text-secondary)", marginBottom: "0.25rem" }}>
-        {"🔒"} Who can see this
-      </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.25rem" }}>
-        {ringLabels.map((ring) => (
-          <span key={ring.label} onClick={pillClick} style={{ background: ring.bgColor, border: `1px solid ${ring.borderColor}`, borderRadius: 10, padding: "0.1rem 0.5rem", color: ring.color, fontWeight: 700, fontSize: "0.7rem", ...pillStyle }}>
-            {ring.emoji} {ring.label}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function EntryView({
   item,
