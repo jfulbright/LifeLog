@@ -141,6 +141,16 @@ async function runAll() {
   console.log(`  Results written to scripts/tests/results/latest.json`);
   console.log(`  Summary written to scripts/tests/results/latest-summary.md\n`);
 
+  // ── Phase 3: Post-run cleanup ──
+  console.log("\x1b[1m▸ Phase 3: Cleanup\x1b[0m\n");
+  try {
+    await resetAllTestData();
+    await seedBaselineContacts();
+    console.log("  ✓ Test data cleaned up — DB left with baseline contacts only\n");
+  } catch (err) {
+    console.error(`  WARN: Post-run cleanup failed: ${err.message}\n`);
+  }
+
   if (totalFailed > 0) process.exit(1);
 }
 

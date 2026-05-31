@@ -106,8 +106,17 @@ async function upsertContact(client, ownerId, contact) {
 
 // Allow running standalone
 if (process.argv[1]?.endsWith("cleanup.mjs")) {
-  console.log("\n\x1b[1m🧹 Test Data Cleanup\x1b[0m\n");
-  await resetAllTestData();
-  await seedBaselineContacts();
-  console.log("\n  Done.\n");
+  const isWipe = process.argv.includes("--wipe");
+
+  if (isWipe) {
+    console.log("\n\x1b[1m🗑️  Full Wipe — Removing ALL data for test users\x1b[0m\n");
+    await resetAllTestData();
+    console.log("\n  ✓ All test user data removed (items, collaborators, overlays, recommendations, contacts).");
+    console.log("  Run 'node scripts/seed-realistic-data.mjs' to repopulate.\n");
+  } else {
+    console.log("\n\x1b[1m🧹 Test Data Cleanup\x1b[0m\n");
+    await resetAllTestData();
+    await seedBaselineContacts();
+    console.log("\n  Done.\n");
+  }
 }

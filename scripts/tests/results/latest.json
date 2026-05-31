@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-05-31T23:18:35.017Z",
-  "elapsed": "17.4s",
+  "timestamp": "2026-05-31T23:32:49.440Z",
+  "elapsed": "17.0s",
   "totals": {
     "passed": 111,
     "failed": 0,
@@ -16,102 +16,102 @@
         {
           "name": "Jason: Event (attended)",
           "status": "PASS",
-          "detail": "id=d3305079-66c9-4033-bcc4-9b90580d49ca"
+          "detail": "id=94dd9463-6299-4311-9852-d01d190185ae"
         },
         {
           "name": "Jason: Event (wishlist)",
           "status": "PASS",
-          "detail": "id=42bc1997-0daa-4dd8-8622-1f8ca04cb1c7"
+          "detail": "id=ecacd32c-d997-4236-8798-b8bbbb91782e"
         },
         {
           "name": "Jason: Travel (visited)",
           "status": "PASS",
-          "detail": "id=81ed9e82-a9f6-4ed2-867c-96c615dd8fb4"
+          "detail": "id=b862627f-3f73-4881-b2ce-51b7428c0f13"
         },
         {
           "name": "Jason: Travel (wishlist)",
           "status": "PASS",
-          "detail": "id=72330fac-1f03-4321-a044-d55521fa62b6"
+          "detail": "id=c26ab371-b900-406e-ae28-2a15f1639392"
         },
         {
           "name": "Jason: Activity (done)",
           "status": "PASS",
-          "detail": "id=86486fea-adf7-42e9-885a-827dafbc0a43"
+          "detail": "id=caa7260d-ccaf-49cd-9fbf-d6da05c308db"
         },
         {
           "name": "Jason: Activity (wishlist)",
           "status": "PASS",
-          "detail": "id=b670f7cf-556a-42a8-9de1-69a5068c166b"
+          "detail": "id=8898f6f2-cbb2-4654-a325-6a660cb24207"
         },
         {
           "name": "Jason: Car (owned)",
           "status": "PASS",
-          "detail": "id=b769affe-41fc-43ca-a75c-ff514f25675a"
+          "detail": "id=80d319f6-b343-4b61-93b1-ae2eb69278af"
         },
         {
           "name": "Jason: Car (wishlist)",
           "status": "PASS",
-          "detail": "id=03256802-457a-41cc-84d2-a0e9e4b3cfb2"
+          "detail": "id=84a975f0-5007-4d6e-8ac5-676cc27d138d"
         },
         {
           "name": "Sarah: Movie (watched)",
           "status": "PASS",
-          "detail": "id=c0afde99-8836-4051-9c99-11a5f7285718"
+          "detail": "id=685f1c73-bc30-41a4-9316-e2c3521eaa1d"
         },
         {
           "name": "Sarah: Movie (watchlist)",
           "status": "PASS",
-          "detail": "id=f0fe2ab7-d5a6-4d0a-87d0-2f7912e84fec"
+          "detail": "id=28b3f569-6b9e-44b4-8024-13babdcc6578"
         },
         {
           "name": "Sarah: Home (owned)",
           "status": "PASS",
-          "detail": "id=a5ed7683-58da-4b0d-8abc-948fbe10d5d7"
+          "detail": "id=65dfb76b-0ad3-47ed-b97d-c5a225a27535"
         },
         {
           "name": "Sarah: Home (rented)",
           "status": "PASS",
-          "detail": "id=e4c07056-4670-40fd-afec-f32359a7d2e1"
+          "detail": "id=c4ae440a-e978-4ee4-b29d-8e7269a16bdf"
         },
         {
           "name": "Sarah: Cellar (wine tried)",
           "status": "PASS",
-          "detail": "id=64f59890-297f-46fa-9bf9-78f63240159e"
+          "detail": "id=b8dadcff-aad1-47be-9679-9589cd7f205f"
         },
         {
           "name": "Sarah: Cellar (whiskey in cellar)",
           "status": "PASS",
-          "detail": "id=c677885b-adf9-43fa-8cc5-aa3fabd8f556"
+          "detail": "id=f96cd7e7-07e2-4240-a5df-6b2a069ad547"
         },
         {
           "name": "Sarah: Kids (happened)",
           "status": "PASS",
-          "detail": "id=0364b0dd-504b-4dac-9e39-917c83f711d9"
+          "detail": "id=edb48000-1e08-4c9d-9dbf-007695b19f24"
         },
         {
           "name": "Sarah: Kids (upcoming)",
           "status": "PASS",
-          "detail": "id=3233fadf-5a00-4460-9fe8-9a62428417f2"
+          "detail": "id=619648bc-b7f4-4942-a1e2-27219b2b8a19"
         },
         {
           "name": "Mike: Event (attended)",
           "status": "PASS",
-          "detail": "id=e97ed74e-dc7a-40a0-8dbe-7d10d9fb53b9"
+          "detail": "id=d534812b-b5c5-46c8-88ab-b1d990edd4c9"
         },
         {
           "name": "Mike: Travel (visited)",
           "status": "PASS",
-          "detail": "id=11ee2e14-efaa-4727-9ea8-f820e5a46b23"
+          "detail": "id=b8841f9d-011f-4dc1-8e71-42568d829cad"
         },
         {
           "name": "Mike: Movie (watched)",
           "status": "PASS",
-          "detail": "id=255111c6-1677-4bd7-b119-39022197ca49"
+          "detail": "id=d839cc93-2292-43e6-8095-f426e199f097"
         },
         {
           "name": "Mike: Activity (done)",
           "status": "PASS",
-          "detail": "id=6d12851f-e144-4859-a8c8-d2532cf5d849"
+          "detail": "id=4d0d1ed1-15bf-4c42-9bda-2bf01a5a8121"
         },
         {
           "name": "Jason events count",
@@ -174,27 +174,27 @@
         {
           "name": "Setup: entries created",
           "status": "PASS",
-          "detail": "event=ad22be0d-e2d9-42eb-b13b-703749ae77ce, travel=6a34146c-c9e8-4e3a-a272-df3d37bf46f7, movie=b6061720-5d94-4d63-9f0d-170793ad3ebe"
+          "detail": "event=72cb225f-dc47-4b5f-8cc5-284ca33f3f01, travel=1fbef0b7-17ab-407e-b8a5-38bf469b9255, movie=e5ce346e-fc04-4e45-8c75-292f191d3473"
         },
         {
           "name": "Share event with Jason",
           "status": "PASS",
-          "detail": "collab_id=fc00af75-74bc-4d2b-be97-472754fd0790, status=pending"
+          "detail": "collab_id=5f80322f-0135-40dc-b97b-1f9fcbee490b, status=pending"
         },
         {
           "name": "Share event with Mike",
           "status": "PASS",
-          "detail": "collab_id=87795d34-a401-4b89-9aca-7d54c3f061ca, status=pending"
+          "detail": "collab_id=24c62fa1-1c34-4dc0-894d-6bc17ae14593, status=pending"
         },
         {
           "name": "Jason sees pending collab",
           "status": "PASS",
-          "detail": "id=fc00af75-74bc-4d2b-be97-472754fd0790"
+          "detail": "id=5f80322f-0135-40dc-b97b-1f9fcbee490b"
         },
         {
           "name": "Mike sees pending collab",
           "status": "PASS",
-          "detail": "id=87795d34-a401-4b89-9aca-7d54c3f061ca"
+          "detail": "id=24c62fa1-1c34-4dc0-894d-6bc17ae14593"
         },
         {
           "name": "Jason accepts collab",
@@ -219,7 +219,7 @@
         {
           "name": "Share travel with Jason",
           "status": "PASS",
-          "detail": "collab_id=379d708e-b1cd-44fe-b652-51fb5cc3e4e0"
+          "detail": "collab_id=cd5411d0-8f59-4298-98df-c2a7692ffb7e"
         },
         {
           "name": "Jason accepts travel collab",
@@ -239,7 +239,7 @@
         {
           "name": "Jason accepted collabs count",
           "status": "PASS",
-          "detail": "3 across [events, travel, movies]"
+          "detail": "3 across [travel, events, movies]"
         },
         {
           "name": "Mike accepted collabs count",
@@ -257,12 +257,12 @@
         {
           "name": "Setup: entries created",
           "status": "PASS",
-          "detail": "movie=9b7618f1-42be-4ae7-8105-0f857da657a3, event=5c2721bf-4b28-4450-8d7a-9664edd7f3b7"
+          "detail": "movie=2f08c3ba-d3d2-486c-9f0a-f1d0b3ea4b22, event=1d59f5e3-b3e8-461b-b609-b0fcefe2ee53"
         },
         {
           "name": "Sarah recommends movie to Jason (direct)",
           "status": "PASS",
-          "detail": "rec_id=e5f700b3-e7f4-4066-9e0d-b562096f9f8b"
+          "detail": "rec_id=b3c21a41-fa55-46f7-af4c-568b3d2a150c"
         },
         {
           "name": "Jason sees direct recommendation",
@@ -272,12 +272,12 @@
         {
           "name": "Sarah recommends event to ring 4",
           "status": "PASS",
-          "detail": "rec_id=420f74c8-2a1f-487e-a9a1-d538ab287c85"
+          "detail": "rec_id=feb7bec7-ef9b-42f9-8ee4-db1545ac0da9"
         },
         {
           "name": "Sarah recommends event to ring 3",
           "status": "PASS",
-          "detail": "rec_id=82e01450-c36a-4adf-9272-b5527a0ba163"
+          "detail": "rec_id=9a75a584-ee91-4f53-898e-fc9aa50c2be4"
         },
         {
           "name": "Jason in Sarah's contacts",
@@ -302,7 +302,7 @@
         {
           "name": "New entry created from rec acceptance",
           "status": "PASS",
-          "detail": "id=77756baf-4e49-403f-99a2-9828d6601f68, has recommendedBy provenance"
+          "detail": "id=3fea96ed-d17e-4eb1-a375-7c784e190963, has recommendedBy provenance"
         },
         {
           "name": "Mike dismisses rec",
@@ -345,7 +345,7 @@
         {
           "name": "Jason recommends to ring 2",
           "status": "PASS",
-          "detail": "rec_id=127ba29e-bbd2-4d8b-baa6-3468c6026d0f"
+          "detail": "rec_id=a63d4122-30a4-482b-a040-5d986afe6d5f"
         },
         {
           "name": "Mike receives ring-2 rec from Jason",
@@ -370,7 +370,7 @@
         {
           "name": "Jason recommends to ring 4",
           "status": "PASS",
-          "detail": "rec_id=e450e812-f79a-45fd-a2e5-abf2686fc18d"
+          "detail": "rec_id=5620c650-9924-48e0-b003-e658ad2fda6f"
         },
         {
           "name": "Sarah receives ring-4 rec from Jason",
@@ -388,17 +388,17 @@
         {
           "name": "Setup: shared entry created",
           "status": "PASS",
-          "detail": "id=52a2831a-4fff-4a6c-9839-4c51d4fb38bd, shared with Jason + Mike (pre-accepted)"
+          "detail": "id=228d2116-efb2-42db-90b6-40a663e9e9fd, shared with Jason + Mike (pre-accepted)"
         },
         {
           "name": "Jason adds overlay",
           "status": "PASS",
-          "detail": "id=47045223-0309-4068-bf1d-0804098bcd27, rating=4"
+          "detail": "id=3aed5346-dc2a-431e-8231-4f23ae81fb88, rating=4"
         },
         {
           "name": "Mike adds overlay",
           "status": "PASS",
-          "detail": "id=7db35062-35f4-4b2b-b3e0-3206f40d2968, rating=5"
+          "detail": "id=918fbc87-e41e-4411-b37e-1ca3868988c5, rating=5"
         },
         {
           "name": "Sarah reads all overlays",
@@ -446,7 +446,7 @@
         {
           "name": "Setup: 2 shared entries created",
           "status": "PASS",
-          "detail": "ids=[ee31d40f-f5a1-4568-8b64-d7ca76ab8a70, 398419b6-68ce-4dcf-873c-6208b23d77e4]"
+          "detail": "ids=[0d75b328-db0e-4be4-b815-bdccb6ab9557, d8e7038e-50f9-4301-b023-5b9201f69176]"
         },
         {
           "name": "Jason cannot delete shared entry (not owner)",
@@ -504,7 +504,7 @@
         {
           "name": "Setup: Sarah's private entry created",
           "status": "PASS",
-          "detail": "id=9f950f23-3ea1-497c-8de5-4836643b1651"
+          "detail": "id=301a971a-4935-4b25-89e2-0e0e7f30a3a8"
         },
         {
           "name": "Mike cannot read Sarah's private entry",
@@ -597,32 +597,32 @@
         {
           "name": "getItemsWithShared(events)",
           "status": "PASS",
-          "detail": "232ms (< 500ms threshold)"
+          "detail": "225ms (< 500ms threshold)"
         },
         {
           "name": "getItemsWithShared(travel)",
           "status": "PASS",
-          "detail": "220ms (< 500ms threshold)"
+          "detail": "224ms (< 500ms threshold)"
         },
         {
           "name": "getItemsWithShared(movies)",
           "status": "PASS",
-          "detail": "223ms (< 500ms threshold)"
+          "detail": "219ms (< 500ms threshold)"
         },
         {
           "name": "getMyRecommendations (with ring resolution)",
           "status": "PASS",
-          "detail": "146ms (< 1000ms threshold)"
+          "detail": "145ms (< 1000ms threshold)"
         },
         {
           "name": "getOverlaysForEntries (20 entries)",
           "status": "PASS",
-          "detail": "86ms (< 300ms threshold)"
+          "detail": "87ms (< 300ms threshold)"
         },
         {
           "name": "Full category load (items+collabs+overlays)",
           "status": "PASS",
-          "detail": "299ms (< 2000ms threshold)"
+          "detail": "288ms (< 2000ms threshold)"
         }
       ]
     }
@@ -631,121 +631,121 @@
     {
       "name": "Jason: Event (attended)",
       "status": "PASS",
-      "detail": "id=d3305079-66c9-4033-bcc4-9b90580d49ca",
+      "detail": "id=94dd9463-6299-4311-9852-d01d190185ae",
       "file": "01-entry-creation"
     },
     {
       "name": "Jason: Event (wishlist)",
       "status": "PASS",
-      "detail": "id=42bc1997-0daa-4dd8-8622-1f8ca04cb1c7",
+      "detail": "id=ecacd32c-d997-4236-8798-b8bbbb91782e",
       "file": "01-entry-creation"
     },
     {
       "name": "Jason: Travel (visited)",
       "status": "PASS",
-      "detail": "id=81ed9e82-a9f6-4ed2-867c-96c615dd8fb4",
+      "detail": "id=b862627f-3f73-4881-b2ce-51b7428c0f13",
       "file": "01-entry-creation"
     },
     {
       "name": "Jason: Travel (wishlist)",
       "status": "PASS",
-      "detail": "id=72330fac-1f03-4321-a044-d55521fa62b6",
+      "detail": "id=c26ab371-b900-406e-ae28-2a15f1639392",
       "file": "01-entry-creation"
     },
     {
       "name": "Jason: Activity (done)",
       "status": "PASS",
-      "detail": "id=86486fea-adf7-42e9-885a-827dafbc0a43",
+      "detail": "id=caa7260d-ccaf-49cd-9fbf-d6da05c308db",
       "file": "01-entry-creation"
     },
     {
       "name": "Jason: Activity (wishlist)",
       "status": "PASS",
-      "detail": "id=b670f7cf-556a-42a8-9de1-69a5068c166b",
+      "detail": "id=8898f6f2-cbb2-4654-a325-6a660cb24207",
       "file": "01-entry-creation"
     },
     {
       "name": "Jason: Car (owned)",
       "status": "PASS",
-      "detail": "id=b769affe-41fc-43ca-a75c-ff514f25675a",
+      "detail": "id=80d319f6-b343-4b61-93b1-ae2eb69278af",
       "file": "01-entry-creation"
     },
     {
       "name": "Jason: Car (wishlist)",
       "status": "PASS",
-      "detail": "id=03256802-457a-41cc-84d2-a0e9e4b3cfb2",
+      "detail": "id=84a975f0-5007-4d6e-8ac5-676cc27d138d",
       "file": "01-entry-creation"
     },
     {
       "name": "Sarah: Movie (watched)",
       "status": "PASS",
-      "detail": "id=c0afde99-8836-4051-9c99-11a5f7285718",
+      "detail": "id=685f1c73-bc30-41a4-9316-e2c3521eaa1d",
       "file": "01-entry-creation"
     },
     {
       "name": "Sarah: Movie (watchlist)",
       "status": "PASS",
-      "detail": "id=f0fe2ab7-d5a6-4d0a-87d0-2f7912e84fec",
+      "detail": "id=28b3f569-6b9e-44b4-8024-13babdcc6578",
       "file": "01-entry-creation"
     },
     {
       "name": "Sarah: Home (owned)",
       "status": "PASS",
-      "detail": "id=a5ed7683-58da-4b0d-8abc-948fbe10d5d7",
+      "detail": "id=65dfb76b-0ad3-47ed-b97d-c5a225a27535",
       "file": "01-entry-creation"
     },
     {
       "name": "Sarah: Home (rented)",
       "status": "PASS",
-      "detail": "id=e4c07056-4670-40fd-afec-f32359a7d2e1",
+      "detail": "id=c4ae440a-e978-4ee4-b29d-8e7269a16bdf",
       "file": "01-entry-creation"
     },
     {
       "name": "Sarah: Cellar (wine tried)",
       "status": "PASS",
-      "detail": "id=64f59890-297f-46fa-9bf9-78f63240159e",
+      "detail": "id=b8dadcff-aad1-47be-9679-9589cd7f205f",
       "file": "01-entry-creation"
     },
     {
       "name": "Sarah: Cellar (whiskey in cellar)",
       "status": "PASS",
-      "detail": "id=c677885b-adf9-43fa-8cc5-aa3fabd8f556",
+      "detail": "id=f96cd7e7-07e2-4240-a5df-6b2a069ad547",
       "file": "01-entry-creation"
     },
     {
       "name": "Sarah: Kids (happened)",
       "status": "PASS",
-      "detail": "id=0364b0dd-504b-4dac-9e39-917c83f711d9",
+      "detail": "id=edb48000-1e08-4c9d-9dbf-007695b19f24",
       "file": "01-entry-creation"
     },
     {
       "name": "Sarah: Kids (upcoming)",
       "status": "PASS",
-      "detail": "id=3233fadf-5a00-4460-9fe8-9a62428417f2",
+      "detail": "id=619648bc-b7f4-4942-a1e2-27219b2b8a19",
       "file": "01-entry-creation"
     },
     {
       "name": "Mike: Event (attended)",
       "status": "PASS",
-      "detail": "id=e97ed74e-dc7a-40a0-8dbe-7d10d9fb53b9",
+      "detail": "id=d534812b-b5c5-46c8-88ab-b1d990edd4c9",
       "file": "01-entry-creation"
     },
     {
       "name": "Mike: Travel (visited)",
       "status": "PASS",
-      "detail": "id=11ee2e14-efaa-4727-9ea8-f820e5a46b23",
+      "detail": "id=b8841f9d-011f-4dc1-8e71-42568d829cad",
       "file": "01-entry-creation"
     },
     {
       "name": "Mike: Movie (watched)",
       "status": "PASS",
-      "detail": "id=255111c6-1677-4bd7-b119-39022197ca49",
+      "detail": "id=d839cc93-2292-43e6-8095-f426e199f097",
       "file": "01-entry-creation"
     },
     {
       "name": "Mike: Activity (done)",
       "status": "PASS",
-      "detail": "id=6d12851f-e144-4859-a8c8-d2532cf5d849",
+      "detail": "id=4d0d1ed1-15bf-4c42-9bda-2bf01a5a8121",
       "file": "01-entry-creation"
     },
     {
@@ -811,31 +811,31 @@
     {
       "name": "Setup: entries created",
       "status": "PASS",
-      "detail": "event=ad22be0d-e2d9-42eb-b13b-703749ae77ce, travel=6a34146c-c9e8-4e3a-a272-df3d37bf46f7, movie=b6061720-5d94-4d63-9f0d-170793ad3ebe",
+      "detail": "event=72cb225f-dc47-4b5f-8cc5-284ca33f3f01, travel=1fbef0b7-17ab-407e-b8a5-38bf469b9255, movie=e5ce346e-fc04-4e45-8c75-292f191d3473",
       "file": "02-collaboration-flow"
     },
     {
       "name": "Share event with Jason",
       "status": "PASS",
-      "detail": "collab_id=fc00af75-74bc-4d2b-be97-472754fd0790, status=pending",
+      "detail": "collab_id=5f80322f-0135-40dc-b97b-1f9fcbee490b, status=pending",
       "file": "02-collaboration-flow"
     },
     {
       "name": "Share event with Mike",
       "status": "PASS",
-      "detail": "collab_id=87795d34-a401-4b89-9aca-7d54c3f061ca, status=pending",
+      "detail": "collab_id=24c62fa1-1c34-4dc0-894d-6bc17ae14593, status=pending",
       "file": "02-collaboration-flow"
     },
     {
       "name": "Jason sees pending collab",
       "status": "PASS",
-      "detail": "id=fc00af75-74bc-4d2b-be97-472754fd0790",
+      "detail": "id=5f80322f-0135-40dc-b97b-1f9fcbee490b",
       "file": "02-collaboration-flow"
     },
     {
       "name": "Mike sees pending collab",
       "status": "PASS",
-      "detail": "id=87795d34-a401-4b89-9aca-7d54c3f061ca",
+      "detail": "id=24c62fa1-1c34-4dc0-894d-6bc17ae14593",
       "file": "02-collaboration-flow"
     },
     {
@@ -865,7 +865,7 @@
     {
       "name": "Share travel with Jason",
       "status": "PASS",
-      "detail": "collab_id=379d708e-b1cd-44fe-b652-51fb5cc3e4e0",
+      "detail": "collab_id=cd5411d0-8f59-4298-98df-c2a7692ffb7e",
       "file": "02-collaboration-flow"
     },
     {
@@ -889,7 +889,7 @@
     {
       "name": "Jason accepted collabs count",
       "status": "PASS",
-      "detail": "3 across [events, travel, movies]",
+      "detail": "3 across [travel, events, movies]",
       "file": "02-collaboration-flow"
     },
     {
@@ -901,13 +901,13 @@
     {
       "name": "Setup: entries created",
       "status": "PASS",
-      "detail": "movie=9b7618f1-42be-4ae7-8105-0f857da657a3, event=5c2721bf-4b28-4450-8d7a-9664edd7f3b7",
+      "detail": "movie=2f08c3ba-d3d2-486c-9f0a-f1d0b3ea4b22, event=1d59f5e3-b3e8-461b-b609-b0fcefe2ee53",
       "file": "03-recommendation-flow"
     },
     {
       "name": "Sarah recommends movie to Jason (direct)",
       "status": "PASS",
-      "detail": "rec_id=e5f700b3-e7f4-4066-9e0d-b562096f9f8b",
+      "detail": "rec_id=b3c21a41-fa55-46f7-af4c-568b3d2a150c",
       "file": "03-recommendation-flow"
     },
     {
@@ -919,13 +919,13 @@
     {
       "name": "Sarah recommends event to ring 4",
       "status": "PASS",
-      "detail": "rec_id=420f74c8-2a1f-487e-a9a1-d538ab287c85",
+      "detail": "rec_id=feb7bec7-ef9b-42f9-8ee4-db1545ac0da9",
       "file": "03-recommendation-flow"
     },
     {
       "name": "Sarah recommends event to ring 3",
       "status": "PASS",
-      "detail": "rec_id=82e01450-c36a-4adf-9272-b5527a0ba163",
+      "detail": "rec_id=9a75a584-ee91-4f53-898e-fc9aa50c2be4",
       "file": "03-recommendation-flow"
     },
     {
@@ -955,7 +955,7 @@
     {
       "name": "New entry created from rec acceptance",
       "status": "PASS",
-      "detail": "id=77756baf-4e49-403f-99a2-9828d6601f68, has recommendedBy provenance",
+      "detail": "id=3fea96ed-d17e-4eb1-a375-7c784e190963, has recommendedBy provenance",
       "file": "03-recommendation-flow"
     },
     {
@@ -997,7 +997,7 @@
     {
       "name": "Jason recommends to ring 2",
       "status": "PASS",
-      "detail": "rec_id=127ba29e-bbd2-4d8b-baa6-3468c6026d0f",
+      "detail": "rec_id=a63d4122-30a4-482b-a040-5d986afe6d5f",
       "file": "04-ring-visibility"
     },
     {
@@ -1027,7 +1027,7 @@
     {
       "name": "Jason recommends to ring 4",
       "status": "PASS",
-      "detail": "rec_id=e450e812-f79a-45fd-a2e5-abf2686fc18d",
+      "detail": "rec_id=5620c650-9924-48e0-b003-e658ad2fda6f",
       "file": "04-ring-visibility"
     },
     {
@@ -1039,19 +1039,19 @@
     {
       "name": "Setup: shared entry created",
       "status": "PASS",
-      "detail": "id=52a2831a-4fff-4a6c-9839-4c51d4fb38bd, shared with Jason + Mike (pre-accepted)",
+      "detail": "id=228d2116-efb2-42db-90b6-40a663e9e9fd, shared with Jason + Mike (pre-accepted)",
       "file": "05-edit-and-overlay"
     },
     {
       "name": "Jason adds overlay",
       "status": "PASS",
-      "detail": "id=47045223-0309-4068-bf1d-0804098bcd27, rating=4",
+      "detail": "id=3aed5346-dc2a-431e-8231-4f23ae81fb88, rating=4",
       "file": "05-edit-and-overlay"
     },
     {
       "name": "Mike adds overlay",
       "status": "PASS",
-      "detail": "id=7db35062-35f4-4b2b-b3e0-3206f40d2968, rating=5",
+      "detail": "id=918fbc87-e41e-4411-b37e-1ca3868988c5, rating=5",
       "file": "05-edit-and-overlay"
     },
     {
@@ -1099,7 +1099,7 @@
     {
       "name": "Setup: 2 shared entries created",
       "status": "PASS",
-      "detail": "ids=[ee31d40f-f5a1-4568-8b64-d7ca76ab8a70, 398419b6-68ce-4dcf-873c-6208b23d77e4]",
+      "detail": "ids=[0d75b328-db0e-4be4-b815-bdccb6ab9557, d8e7038e-50f9-4301-b023-5b9201f69176]",
       "file": "06-delete-and-leave"
     },
     {
@@ -1159,7 +1159,7 @@
     {
       "name": "Setup: Sarah's private entry created",
       "status": "PASS",
-      "detail": "id=9f950f23-3ea1-497c-8de5-4836643b1651",
+      "detail": "id=301a971a-4935-4b25-89e2-0e0e7f30a3a8",
       "file": "07-isolation-security"
     },
     {
@@ -1261,37 +1261,37 @@
     {
       "name": "getItemsWithShared(events)",
       "status": "PASS",
-      "detail": "232ms (< 500ms threshold)",
+      "detail": "225ms (< 500ms threshold)",
       "file": "08-scale-performance"
     },
     {
       "name": "getItemsWithShared(travel)",
       "status": "PASS",
-      "detail": "220ms (< 500ms threshold)",
+      "detail": "224ms (< 500ms threshold)",
       "file": "08-scale-performance"
     },
     {
       "name": "getItemsWithShared(movies)",
       "status": "PASS",
-      "detail": "223ms (< 500ms threshold)",
+      "detail": "219ms (< 500ms threshold)",
       "file": "08-scale-performance"
     },
     {
       "name": "getMyRecommendations (with ring resolution)",
       "status": "PASS",
-      "detail": "146ms (< 1000ms threshold)",
+      "detail": "145ms (< 1000ms threshold)",
       "file": "08-scale-performance"
     },
     {
       "name": "getOverlaysForEntries (20 entries)",
       "status": "PASS",
-      "detail": "86ms (< 300ms threshold)",
+      "detail": "87ms (< 300ms threshold)",
       "file": "08-scale-performance"
     },
     {
       "name": "Full category load (items+collabs+overlays)",
       "status": "PASS",
-      "detail": "299ms (< 2000ms threshold)",
+      "detail": "288ms (< 2000ms threshold)",
       "file": "08-scale-performance"
     }
   ]
