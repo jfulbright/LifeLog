@@ -261,89 +261,141 @@ async function main() {
     console.log(`\n  Seeding ${name}...`);
     const entries = [];
 
-    // Movies
+    // Movies (status already in data object from factory)
     const movies = moviesFn();
     const movieRows = movies.map(m => ({ id: m.id, user_id: userId, category: "movies", status: m.status, start_date: m.startDate || null, data: m }));
     const { data: mData, error: mErr } = await client.from("items").insert(movieRows).select("id");
     console.log(`    Movies: ${mErr ? `ERROR ${mErr.message}` : `${mData.length} created`}`);
     entries.push(...(mData || []));
 
-    // Events
+    // Events — inject status + id into data JSONB
     const events = eventsFn();
-    const eventRows = events.map(e => ({ ...e, user_id: userId, data: { ...e.data, id: e.id } }));
+    const eventRows = events.map(e => ({ ...e, user_id: userId, data: { ...e.data, id: e.id, status: e.status } }));
     const { data: eData, error: eErr } = await client.from("items").insert(eventRows).select("id");
     console.log(`    Events: ${eErr ? `ERROR ${eErr.message}` : `${eData.length} created`}`);
     entries.push(...(eData || []));
 
-    // Travel
+    // Travel — inject status + id into data JSONB
     const travel = travelFn();
-    const travelRows = travel.map(t => ({ ...t, user_id: userId, data: { ...t.data, id: t.id } }));
+    const travelRows = travel.map(t => ({ ...t, user_id: userId, data: { ...t.data, id: t.id, status: t.status } }));
     const { data: tData, error: tErr } = await client.from("items").insert(travelRows).select("id");
     console.log(`    Travel: ${tErr ? `ERROR ${tErr.message}` : `${tData.length} created`}`);
     entries.push(...(tData || []));
 
-    // Activities
+    // Activities — inject status + id into data JSONB
     const activities = activitiesFn();
-    const actRows = activities.map(a => ({ ...a, user_id: userId, data: { ...a.data, id: a.id } }));
+    const actRows = activities.map(a => ({ ...a, user_id: userId, data: { ...a.data, id: a.id, status: a.status } }));
     const { data: aData, error: aErr } = await client.from("items").insert(actRows).select("id");
     console.log(`    Activities: ${aErr ? `ERROR ${aErr.message}` : `${aData.length} created`}`);
     entries.push(...(aData || []));
 
-    allEntries[name] = { client, userId, movieIds: (mData || []).map(d => d.id), eventIds: (eData || []).map(d => d.id) };
+    allEntries[name] = { client, userId, movieIds: (mData || []).map(d => d.id), eventIds: (eData || []).map(d => d.id), travelIds: (tData || []).map(d => d.id), activityIds: (aData || []).map(d => d.id) };
   }
 
   // ── Social Features ──
   console.log("\n  Setting up social features...");
+  const J = allEntries.Jason, S = allEntries.Sarah, M = allEntries.Mike;
 
-  // Sarah shares her Taylor Swift event with Jason and Mike
-  const sarahEventId = allEntries.Sarah.eventIds[0]; // Taylor Swift
-  if (sarahEventId) {
+  // ────────────────────────────────────────────────────────────────────────────
+  // COLLABORATIONS — Multiple people, accepted with overlays
+  // ────────────────────────────────────────────────────────────────────────────
+
+  // 1. Sarah shares Taylor Swift event with Jason (accepted) + Mike (accepted)
+  //    Both add overlays with snaps
+  if (S.eventIds[0]) {
     await sarahClient.from("collaborators").insert([
-      { entry_id: sarahEventId, entry_category: "events", owner_id: sarahId, collaborator_user_id: jasonId, status: "accepted", can_edit: true, invited_at: new Date().toISOString(), accepted_at: new Date().toISOString() },
-      { entry_id: sarahEventId, entry_category: "events", owner_id: sarahId, collaborator_user_id: mikeId, status: "pending", can_edit: true, invited_at: new Date().toISOString() },
+      { entry_id: S.eventIds[0], entry_category: "events", owner_id: sarahId, collaborator_user_id: jasonId, status: "accepted", can_edit: true, invited_at: new Date().toISOString(), accepted_at: new Date().toISOString() },
+      { entry_id: S.eventIds[0], entry_category: "events", owner_id: sarahId, collaborator_user_id: mikeId, status: "accepted", can_edit: true, invited_at: new Date().toISOString(), accepted_at: new Date().toISOString() },
     ]);
-
-    // Jason adds an overlay
-    await jasonClient.from("overlays").upsert({
-      entry_id: sarahEventId, user_id: jasonId,
-      snapshot1: "The Travis Kelce moment when he came on stage was wild",
-      snapshot2: "Sarah cried during All Too Well — so did I honestly",
-      rating: 5, updated_at: new Date().toISOString(),
-    }, { onConflict: "entry_id,user_id" });
-    console.log("    ✓ Shared Sarah's Taylor Swift event + Jason overlay");
+    await jasonClient.from("overlays").upsert({ entry_id: S.eventIds[0], user_id: jasonId, snapshot1: "The Travis Kelce moment when he came on stage was wild", snapshot2: "Sarah cried during All Too Well — so did I honestly", rating: 5, updated_at: new Date().toISOString() }, { onConflict: "entry_id,user_id" });
+    await mikeClient.from("overlays").upsert({ entry_id: S.eventIds[0], user_id: mikeId, snapshot1: "Not my usual scene but even I was dancing", rating: 4, updated_at: new Date().toISOString() }, { onConflict: "entry_id,user_id" });
+    console.log("    ✓ Sarah's Taylor Swift → Jason+Mike accepted, both have overlays");
   }
 
-  // Jason shares his Super Bowl event with Mike
-  const jasonSuperBowlId = allEntries.Jason.eventIds[1]; // Super Bowl
-  if (jasonSuperBowlId) {
-    await jasonClient.from("collaborators").insert({
-      entry_id: jasonSuperBowlId, entry_category: "events", owner_id: jasonId, collaborator_user_id: mikeId, status: "accepted", can_edit: true, invited_at: new Date().toISOString(), accepted_at: new Date().toISOString(),
-    });
-
-    await mikeClient.from("overlays").upsert({
-      entry_id: jasonSuperBowlId, user_id: mikeId,
-      snapshot1: "The overtime TD — I've never screamed louder in my life",
-      rating: 5, updated_at: new Date().toISOString(),
-    }, { onConflict: "entry_id,user_id" });
-    console.log("    ✓ Shared Jason's Super Bowl event + Mike overlay");
+  // 2. Jason shares Super Bowl with Mike (accepted) + Sarah (pending — she hasn't responded yet)
+  if (J.eventIds[1]) {
+    await jasonClient.from("collaborators").insert([
+      { entry_id: J.eventIds[1], entry_category: "events", owner_id: jasonId, collaborator_user_id: mikeId, status: "accepted", can_edit: true, invited_at: new Date().toISOString(), accepted_at: new Date().toISOString() },
+      { entry_id: J.eventIds[1], entry_category: "events", owner_id: jasonId, collaborator_user_id: sarahId, status: "pending", can_edit: true, invited_at: new Date().toISOString() },
+    ]);
+    await mikeClient.from("overlays").upsert({ entry_id: J.eventIds[1], user_id: mikeId, snapshot1: "The overtime TD — I've never screamed louder in my life", snapshot2: "Jason spilled his beer on that play", rating: 5, updated_at: new Date().toISOString() }, { onConflict: "entry_id,user_id" });
+    console.log("    ✓ Jason's Super Bowl → Mike accepted (overlay), Sarah pending");
   }
 
-  // Recommendations: Sarah recommends Past Lives to Jason (direct)
-  const sarahPastLivesId = allEntries.Sarah.movieIds[6]; // Past Lives
-  if (sarahPastLivesId) {
-    await sarahClient.from("recommendations").insert({
-      from_user_id: sarahId, entry_id: sarahPastLivesId, entry_category: "movies", to_user_id: jasonId, status: "active",
+  // 3. Sarah shares Paris trip with Jason (accepted) — travel collaboration
+  if (S.travelIds[0]) {
+    await sarahClient.from("collaborators").insert({
+      entry_id: S.travelIds[0], entry_category: "travel", owner_id: sarahId, collaborator_user_id: jasonId, status: "accepted", can_edit: true, invited_at: new Date().toISOString(), accepted_at: new Date().toISOString(),
     });
-    console.log("    ✓ Sarah recommends Past Lives to Jason");
+    await jasonClient.from("overlays").upsert({ entry_id: S.travelIds[0], user_id: jasonId, snapshot1: "That tiny restaurant she found in the 5th was perfection", snapshot2: "Getting lost in Montmartre at midnight", rating: 5, updated_at: new Date().toISOString() }, { onConflict: "entry_id,user_id" });
+    console.log("    ✓ Sarah's Paris trip → Jason accepted with overlay");
   }
 
-  // Jason recommends Inception to ring 4 (Friends)
-  const jasonInceptionId = allEntries.Jason.movieIds[1]; // Inception
-  if (jasonInceptionId) {
-    await jasonClient.from("recommendations").insert({
-      from_user_id: jasonId, entry_id: jasonInceptionId, entry_category: "movies", to_user_id: null, to_ring_level: 4, status: "active",
+  // 4. Mike shares Patagonia trek with Jason (accepted) — activity collaboration
+  if (M.activityIds[1]) {
+    await mikeClient.from("collaborators").insert({
+      entry_id: M.activityIds[1], entry_category: "activities", owner_id: mikeId, collaborator_user_id: jasonId, status: "accepted", can_edit: true, invited_at: new Date().toISOString(), accepted_at: new Date().toISOString(),
     });
-    console.log("    ✓ Jason recommends Inception to ring 4");
+    await jasonClient.from("overlays").upsert({ entry_id: M.activityIds[1], user_id: jasonId, snapshot1: "Day 3 was brutal but the glacier view made it worth every step", rating: 5, updated_at: new Date().toISOString() }, { onConflict: "entry_id,user_id" });
+    console.log("    ✓ Mike's Patagonia trek → Jason accepted with overlay");
+  }
+
+  // 5. Jason shares ACL Festival with Sarah (accepted) + Mike (accepted)
+  if (J.eventIds[2]) {
+    await jasonClient.from("collaborators").insert([
+      { entry_id: J.eventIds[2], entry_category: "events", owner_id: jasonId, collaborator_user_id: sarahId, status: "accepted", can_edit: true, invited_at: new Date().toISOString(), accepted_at: new Date().toISOString() },
+      { entry_id: J.eventIds[2], entry_category: "events", owner_id: jasonId, collaborator_user_id: mikeId, status: "accepted", can_edit: true, invited_at: new Date().toISOString(), accepted_at: new Date().toISOString() },
+    ]);
+    await sarahClient.from("overlays").upsert({ entry_id: J.eventIds[2], user_id: sarahId, snapshot1: "The sunset during Tame Impala was unreal", snapshot2: "Best food trucks I've ever had at a festival", rating: 5, updated_at: new Date().toISOString() }, { onConflict: "entry_id,user_id" });
+    await mikeClient.from("overlays").upsert({ entry_id: J.eventIds[2], user_id: mikeId, snapshot1: "Three days, zero sleep, no regrets", rating: 5, updated_at: new Date().toISOString() }, { onConflict: "entry_id,user_id" });
+    console.log("    ✓ Jason's ACL Festival → Sarah+Mike accepted, both have overlays");
+  }
+
+  // 6. Mike shares his movie (The Raid) with Jason (pending — incoming for Jason)
+  if (M.movieIds[7]) {
+    await mikeClient.from("collaborators").insert({
+      entry_id: M.movieIds[7], entry_category: "movies", owner_id: mikeId, collaborator_user_id: jasonId, status: "pending", can_edit: true, invited_at: new Date().toISOString(),
+    });
+    console.log("    ✓ Mike's The Raid → Jason pending (incoming collab)");
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // RECOMMENDATIONS — active, accepted, dismissed across categories
+  // ────────────────────────────────────────────────────────────────────────────
+
+  const recs = [];
+
+  // Active (pending) recommendations TO Jason
+  if (S.movieIds[6]) recs.push({ from_user_id: sarahId, entry_id: S.movieIds[6], entry_category: "movies", to_user_id: jasonId, status: "active" }); // Past Lives
+  if (M.eventIds[1]) recs.push({ from_user_id: mikeId, entry_id: M.eventIds[1], entry_category: "events", to_user_id: jasonId, status: "active" }); // Metallica
+  if (M.travelIds[0]) recs.push({ from_user_id: mikeId, entry_id: M.travelIds[0], entry_category: "travel", to_user_id: jasonId, status: "active" }); // Patagonia
+
+  // Accepted recommendations (Jason already added to his list)
+  if (S.movieIds[10]) recs.push({ from_user_id: sarahId, entry_id: S.movieIds[10], entry_category: "movies", to_user_id: jasonId, status: "accepted" }); // Poor Things
+  if (S.activityIds[0]) recs.push({ from_user_id: sarahId, entry_id: S.activityIds[0], entry_category: "activities", to_user_id: jasonId, status: "accepted" }); // Angels Landing
+
+  // Dismissed recommendations (Jason declined)
+  if (S.movieIds[11]) recs.push({ from_user_id: sarahId, entry_id: S.movieIds[11], entry_category: "movies", to_user_id: jasonId, status: "dismissed" }); // Barbie
+  if (M.activityIds[3]) recs.push({ from_user_id: mikeId, entry_id: M.activityIds[3], entry_category: "activities", to_user_id: jasonId, status: "dismissed" }); // Scuba Belize
+
+  // Ring-based recommendations (Jason recommends to ring 4 = Sarah)
+  if (J.movieIds[1]) recs.push({ from_user_id: jasonId, entry_id: J.movieIds[1], entry_category: "movies", to_user_id: null, to_ring_level: 4, status: "active" }); // Inception → ring 4
+  if (J.travelIds[0]) recs.push({ from_user_id: jasonId, entry_id: J.travelIds[0], entry_category: "travel", to_user_id: null, to_ring_level: 4, status: "active" }); // Barcelona → ring 4
+
+  // Recommendations FROM Jason to Mike (direct)
+  if (J.eventIds[0]) recs.push({ from_user_id: jasonId, entry_id: J.eventIds[0], entry_category: "events", to_user_id: mikeId, status: "active" }); // Radiohead
+
+  // Recommendations FROM Jason to Sarah (various states)
+  if (J.movieIds[7]) recs.push({ from_user_id: jasonId, entry_id: J.movieIds[7], entry_category: "movies", to_user_id: sarahId, status: "active" }); // Oppenheimer
+  if (J.activityIds[2]) recs.push({ from_user_id: jasonId, entry_id: J.activityIds[2], entry_category: "activities", to_user_id: sarahId, status: "accepted" }); // Moab biking
+
+  if (recs.length > 0) {
+    const { error: recErr } = await sarahClient.from("recommendations").insert(recs.filter(r => r.from_user_id === sarahId));
+    const { error: recErr2 } = await mikeClient.from("recommendations").insert(recs.filter(r => r.from_user_id === mikeId));
+    const { error: recErr3 } = await jasonClient.from("recommendations").insert(recs.filter(r => r.from_user_id === jasonId));
+    const errors = [recErr, recErr2, recErr3].filter(Boolean);
+    if (errors.length) console.log(`    WARN: Some rec inserts failed: ${errors.map(e => e.message).join(", ")}`);
+    console.log(`    ✓ ${recs.length} recommendations created (active/accepted/dismissed across categories)`);
   }
 
   console.log("\n\x1b[32m  ✓ Done! Seeded realistic data for all 3 users.\x1b[0m\n");
