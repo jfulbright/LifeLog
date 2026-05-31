@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Badge } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import categoryMeta from "../helpers/categoryMeta";
 import { formatDisplayDate } from "../helpers/dateUtils";
-import { getStatusLabel } from "../helpers/statusLabels";
+import StatusBadge from "../components/shared/StatusBadge";
 import { getSnapshotTeaser } from "../helpers/operator";
 import dataService from "../services/dataService";
 import PrivacyIndicator, { isEntryShared } from "../components/shared/PrivacyIndicator";
@@ -291,22 +290,7 @@ function Timeline() {
                         </div>
                       )}
                     </div>
-                    {entry.status && (
-                      <Badge
-                        bg={
-                          ["attended", "visited", "owned", "done", "tried"].includes(entry.status)
-                            ? "success"
-                            : ["wishlist", "watchlist"].includes(entry.status)
-                            ? "primary"
-                            : entry.status === "upcoming"
-                            ? "info"
-                            : "secondary"
-                        }
-                        className="badge-status"
-                      >
-                        {getStatusLabel(entry.category, entry.status)}
-                      </Badge>
-                    )}
+                    <StatusBadge category={entry.category} status={entry.status} />
                   </div>
                 </div>
               ))}

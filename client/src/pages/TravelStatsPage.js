@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Row, Col, Badge } from "react-bootstrap";
+import { Row, Col } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import dataService from "../services/dataService";
 import contactsService from "../services/contactsService";
@@ -8,6 +8,7 @@ import WorldMapView from "../features/travel/components/WorldMapView";
 import { codeToFlag, CONTINENT_LABELS } from "../data/countries";
 import { StatCard, BarChart, ProgressBar, SectionHeader } from "../components/shared/stats";
 import CircleStats from "../components/shared/stats/CircleStats";
+import StatusBadge from "../components/shared/StatusBadge";
 
 function TravelStatsPage() {
   const [items, setItems] = useState([]);
@@ -147,9 +148,7 @@ function TravelStatsPage() {
                     onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-surface-hover)"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}
                   >
-                    <Badge bg={trip.status === "visited" ? "success" : "primary"}>
-                      {trip.status}
-                    </Badge>
+                    <StatusBadge category="travel" status={trip.status} />
                     <span style={{ fontWeight: 600, flex: 1 }}>{trip.title || trip.city || "Trip"}</span>
                     {trip.city && <span style={{ color: "var(--color-text-tertiary)" }}>{trip.city}</span>}
                     {trip.startDate && <span style={{ color: "var(--color-text-tertiary)" }}>{"·"} {new Date(trip.startDate + "T00:00:00").getFullYear()}</span>}
