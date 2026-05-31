@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { Button, Badge, Modal, Form } from "react-bootstrap";
+import { Button, Modal, Form } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import TravelForm from "../../../features/travel/components/TravelForm";
 import ItemCardList from "../../../components/shared/ItemCardList";
@@ -11,6 +11,7 @@ import PhotoGrid from "../../../components/shared/PhotoGrid";
 import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
 import CategoryListHeader from "../../../components/shared/CategoryListHeader";
 import StarRating from "../../../components/shared/StarRating";
+import StatusBadge from "../../../components/shared/StatusBadge";
 import travelSchema from "../../../features/travel/travelSchema";
 import useCategory from "../../../hooks/useCategory";
 import { formatDisplayDate, formatDateRange } from "../../../helpers/dateUtils";
@@ -359,8 +360,6 @@ function TripDetailPeek({ trip, linkedActivities, onEdit, onClose }) {
   const linked = linkedActivities.filter((a) => a.linkedTripId === trip.id);
 
 
-  const statusVariant = trip.status === "visited" ? "success" : trip.status === "wishlist" ? "primary" : "secondary";
-
   return (
     <div style={{
       marginTop: "0.75rem",
@@ -373,9 +372,7 @@ function TripDetailPeek({ trip, linkedActivities, onEdit, onClose }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.2rem" }}>
-            <Badge bg={statusVariant}>
-              {trip.status}
-            </Badge>
+            <StatusBadge category="travel" status={trip.status} />
             <span style={{ fontWeight: 700, fontSize: "var(--font-size-sm)" }}>
               {trip.title || location || "Trip"}
             </span>
@@ -695,9 +692,7 @@ function TravelList() {
                   onMouseEnter={(e) => { if (trip.id) e.currentTarget.style.background = "var(--color-surface-hover)"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}
                 >
-                  <Badge bg={trip.status === "visited" ? "success" : "primary"}>
-                    {trip.status}
-                  </Badge>
+                  <StatusBadge category="travel" status={trip.status} />
                   <span style={{ fontWeight: 600, flex: 1 }}>{trip.title || trip.city || "Trip"}</span>
                   {trip.startDate && (
                     <span style={{ color: "var(--color-text-tertiary)" }}>

@@ -1,8 +1,7 @@
 import React from "react";
-import { Badge } from "react-bootstrap";
-import { getStatusLabel } from "../../helpers/statusLabels";
 import { getCategoryMeta, getEntryTitle, getEntrySubtitle } from "../../helpers/categoryMeta";
 import { formatDisplayDate } from "../../helpers/dateUtils";
+import StatusBadge from "./StatusBadge";
 import PrivacyIndicator from "./PrivacyIndicator";
 
 const EVENT_TYPE_EMOJI = {
@@ -13,29 +12,6 @@ const EVENT_TYPE_EMOJI = {
   festival: "🎪",
   other: "📅",
 };
-
-function getStatusBadgeVariant(status) {
-  switch (status) {
-    case "attended":
-    case "visited":
-    case "owned":
-    case "watched":
-    case "done":
-    case "tried":
-    case "happened":
-      return "success";
-    case "wishlist":
-    case "watchlist":
-      return "primary";
-    case "upcoming":
-      return "info";
-    case "rented":
-    case "cellar":
-      return "info";
-    default:
-      return "secondary";
-  }
-}
 
 function EntryHeader({ item, category, schema, contacts, onClick }) {
   const meta = getCategoryMeta(category);
@@ -49,9 +25,6 @@ function EntryHeader({ item, category, schema, contacts, onClick }) {
     ? (typeField?.optionLabels?.[typeValue] || typeValue.charAt(0).toUpperCase() + typeValue.slice(1))
     : null;
   const typeEmoji = typeValue ? (EVENT_TYPE_EMOJI[typeValue] || meta.icon) : null;
-
-  const statusVariant = getStatusBadgeVariant(item.status);
-  const badgeClass = "";
 
   const thumbSrc = item.photo1 || item.posterUrl || item.photoLink;
 
@@ -82,14 +55,7 @@ function EntryHeader({ item, category, schema, contacts, onClick }) {
             {getPrimaryLabel()}
             <PrivacyIndicator item={item} style={{ marginLeft: "0.4rem" }} />
           </h6>
-          {item.status && (
-            <Badge
-              bg={statusVariant}
-              className={`badge-status flex-shrink-0 ${badgeClass}`}
-            >
-              {getStatusLabel(category, item.status)}
-            </Badge>
-          )}
+          <StatusBadge category={category} status={item.status} />
         </div>
 
         {getSecondaryLabel() && (
