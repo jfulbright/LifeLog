@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useAppData } from "../../contexts/AppDataContext";
 import { RING_META } from "../../helpers/ringMeta";
+import Avatar from "./Avatar";
 
 /**
  * ContactPicker — autocomplete chip input for the "Who I was with" field.
@@ -143,7 +144,7 @@ function ContactPicker({ value = [], onChange, placeholder = "Add from your peop
                       addContact(contact);
                     }}
                   >
-                    <ContactInitialBadge name={contact.displayName} color={ring?.color} size={28} />
+                    <Avatar displayName={contact.displayName} color={ring?.color} size={28} />
                     <div className="contact-picker-option-info">
                       <span className="contact-picker-option-name">{contact.displayName}</span>
                       <span className="contact-picker-option-email">{contact.email}</span>
@@ -186,35 +187,6 @@ function ContactPicker({ value = [], onChange, placeholder = "Add from your peop
           )}
         </div>
       )}
-    </div>
-  );
-}
-
-function ContactInitialBadge({ name, color = "#9E9E9E", size = 28 }) {
-  const initials = (name || "?")
-    .split(" ")
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-  return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: "50%",
-        background: color,
-        color: "#fff",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: size * 0.36,
-        fontWeight: 700,
-        flexShrink: 0,
-      }}
-      aria-hidden="true"
-    >
-      {initials}
     </div>
   );
 }

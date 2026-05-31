@@ -6,20 +6,7 @@ import {
 } from "../../helpers/socialContent";
 import PhotoGrid from "./PhotoGrid";
 import StarRating from "./StarRating";
-
-function ContributorAvatar({ avatarUrl, displayName }) {
-  const letter = (displayName || "?").charAt(0).toUpperCase();
-
-  if (avatarUrl) {
-    return (
-      <div className="contributor-avatar">
-        <img src={avatarUrl} alt={displayName} />
-      </div>
-    );
-  }
-
-  return <div className="contributor-avatar">{letter}</div>;
-}
+import Avatar from "./Avatar";
 
 function ContributorTile({ contribution, onEdit }) {
   const snaps = contribution.snaps || [];
@@ -27,7 +14,7 @@ function ContributorTile({ contribution, onEdit }) {
 
   return (
     <div className="contributor-tile">
-      <ContributorAvatar avatarUrl={contribution.avatarUrl} displayName={contribution.displayName} />
+      <Avatar avatarUrl={contribution.avatarUrl} displayName={contribution.displayName} size={32} className="contributor-avatar" />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem", flexWrap: "wrap" }}>
           <span style={{ fontWeight: 700, fontSize: "var(--font-size-sm)", color: "var(--color-text-primary)" }}>

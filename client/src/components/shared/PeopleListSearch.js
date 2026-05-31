@@ -1,35 +1,7 @@
 import React, { useState } from "react";
 import { useAppData } from "../../contexts/AppDataContext";
 import { RING_META, RING_LEVELS } from "../../helpers/ringMeta";
-
-function ContactInitialBadge({ name, color = "#9E9E9E", size = 28 }) {
-  const initials = (name || "?")
-    .split(" ")
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-  return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: "50%",
-        background: color,
-        color: "#fff",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: size * 0.36,
-        fontWeight: 700,
-        flexShrink: 0,
-      }}
-      aria-hidden="true"
-    >
-      {initials}
-    </div>
-  );
-}
+import Avatar from "./Avatar";
 
 function PeopleListSearch({
   selectedContacts = [],
@@ -140,7 +112,7 @@ function PeopleListSearch({
                         transition: "background 100ms ease",
                       }}
                     >
-                      <ContactInitialBadge name={contact.displayName} color={meta.color} size={26} />
+                      <Avatar displayName={contact.displayName} color={meta.color} size={26} />
                       <span style={{ flex: 1, fontSize: "var(--font-size-sm)", fontWeight: selected ? 600 : 400, color: "var(--color-text-primary)" }}>
                         {contact.displayName}
                       </span>
