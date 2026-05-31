@@ -2,7 +2,7 @@
 
 > Behavioral reference for social sharing. Defines rules, flows, edge cases, and MVP decisions.
 > For data model and RLS policies, see [ARCHITECTURE.md](./ARCHITECTURE.md) §3.
-> Last updated: 2026-05-21
+> Last updated: 2026-05-22
 
 ---
 
@@ -56,7 +56,7 @@ These behavioral ground truths must not be violated without deliberate product d
 8. Changes to shared entries require **page reload** to appear (no real-time sync).
 9. The **owner sees all overlays** on their entries; collaborators see all overlays on entries they've accepted.
 10. A recommendation targets a **ring OR a user**, never both in the same row.
-11. Accepting a recommendation creates a **new entry** in the recipient's account (with `recommendedBy` provenance) — it does NOT create a collaboration. **⚠️ UNDER REVIEW** (see §8.3).
+11. Accepting a recommendation creates a **new entry** in the recipient's account (with `recommendedBy` provenance) — it does NOT create a collaboration. **⚠️ UNDER REVIEW** (see §9.3).
 12. A shared entry appears in the collaborator's category list **only after acceptance**.
 
 ---
@@ -66,10 +66,12 @@ These behavioral ground truths must not be violated without deliberate product d
 ```
 User creates/edits entry
     │
-    ├── Adds companions (contact-list field — "who was there")
+    ├── "👥 Who was there?" — PeopleField mode="companions"
+    │   User selects rings (bulk-adds all members) and/or individual contacts
+    │   Can also type freetext names for people not in contacts
     │
-    ├── Toggles "Share & Collaborate" per companion
-    │   (ShareWithCompanionsToggle component)
+    ├── Share toggle per companion (ShareWithCompanionsToggle)
+    │   Opts selected companions into active collaboration
     │
     └── Saves entry
          │
@@ -92,7 +94,7 @@ User creates/edits entry
               └── DECLINE → hidden from their feed
 ```
 
-**Note:** Companions and sharing are separate concepts. Adding someone as a companion records "they were there." Toggling share gives them active collaboration access. This distinction is a known UX pain point (see §8.1).
+**Note:** Companions and sharing are separate concepts. Adding someone as a companion records "they were there." Toggling share gives them active collaboration access. This distinction is a known UX pain point (see §9.1).
 
 ---
 
@@ -101,8 +103,11 @@ User creates/edits entry
 ```
 User views an experienced entry (attended, visited, watched, etc.)
     │
-    ├── Opens RecommendSection in form
-    ├── Selects rings and/or individual contacts
+    ├── "⭐ Recommend to" — PeopleField mode="recommend"
+    │   User selects rings and/or individual contacts
+    │   Selections persist in item JSONB (recommendedToRings, recommendedToContacts)
+    │   so they survive edit round-trips
+    │
     ├── Saves entry
     │
     └── useCategory.handleSubmit calls recommendationService.createRecommendations()
@@ -119,7 +124,7 @@ User views an experienced entry (attended, visited, watched, etc.)
               └── "Dismiss" → marks recommendation as dismissed
 ```
 
-**Open question:** The "new entry" model gives recipients full autonomy but feels disconnected from the recommender's experience. Alternative: create a collaboration link instead. Decision deferred — needs user testing (see §8.3).
+**Open question:** The "new entry" model gives recipients full autonomy but feels disconnected from the recommender's experience. Alternative: create a collaboration link instead. Decision deferred — needs user testing (see §9.3).
 
 ---
 
@@ -196,15 +201,26 @@ getAllSocialPhotos(item)     // flat array of all photos across contributors
 | `inviteService` | Invite generation and lookup | `createInvite()`, `getInviteByToken()` |
 | `profileService` | User profile management | `getMyProfile()`, `updateProfile()`, `uploadAvatar()` |
 
+### Contexts
+
+| Context | Role |
+|---------|------|
+| `SocialDataContext` | Provides `mutationVersion` counter + `incrementVersion()`. Components call `incrementVersion()` after social mutations (overlay save, accept, decline). Subscribers re-fetch on version change instead of relying on fragile DOM events. |
+
 ### Components
 
 | Component | Role |
 |-----------|------|
-| `ShareWithSection` | Ring visibility selector (passive browse control) |
+| `PeopleField` | Unified chip-input + inline dropdown for all social fields. Three modes: `companions` (contacts + freetext + rings), `recommend` (rings + contacts), `visibility` (rings only). |
 | `ShareWithCompanionsToggle` | Per-companion share toggle (active collaboration) |
-| `OverlayForm` | Form for adding personal overlay (snaps, rating, notes) |
-| `RecommendSection` | Ring + individual picker for recommendations |
+| `OverlayForm` | Unified status-aware overlay form (past: rating + snaps, wishlist: "why I'm interested") |
+| `SocialMemoriesCard` | Airbnb-reviews-style per-contributor display with collapse/expand |
 | `PrivacyIndicator` | Lock/people icon showing shared state on cards |
+
+**Deprecated (still in codebase, no longer imported by ItemForm):**
+- `RecommendPicker` — replaced by `PeopleField mode="recommend"`
+- `VisibilityPicker` — replaced by `PeopleField mode="visibility"`
+- `ShareWithSection` — replaced by `PeopleField mode="visibility"`
 
 ### Pages
 
@@ -218,9 +234,48 @@ getAllSocialPhotos(item)     // flat array of all photos across contributors
 
 ---
 
-## 8. UX Pain Points & Open Questions
+## 8. PeopleField Architecture
 
-### 8.1 Sharing Toggle Confusion
+The unified `PeopleField` component (`client/src/components/shared/PeopleField.js`) replaces three separate components with a single chip-input + inline dropdown UI. No modals, no expand/collapse — the dropdown opens inline on focus.
+
+### Modes
+
+| Mode | Schema field type | Rings shown | Contacts shown | Freetext | Persists as |
+|------|------------------|-------------|----------------|----------|-------------|
+| `companions` | `contact-list` | Yes (bulk add/remove) | Yes | Yes | Array of contact objects + strings |
+| `recommend` | `recommend` | Yes | Yes | No | `recommendedToRings[]` + `recommendedToContacts[]` |
+| `visibility` | `visible-to` | Yes | No | No | `visibilityRings[]` |
+
+### Ring behavior by mode
+
+- **companions:** Toggling a ring bulk-adds or bulk-removes ALL contacts in that ring. `getSelectedRings()` computes whether all members are currently selected.
+- **recommend/visibility:** Toggling a ring adds/removes the ring level itself (not individual contacts).
+
+### Schema integration
+
+Each category schema declares social fields with specific types that ItemForm maps to PeopleField:
+
+```javascript
+// In any *Schema.js:
+{ name: "visibilityControl", type: "visible-to", label: "🔒 Who can see this", section: "Social" }
+// ItemForm renders: <PeopleField mode="visibility" ... />
+```
+
+### Data persistence
+
+- `recommendedToRings` and `recommendedToContacts` persist in item JSONB data (not stripped on save)
+- `shareWithCompanionIds` and `_recommendedCompanions` are transient (stripped before save)
+- This ensures edit round-trips show previous selections
+
+### Scroll fix
+
+The dropdown is absolutely positioned and can clip below the viewport. On open, PeopleField calculates the expected bottom position and calls `window.scrollBy({ top: overflow + 20, behavior: "smooth" })` if needed.
+
+---
+
+## 9. UX Pain Points & Open Questions
+
+### 9.1 Sharing Toggle Confusion
 
 **Problem:** The distinction between "tag as companion" (who was there) and "Share & Collaborate" (give them active access) is unclear to users. The `ShareWithCompanionsToggle` appears after companions are selected, creating a two-step mental model that may not be intuitive.
 
@@ -231,7 +286,7 @@ getAllSocialPhotos(item)     // flat array of all photos across contributors
 - (b) Keep separate but improve labeling/placement
 - (c) Split into two distinct UI sections with clearer intent
 
-### 8.2 Ring Labels & Flexibility
+### 9.2 Ring Labels & Flexibility
 
 **Problem:** The fixed labels "Partner in Crime / Immediate Family / Extended Family / Friends" feel rigid. Not all users structure their relationships this way — some may want "Work Friends" or "Travel Buddies."
 
@@ -239,7 +294,7 @@ getAllSocialPhotos(item)     // flat array of all photos across contributors
 
 **For MVP:** Ship with current labels. Consider custom ring names post-launch. The 4-level hierarchy (most intimate → broadest) is sound even if labels change.
 
-### 8.3 Recommendation Disconnection
+### 9.3 Recommendation Disconnection
 
 **Problem:** Accepting a recommendation creates an entirely independent entry in the recipient's account. There's no ongoing link to the recommender's experience — their snapshots, rating, and photos don't carry over.
 
@@ -252,9 +307,9 @@ getAllSocialPhotos(item)     // flat array of all photos across contributors
 
 ---
 
-## 9. MVP Decisions
+## 10. MVP Decisions
 
-### 9.1 Ship As-Is (acceptable for 10-20 users)
+### 10.1 Ship As-Is (acceptable for 10-20 users)
 
 | Decision | Rationale |
 |----------|-----------|
@@ -262,31 +317,31 @@ getAllSocialPhotos(item)     // flat array of all photos across contributors
 | No conflict handling (last-write-wins) | Concurrent edits unlikely at this scale. Data is correctable if it happens. |
 | "Leave Share" reuses declined status | No user-visible consequence at MVP. Can split later if needed. |
 | No real-time sync (reload required) | Acceptable. Users learn the pattern. Push is premature. |
-| N+1 query in SharedFeed | Performance fine with <100 shared entries. Optimize later. |
+| ~~N+1 query in SharedFeed~~ | **Fixed** — batch `getOverlaysForEntries()` now fetches all overlays in one call. |
 | `can_edit` hardcoded true | Slightly risky with 10-20 users, but all are known contacts. Manageable. |
 | No activity feed | Not enough activity at this scale to justify the feature. |
 | Deferred sharing UI is silent | Users who share already know the contact isn't on the platform. |
 
-### 9.2 Verify Before Launch
+### 10.2 Verify Before Launch
 
 - [ ] **Ring-based recommendations RLS** — test end-to-end: user A recommends to ring 2, user B (in ring 2 via contacts) sees it on `/recommendations`
 - [ ] **TravelStats shared entry inclusion** — confirm `getItemsWithShared()` is used in the stats query path
 - [ ] **Deferred sharing resolution** — test full flow: share with unlinked contact → they sign up → auto-link resolves → entry appears in their SharedFeed
 
-### 9.3 Deferred to Post-Launch
+### 10.3 Deferred to Post-Launch
 
 - Real-time sync (Supabase Realtime subscriptions)
 - Activity feed / collaboration history
 - Per-collaborator permission UI (granular `can_edit`)
 - Distinct "left" status (separate from "declined")
 - Category-aware SharedEditPanel (full schema-driven editing for collaborators)
-- SharedFeed query optimization (batch load instead of N+1)
 - Custom ring labels
 - Recommendation model decision (new entry vs. collaboration vs. hybrid)
+- Remove deprecated components (RecommendPicker, VisibilityPicker, ShareWithSection)
 
 ---
 
-## 10. Post-Launch Social Roadmap
+## 11. Post-Launch Social Roadmap
 
 These items link to [ROADMAP.md](./ROADMAP.md) priorities:
 

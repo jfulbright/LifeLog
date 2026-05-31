@@ -1,6 +1,7 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
-function StatsStrip({ stats, icon }) {
+function StatsStrip({ stats, icon, statsLink }) {
   if (!stats || stats.length === 0) return null;
 
   return (
@@ -30,6 +31,26 @@ function StatsStrip({ stats, icon }) {
           </span>
         </React.Fragment>
       ))}
+      {statsLink && (
+        <Link
+          to={statsLink.to}
+          style={{
+            marginLeft: "auto",
+            fontSize: "var(--font-size-sm)",
+            fontWeight: 600,
+            color: statsLink.color || "var(--color-primary)",
+            textDecoration: "none",
+            whiteSpace: "nowrap",
+            padding: "0.1rem 0.4rem",
+            borderRadius: 4,
+            transition: "background 0.15s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-surface-hover)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}
+        >
+          Stats &rarr;
+        </Link>
+      )}
     </div>
   );
 }

@@ -255,6 +255,7 @@ function ItemForm({
   onCancel,
   title = "Entry",
   buttonText = "Save",
+  hideSections,
 }) {
   const isReadOnly = !setFormData;
   const formRef = useRef(null);
@@ -270,12 +271,16 @@ function ItemForm({
     .filter((field) => !field.hidden && isFieldVisible(field, formData))
     .sort((a, b) => (a.order || 0) - (b.order || 0));
 
-  const groupedFields = visibleFields.reduce((acc, field) => {
+  const allGroupedFields = visibleFields.reduce((acc, field) => {
     const section = field.section || "Main";
     if (!acc[section]) acc[section] = [];
     acc[section].push(field);
     return acc;
   }, {});
+
+  const groupedFields = hideSections
+    ? Object.fromEntries(Object.entries(allGroupedFields).filter(([section]) => !hideSections.includes(section)))
+    : allGroupedFields;
 
   const validate = () => {
     const errors = {};

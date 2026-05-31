@@ -3,10 +3,10 @@ import { Button, Badge } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import collaboratorService from "../services/collaboratorService";
 import overlayService from "../services/overlayService";
-import OverlayForm from "../components/shared/OverlayForm";
+import SharedMemoriesSection from "../components/shared/SharedMemoriesSection";
 import { useAppData } from "../contexts/AppDataContext";
 import { useSocialData } from "../contexts/SocialDataContext";
-import categoryMeta from "../helpers/categoryMeta";
+import categoryMeta, { formatLocation } from "../helpers/categoryMeta";
 
 /**
  * SharedFeed — Phase 7b
@@ -48,27 +48,25 @@ function getEntrySubtitle(entry) {
     const display = meta.getSecondaryDisplay(entry);
     if (display) return display;
   }
-  if (meta?.secondaryFields) {
-    const parts = meta.secondaryFields.map((f) => entry[f]).filter(Boolean);
-    if (parts.length > 0) return parts.join(", ");
-  }
-  const parts = [];
-  if (entry.venue) parts.push(entry.venue);
-  if (entry.city) parts.push(entry.city);
-  if (entry.country && entry.country !== "US") parts.push(entry.country);
-  return parts.join(", ");
+  return formatLocation(entry, meta?.secondaryFields);
+}
+
+function formatDisplayDate(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function formatDateRange(entry) {
   if (!entry.startDate) return null;
-  if (!entry.endDate || entry.startDate === entry.endDate) return entry.startDate;
-  return `${entry.startDate} — ${entry.endDate}`;
+  const start = formatDisplayDate(entry.startDate);
+  if (!entry.endDate || entry.startDate === entry.endDate) return start;
+  return `${start} — ${formatDisplayDate(entry.endDate)}`;
 }
 
 // ── Shared Entry Card ─────────────────────────────────────────────────────────
 
 function SharedEntryCard({ entry, tag, contacts, onAccept, onDecline, onViewOverlays, onEditShared, onLeaveShare, existingOverlay, onOverlaySaved }) {
-  const [showForm, setShowForm] = useState(false);
   const meta = categoryMeta[entry._category] || {};
 
   // Find who shared this with us
@@ -91,77 +89,45 @@ function SharedEntryCard({ entry, tag, contacts, onAccept, onDecline, onViewOver
         marginBottom: "0.75rem",
       }}
     >
-      <div style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem" }}>
-        <div
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 10,
-            background: meta.color || "var(--color-primary)",
-            color: "#fff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "1.25rem",
-            flexShrink: 0,
-          }}
-        >
-          {meta.icon || "📝"}
-        </div>
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-            <span style={{ fontWeight: 700, fontSize: "var(--font-size-base)", color: "var(--color-text-primary)" }}>
-              {getEntryDisplayTitle(entry)}
+      {/* Row 1: Title + visibility + status badges (right-aligned) */}
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+        <span style={{ fontWeight: 700, fontSize: "var(--font-size-base)", color: "var(--color-text-primary)" }}>
+          {getEntryDisplayTitle(entry)}
+        </span>
+        {(entry.shareWithCompanionIds?.length > 0 || entry.visibilityRings?.length > 0) && (
+          <span style={{ fontSize: "0.85rem" }}>👥</span>
+        )}
+        <span style={{ marginLeft: "auto", display: "flex", gap: "0.375rem", alignItems: "center" }}>
+          {entry.status && (
+            <span style={{
+              fontSize: "0.6rem",
+              fontWeight: 700,
+              padding: "0.1rem 0.4rem",
+              borderRadius: 6,
+              background: entry.status === "wishlist" ? "var(--color-primary)" : "var(--color-success)",
+              color: "#fff",
+              textTransform: "capitalize",
+            }}>
+              {entry.status}
             </span>
-            {entry.status && (
-              <span style={{
-                fontSize: "0.6rem",
-                fontWeight: 700,
-                padding: "0.1rem 0.4rem",
-                borderRadius: 6,
-                background: entry.status === "wishlist" ? "var(--color-warning)" : "var(--color-success)",
-                color: entry.status === "wishlist" ? "#1D1C1D" : "#fff",
-                textTransform: "capitalize",
-              }}>
-                {entry.status}
-              </span>
-            )}
-            <StatusBadge status={tagStatus} />
-          </div>
-
-          {getEntrySubtitle(entry) && (
-            <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", marginTop: "0.125rem" }}>
-              {getEntrySubtitle(entry)}
-            </div>
           )}
+          <StatusBadge status={tagStatus} />
+        </span>
+      </div>
 
-          <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)", marginTop: "0.25rem", display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-            {formatDateRange(entry) && <span>📅 {formatDateRange(entry)}</span>}
-            <span>
-              Shared by <strong>{sharedByName}</strong>
-            </span>
-          </div>
-
-          {entry.snapshot1 && (
-            <div
-              style={{
-                marginTop: "0.5rem",
-                fontStyle: "italic",
-                fontSize: "var(--font-size-sm)",
-                color: "var(--color-text-secondary)",
-                borderLeft: "2px solid var(--color-border)",
-                paddingLeft: "0.625rem",
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              }}
-            >
-              "{entry.snapshot1}"
-            </div>
-          )}
+      {/* Row 2: Location */}
+      {getEntrySubtitle(entry) && (
+        <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", marginTop: "0.25rem" }}>
+          {getEntrySubtitle(entry)}
         </div>
+      )}
+
+      {/* Row 3: Date + Shared By */}
+      <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)", marginTop: "0.375rem", display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
+        {formatDateRange(entry) && <span>{"📅"} {formatDateRange(entry)}</span>}
+        <span>
+          {"🤝"} Shared with you by <span style={{ color: "var(--color-primary)", fontWeight: 600 }}>{sharedByName}</span>
+        </span>
       </div>
 
       {tagStatus === "pending" && (
@@ -190,7 +156,7 @@ function SharedEntryCard({ entry, tag, contacts, onAccept, onDecline, onViewOver
 
       {tagStatus === "accepted" && (
         <div style={{ marginTop: "0.875rem", paddingTop: "0.75rem", borderTop: "1px solid var(--color-border)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
             <Link
               to={`/${entry._category || "travel"}`}
               style={{ fontSize: "var(--font-size-xs)", color: "var(--color-primary)", fontWeight: 600, textDecoration: "none" }}
@@ -207,38 +173,11 @@ function SharedEntryCard({ entry, tag, contacts, onAccept, onDecline, onViewOver
             </Button>
           </div>
 
-          {existingOverlay && !showForm ? (
-            <div>
-              {existingOverlay.rating && (
-                <div style={{ marginBottom: "0.375rem", color: "#f5a623" }}>
-                  {"★".repeat(parseInt(existingOverlay.rating))}{"☆".repeat(5 - parseInt(existingOverlay.rating))}
-                </div>
-              )}
-              {[existingOverlay.snapshot1, existingOverlay.snapshot2, existingOverlay.snapshot3].filter(Boolean).map((snap, i) => (
-                <div key={i} style={{ fontSize: "var(--font-size-sm)", fontStyle: "italic", color: "var(--color-text-secondary)", borderLeft: "2px solid var(--color-border)", paddingLeft: "0.625rem", marginBottom: "0.375rem" }}>
-                  "{snap}"
-                </div>
-              ))}
-              <Button
-                variant="outline-primary"
-                size="sm"
-                onClick={() => setShowForm(true)}
-                style={{ fontSize: "var(--font-size-xs)", marginTop: "0.5rem" }}
-              >
-                Edit my snaps
-              </Button>
-            </div>
-          ) : (
-            <OverlayForm
-              entryId={entry.id}
-              entryStatus={entry.status}
-              initialOverlay={existingOverlay || undefined}
-              onSaved={() => {
-                setShowForm(false);
-                if (onOverlaySaved) onOverlaySaved(entry.id);
-              }}
-            />
-          )}
+          <SharedMemoriesSection
+            item={{ ...entry, _isShared: true, _myOverlayContribution: existingOverlay }}
+            contacts={contacts}
+            onOverlaySaved={() => { if (onOverlaySaved) onOverlaySaved(entry.id); }}
+          />
         </div>
       )}
     </div>
@@ -433,7 +372,7 @@ function SharedFeed() {
   const [allItems, setAllItems] = useState([]);
   const [myOverlays, setMyOverlays] = useState({});
   const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("pending");
   const [overlayTarget, setOverlayTarget] = useState(null);
   const [editTarget, setEditTarget] = useState(null);
 
@@ -531,10 +470,15 @@ function SharedFeed() {
   };
 
   const handleSaveOverlay = async (overlayData) => {
-    await overlayService.saveOverlay(overlayData.entryId, overlayData);
-    incrementVersion();
-    await load();
-    setOverlayTarget(null);
+    try {
+      await overlayService.saveOverlay(overlayData.entryId, overlayData);
+      incrementVersion();
+      await load();
+      setOverlayTarget(null);
+    } catch (err) {
+      console.error("[SharedFeed] overlay save failed:", err);
+      alert(`Failed to save overlay: ${err.message}`);
+    }
   };
 
   const pendingCount = allItems.filter((c) => c.status === "pending").length;
@@ -584,6 +528,7 @@ function SharedFeed() {
                 key={s}
                 type="button"
                 className={`btn btn-sm ${filterStatus === s ? "active" : ""}`}
+                data-status={s === "all" ? undefined : s}
                 onClick={() => setFilterStatus(s)}
                 style={{ textTransform: "capitalize" }}
               >

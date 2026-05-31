@@ -166,6 +166,26 @@ const dataService = {
     return updated;
   },
 
+  async updateSharedItem(id, item) {
+    const cleanItem = stripTransientFields(item);
+    const userId = await getCurrentUserId();
+    const now = new Date().toISOString();
+    const dataWithMeta = { ...cleanItem, last_edited_at: now, last_edited_by: userId };
+
+    const { error } = await supabase
+      .from("items")
+      .update({
+        data: dataWithMeta,
+        status: cleanItem.status || null,
+        start_date: cleanItem.startDate || null,
+        updated_at: now,
+      })
+      .eq("id", id);
+
+    if (error) throw error;
+    return dataWithMeta;
+  },
+
   async deleteItem(category, id) {
     // Best-effort photo cleanup before removing the DB row.
     // Only runs for Supabase-backed categories (not localStorage ones).

@@ -6,93 +6,80 @@ import {
 } from "../../helpers/socialContent";
 import PhotoGrid from "./PhotoGrid";
 
-function ContributionRow({ contribution }) {
-  const [expanded, setExpanded] = useState(false);
+function ContributorAvatar({ avatarUrl, displayName }) {
+  const letter = (displayName || "?").charAt(0).toUpperCase();
+
+  if (avatarUrl) {
+    return (
+      <div className="contributor-avatar">
+        <img src={avatarUrl} alt={displayName} />
+      </div>
+    );
+  }
+
+  return <div className="contributor-avatar">{letter}</div>;
+}
+
+function StarRating({ rating }) {
+  if (!rating) return null;
+  const filled = parseInt(rating, 10);
+  return (
+    <span style={{ color: "#f5a623", fontSize: "var(--font-size-xs)", letterSpacing: "0.02em" }}>
+      {"★".repeat(filled)}
+      {"☆".repeat(5 - filled)}
+    </span>
+  );
+}
+
+function ContributorTile({ contribution, onEdit }) {
   const snaps = contribution.snaps || [];
-  const hasMore = snaps.length > 1 || contribution.photos.length > 0;
+  const photos = contribution.photos || [];
 
   return (
-    <div
-      style={{
-        marginBottom: "0.75rem",
-        paddingLeft: "0.75rem",
-        borderLeft: contribution.isOwner
-          ? "2px solid var(--color-primary)"
-          : "2px solid var(--color-border)",
-      }}
-    >
-      <div
-        style={{
-          fontWeight: 600,
-          fontSize: "var(--font-size-xs)",
-          color: "var(--color-text-secondary)",
-          marginBottom: "0.375rem",
-          display: "flex",
-          alignItems: "center",
-          gap: "0.5rem",
-        }}
-      >
-        {contribution.displayName}
-        {contribution.isOwner && (
-          <span style={{ fontSize: "0.7rem", color: "var(--color-text-tertiary)", fontWeight: 700 }}>
-            Owner
+    <div className="contributor-tile">
+      <ContributorAvatar avatarUrl={contribution.avatarUrl} displayName={contribution.displayName} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem", flexWrap: "wrap" }}>
+          <span style={{ fontWeight: 700, fontSize: "var(--font-size-sm)", color: "var(--color-text-primary)" }}>
+            {contribution.displayName}
           </span>
+          {contribution.isOwner && !contribution.isMine && (
+            <span style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)", background: "var(--color-surface-hover, #f5f5f5)", borderRadius: 4, padding: "0.1rem 0.4rem", fontWeight: 600 }}>
+              Owner
+            </span>
+          )}
+          <StarRating rating={contribution.rating} />
+          {contribution.isMine && onEdit && (
+            <button
+              type="button"
+              onClick={onEdit}
+              style={{ background: "none", border: "none", padding: 0, fontSize: "var(--font-size-xs)", color: "var(--color-primary)", fontWeight: 600, cursor: "pointer", marginLeft: "auto" }}
+            >
+              Edit
+            </button>
+          )}
+        </div>
+        {snaps.map((snap, i) => (
+          <div key={i} style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", marginBottom: "0.2rem" }}>
+            {"✨"} {snap}
+          </div>
+        ))}
+        {contribution.whyNotes && (
+          <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", marginTop: "0.25rem", fontStyle: "italic" }}>
+            {contribution.whyNotes}
+          </div>
         )}
-        {contribution.rating && (
-          <span style={{ color: "#f5a623", letterSpacing: "0.05em" }}>
-            {"★".repeat(parseInt(contribution.rating, 10))}
-            {"☆".repeat(5 - parseInt(contribution.rating, 10))}
-          </span>
+        {photos.length > 0 && (
+          <div style={{ marginTop: "0.375rem" }}>
+            <PhotoGrid photos={photos.slice(0, 3)} height={60} />
+          </div>
         )}
       </div>
-
-      {contribution.whyNotes && (
-        <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", marginBottom: "0.375rem" }}>
-          {contribution.whyNotes}
-        </div>
-      )}
-
-      {snaps.length > 0 && (
-        <div style={{ fontStyle: "italic", fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", marginBottom: "0.2rem" }}>
-          &ldquo;{snaps[0]}&rdquo;
-        </div>
-      )}
-
-      {expanded && snaps.slice(1).map((snap, i) => (
-        <div key={i} style={{ fontStyle: "italic", fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", marginBottom: "0.2rem" }}>
-          &ldquo;{snap}&rdquo;
-        </div>
-      ))}
-
-      {expanded && contribution.photos.length > 0 && (
-        <div style={{ marginTop: "0.375rem" }}>
-          <PhotoGrid photos={contribution.photos} height={100} />
-        </div>
-      )}
-
-      {hasMore && (
-        <button
-          type="button"
-          onClick={() => setExpanded(!expanded)}
-          style={{
-            background: "none",
-            border: "none",
-            padding: 0,
-            marginTop: "0.25rem",
-            fontSize: "var(--font-size-xs)",
-            color: "var(--color-primary)",
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
-        >
-          {expanded ? "Show less" : "Show more"}
-        </button>
-      )}
     </div>
   );
 }
 
-function SocialMemoriesCard({ item, contacts, refreshKey, contributions: externalContributions }) {
+function SocialMemoriesCard({ item, contacts, refreshKey, contributions: externalContributions, onEditOverlay, expanded = false }) {
   const [contributions, setContributions] = useState(externalContributions || item._socialContributions || []);
 
   useEffect(() => {
@@ -112,35 +99,39 @@ function SocialMemoriesCard({ item, contacts, refreshKey, contributions: externa
   }, [item, contacts, refreshKey, externalContributions]);
 
   const visibleContributions = contributions.filter(hasContributionContent);
-
   if (visibleContributions.length === 0) return null;
 
+  const MAX_IN_CARD = expanded ? visibleContributions.length : 2;
+  const cardContributions = visibleContributions.slice(0, MAX_IN_CARD);
+  const shareeCount = visibleContributions.filter((c) => !c.isOwner).length;
+
+  const gridClass = cardContributions.length === 1
+    ? "perspectives-grid perspectives-grid--single"
+    : "perspectives-grid";
+
   return (
-    <div
-      style={{
-        marginTop: "0.75rem",
-        paddingTop: "0.75rem",
-        borderTop: "1px solid var(--color-border)",
-      }}
-    >
-      <div
-        style={{
-          fontWeight: 700,
-          fontSize: "var(--font-size-xs)",
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-          color: "var(--color-text-secondary)",
-          marginBottom: "0.625rem",
-        }}
-      >
-        Shared memories
+    <div style={{ marginTop: "0.75rem", padding: "0.75rem", borderRadius: 8, background: "linear-gradient(135deg, #F9F5FB 0%, #F0F7FE 100%)", border: "1px solid rgba(74, 21, 75, 0.08)" }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.625rem" }}>
+        <span style={{ fontWeight: 600, fontSize: "var(--font-size-sm)", color: "var(--color-text-primary)" }}>
+          Shared Memories
+        </span>
+        {shareeCount > 0 && (
+          <span style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)" }}>
+            {shareeCount} collaborator contribution{shareeCount !== 1 ? "s" : ""}
+          </span>
+        )}
       </div>
-      {visibleContributions.map((contribution) => (
-        <ContributionRow
-          key={`${contribution.userId || "owner"}-${contribution.isOwner ? "owner" : "overlay"}`}
-          contribution={contribution}
-        />
-      ))}
+
+      <div className={gridClass}>
+        {cardContributions.map((contribution) => (
+          <ContributorTile
+            key={`${contribution.userId || "owner"}-${contribution.isOwner ? "o" : "c"}`}
+            contribution={contribution}
+            onEdit={contribution.isMine && onEditOverlay ? onEditOverlay : undefined}
+          />
+        ))}
+      </div>
+
     </div>
   );
 }

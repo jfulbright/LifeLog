@@ -72,8 +72,7 @@ function MovieResultCard({ movie, socialBadge, onSelect, actions }) {
               </Button>
               <Button
                 size="sm"
-                variant="outline-warning"
-                className="text-dark"
+                variant="outline-primary"
                 onClick={() => onSelect(movie, "watchlist")}
               >
                 Watchlist

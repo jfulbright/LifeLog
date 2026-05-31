@@ -54,6 +54,7 @@ function CellarList() {
     deleteItem,
     closeForm,
     openForm,
+    saveDetailEdit,
     showSnapPrompt,
     snapPromptTitle,
     handleSnapSave,
@@ -265,7 +266,7 @@ function CellarList() {
           category="cellar"
           schema={cellarSchema}
           onClose={() => setViewDetailItem(null)}
-          onSave={() => setViewDetailItem(null)}
+          onSave={(data) => { saveDetailEdit(data); setViewDetailItem(null); }}
           onDelete={(id) => { deleteItem(id); setViewDetailItem(null); }}
         />
       )}

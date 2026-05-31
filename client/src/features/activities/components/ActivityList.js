@@ -77,9 +77,20 @@ function ActivityList() {
         title={"\u{1F3D4}\uFE0F Activities"}
         addLabel="+ Log Activity"
         onAdd={openForm}
-        stats={done.length > 0 ? [
-          { value: done.length, label: "accomplished", color: "#2EB67D" },
-        ] : null}
+        stats={done.length > 0 ? (() => {
+          const types = new Set(done.map((a) => a.activityType).filter(Boolean));
+          const rated = done.filter((a) => a.rating > 0);
+          const avgRating = rated.length > 0 ? (rated.reduce((s, a) => s + a.rating, 0) / rated.length).toFixed(1) : null;
+          const wishlist = activities.filter((a) => a.status === "wishlist");
+          const stats = [
+            { value: done.length, label: "accomplished", color: "#2EB67D" },
+          ];
+          if (types.size > 0) stats.push({ value: types.size, label: "types", color: "var(--color-primary)" });
+          if (avgRating) stats.push({ value: avgRating + "★", label: "avg", color: "var(--color-warning)" });
+          if (wishlist.length > 0) stats.push({ value: wishlist.length, label: "bucket list", color: "var(--color-text-secondary)" });
+          return stats;
+        })() : null}
+        statsLink={{ to: "/activities/stats", color: "var(--color-activities, #2EB67D)" }}
         category="activities"
         statusOptions={activityStatuses}
         filterStatus={filterStatus}

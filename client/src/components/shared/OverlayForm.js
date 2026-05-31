@@ -2,27 +2,37 @@ import React, { useState, useEffect } from "react";
 import { Button, Form } from "react-bootstrap";
 import overlayService from "../../services/overlayService";
 import { useSocialData } from "../../contexts/SocialDataContext";
+import PhotoUploadField from "./PhotoUploadField";
 
 /**
  * Unified overlay form for adding personal perspective to any entry.
  * Works for both wishlist (why_notes) and experienced (snaps, rating, photos).
  * Used in category detail views AND SharedFeed -- single source of truth.
  */
-const PAST_STATUSES = ["attended", "visited", "watched", "tried", "experienced", "in-progress"];
 const FUTURE_STATUSES = ["wishlist", "watchlist", "want-to", "planned"];
 
-function OverlayForm({ entryId, entryStatus, onSaved, initialOverlay }) {
+function OverlayForm({ entryId, entryStatus, onSaved, onCancel, initialOverlay, showPhotos = false }) {
   const { incrementVersion } = useSocialData();
   const [snap1, setSnap1] = useState("");
   const [snap2, setSnap2] = useState("");
   const [snap3, setSnap3] = useState("");
   const [whyNotes, setWhyNotes] = useState("");
   const [rating, setRating] = useState("");
+  const [photos, setPhotos] = useState([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState(null);
   const [loading, setLoading] = useState(!initialOverlay);
 
   const isWishlist = FUTURE_STATUSES.includes(entryStatus);
+
+  const setPhotoAt = (index, url) => {
+    setPhotos((prev) => {
+      const next = [...prev];
+      next[index] = url;
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (initialOverlay) {
@@ -31,6 +41,7 @@ function OverlayForm({ entryId, entryStatus, onSaved, initialOverlay }) {
       setSnap3(initialOverlay.snapshot3 || "");
       setWhyNotes(initialOverlay.why_notes || "");
       setRating(initialOverlay.rating ? String(initialOverlay.rating) : "");
+      setPhotos(Array.isArray(initialOverlay.photos) ? initialOverlay.photos.filter(Boolean) : []);
       return;
     }
     setLoading(true);
@@ -41,13 +52,19 @@ function OverlayForm({ entryId, entryStatus, onSaved, initialOverlay }) {
         setSnap3(o.snapshot3 || "");
         setWhyNotes(o.why_notes || "");
         setRating(o.rating ? String(o.rating) : "");
+        setPhotos(Array.isArray(o.photos) ? o.photos.filter(Boolean) : []);
       }
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [entryId, initialOverlay]);
 
   const handleSave = async () => {
+    if (!entryId) {
+      setSaveError("Missing entry ID — cannot save.");
+      return;
+    }
     setSaving(true);
+    setSaveError(null);
     try {
       await overlayService.saveOverlay(entryId, {
         snapshot1: isWishlist ? "" : snap1,
@@ -55,6 +72,7 @@ function OverlayForm({ entryId, entryStatus, onSaved, initialOverlay }) {
         snapshot3: isWishlist ? "" : snap3,
         why_notes: whyNotes,
         rating: rating ? parseInt(rating) : null,
+        ...(showPhotos && { photos: photos.filter(Boolean) }),
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -62,6 +80,7 @@ function OverlayForm({ entryId, entryStatus, onSaved, initialOverlay }) {
       if (onSaved) onSaved();
     } catch (err) {
       console.error("[OverlayForm] save failed:", err);
+      setSaveError(err.message || "Save failed — please try again.");
     } finally {
       setSaving(false);
     }
@@ -72,7 +91,6 @@ function OverlayForm({ entryId, entryStatus, onSaved, initialOverlay }) {
   return (
     <div>
       {isWishlist ? (
-        /* Future events: only "Why I'm interested" + rating */
         <>
           <Form.Group className="mb-3">
             <Form.Label style={{ fontSize: "var(--font-size-xs)", fontWeight: 600 }}>
@@ -114,7 +132,6 @@ function OverlayForm({ entryId, entryStatus, onSaved, initialOverlay }) {
           </Form.Group>
         </>
       ) : (
-        /* Past events: Rating FIRST, then snaps. No "my thoughts" field. */
         <>
           <Form.Group className="mb-3">
             <Form.Label style={{ fontSize: "var(--font-size-xs)", fontWeight: 600 }}>
@@ -155,7 +172,7 @@ function OverlayForm({ entryId, entryStatus, onSaved, initialOverlay }) {
                 maxLength={140}
                 value={val}
                 onChange={(e) => set(e.target.value)}
-                placeholder="A quick memory\u2026"
+                placeholder="A quick memory..."
                 style={{ fontSize: "var(--font-size-sm)" }}
               />
               <div style={{ textAlign: "right", fontSize: "0.65rem", color: "var(--color-text-tertiary)" }}>
@@ -166,13 +183,43 @@ function OverlayForm({ entryId, entryStatus, onSaved, initialOverlay }) {
         </>
       )}
 
+      {showPhotos && (
+        <div className="mb-2">
+          <div style={{ fontSize: "var(--font-size-xs)", fontWeight: 600, marginBottom: "0.375rem" }}>
+            Photos
+          </div>
+          <div className="row g-2">
+            {[0, 1, 2].map((index) => (
+              <div className="col-4" key={index}>
+                <PhotoUploadField
+                  field={{ name: `overlayPhoto${index + 1}`, label: `Photo ${index + 1}` }}
+                  value={photos[index] || ""}
+                  onChange={(url) => setPhotoAt(index, url)}
+                  itemId={entryId}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="d-flex align-items-center gap-2">
         <Button size="sm" variant="primary" onClick={handleSave} disabled={saving}>
           {saving ? "Saving..." : "Save"}
         </Button>
+        {onCancel && (
+          <Button size="sm" variant="outline-secondary" onClick={onCancel} disabled={saving}>
+            Cancel
+          </Button>
+        )}
         {saved && (
           <span style={{ fontSize: "var(--font-size-xs)", color: "var(--color-success)", fontWeight: 600 }}>
             Saved!
+          </span>
+        )}
+        {saveError && (
+          <span style={{ fontSize: "var(--font-size-xs)", color: "var(--color-danger)", fontWeight: 600 }}>
+            {saveError}
           </span>
         )}
       </div>

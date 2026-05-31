@@ -253,8 +253,7 @@ function EventForm({ formData, setFormData, onSubmit, onCancel }) {
                     </Button>
                     <Button
                       size="sm"
-                      variant="outline-warning"
-                      className="text-dark"
+                      variant="outline-primary"
                       onClick={() => handleSelectResult(concert, "wishlist")}
                     >
                       Wishlist

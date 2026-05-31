@@ -28,7 +28,7 @@ function CarList() {
     showForm, editIndex,
     filterStatus, setFilterStatus,
     showToast, setShowToast,
-    handleSubmit, startEditing, deleteItem, closeForm, openForm,
+    handleSubmit, startEditing, deleteItem, closeForm, openForm, saveDetailEdit,
     showSnapPrompt, snapPromptTitle, handleSnapSave, dismissSnapPrompt,
     viewDetailItem, setViewDetailItem,
   } = useCategory("cars", { schema: carSchema });
@@ -150,7 +150,7 @@ function CarList() {
           category="cars"
           schema={carSchema}
           onClose={() => setViewDetailItem(null)}
-          onSave={() => setViewDetailItem(null)}
+          onSave={(data) => { saveDetailEdit(data); setViewDetailItem(null); }}
           onDelete={(id) => { deleteItem(id); setViewDetailItem(null); }}
         />
       )}

@@ -315,13 +315,13 @@ function Timeline() {
                         bg={
                           ["attended", "visited", "owned", "done", "tried"].includes(entry.status)
                             ? "success"
-                            : entry.status === "wishlist"
-                            ? "warning"
+                            : ["wishlist", "watchlist"].includes(entry.status)
+                            ? "primary"
+                            : entry.status === "upcoming"
+                            ? "info"
                             : "secondary"
                         }
-                        className={`badge-status ${
-                          entry.status === "wishlist" ? "text-dark" : ""
-                        }`}
+                        className="badge-status"
                       >
                         {getStatusLabel(entry.category, entry.status)}
                       </Badge>

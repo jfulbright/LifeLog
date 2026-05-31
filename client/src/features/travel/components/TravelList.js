@@ -382,7 +382,7 @@ function TripDetailPeek({ trip, linkedActivities, onEdit, onClose }) {
     });
   };
 
-  const statusVariant = trip.status === "visited" ? "success" : trip.status === "wishlist" ? "warning" : "secondary";
+  const statusVariant = trip.status === "visited" ? "success" : trip.status === "wishlist" ? "primary" : "secondary";
 
   return (
     <div style={{
@@ -396,7 +396,7 @@ function TripDetailPeek({ trip, linkedActivities, onEdit, onClose }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.2rem" }}>
-            <Badge bg={statusVariant} className={statusVariant === "warning" ? "text-dark" : ""}>
+            <Badge bg={statusVariant}>
               {trip.status}
             </Badge>
             <span style={{ fontWeight: 700, fontSize: "var(--font-size-sm)" }}>
@@ -623,16 +623,12 @@ function TravelList() {
         title={"\u2708\uFE0F Travel"}
         addLabel="+ Add Trip"
         onAdd={openForm}
-        extraActions={<>
-          <Link to="/travel/stats" className="btn btn-sm btn-outline-secondary">
-            {"\u{1F4CA}"} Stats
-          </Link>
-          {allUngrouped.length >= 2 && (
-            <Button variant="outline-secondary" size="sm" onClick={openItineraryModal}>
-              {"\u{1F5FA}\uFE0F"} Create Itinerary
-            </Button>
-          )}
-        </>}
+        extraActions={allUngrouped.length >= 2 ? (
+          <Button variant="outline-secondary" size="sm" onClick={openItineraryModal}>
+            {"\u{1F5FA}\uFE0F"} Create Itinerary
+          </Button>
+        ) : null}
+        statsLink={{ to: "/travel/stats", color: "var(--color-travel)" }}
         stats={(() => {
           const stats = computeTravelStats(travels);
           if (stats.totalTrips === 0) return null;
@@ -722,7 +718,7 @@ function TravelList() {
                   onMouseEnter={(e) => { if (trip.id) e.currentTarget.style.background = "var(--color-surface-hover)"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}
                 >
-                  <Badge bg={trip.status === "visited" ? "success" : "warning"} className={trip.status === "wishlist" ? "text-dark" : ""}>
+                  <Badge bg={trip.status === "visited" ? "success" : "primary"}>
                     {trip.status}
                   </Badge>
                   <span style={{ fontWeight: 600, flex: 1 }}>{trip.title || trip.city || "Trip"}</span>

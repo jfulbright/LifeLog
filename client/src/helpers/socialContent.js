@@ -43,6 +43,7 @@ export function buildOwnerContribution(item, contacts = []) {
     whyNotes,
     photos,
     rating: item?.rating || null,
+    avatarUrl: item?._ownerAvatarUrl || null,
     updatedAt: item?.updatedAt || item?.updated_at || item?.createdAt || null,
   };
 }
@@ -60,6 +61,7 @@ export function buildOverlayContribution(overlay, item, contacts = []) {
     whyNotes: overlay?.why_notes || "",
     photos: getOverlayPhotos(overlay),
     rating: overlay?.rating || null,
+    avatarUrl: overlay?._profileAvatarUrl || null,
     updatedAt: overlay?.updated_at || overlay?.created_at || null,
   };
 }
@@ -102,23 +104,27 @@ export async function enrichItemsWithSocialContent(items, contacts = []) {
   const uniqueUnknownIds = [...new Set(unknownUserIds)];
 
   let profileNames = {};
+  let profileAvatars = {};
   if (uniqueUnknownIds.length > 0) {
     try {
       const { supabase } = await import("../services/supabaseClient");
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, display_name")
+        .select("id, display_name, avatar_url")
         .in("id", uniqueUnknownIds);
       if (profiles) {
-        profiles.forEach((p) => { profileNames[p.id] = p.display_name; });
+        profiles.forEach((p) => {
+          profileNames[p.id] = p.display_name;
+          profileAvatars[p.id] = p.avatar_url || null;
+        });
       }
     } catch {}
   }
 
-  // Attach profile names to overlays for display fallback
   const enrichedOverlays = overlays.map((o) => ({
     ...o,
     _profileName: profileNames[o.user_id] || null,
+    _profileAvatarUrl: profileAvatars[o.user_id] || null,
   }));
 
   return list.map((item) => {

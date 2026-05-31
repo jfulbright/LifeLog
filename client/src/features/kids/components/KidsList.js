@@ -178,7 +178,7 @@ function KidsList() {
     showForm, editIndex,
     filterStatus, setFilterStatus,
     showToast, setShowToast,
-    handleSubmit, startEditing, deleteItem, closeForm, openForm,
+    handleSubmit, startEditing, deleteItem, closeForm, openForm, saveDetailEdit,
     showSnapPrompt, snapPromptTitle, handleSnapSave, dismissSnapPrompt,
     viewDetailItem, setViewDetailItem,
   } = useCategory("kids", { schema: kidsSchema });
@@ -358,7 +358,7 @@ function KidsList() {
           category="kids"
           schema={kidsSchema}
           onClose={() => setViewDetailItem(null)}
-          onSave={() => setViewDetailItem(null)}
+          onSave={(data) => { saveDetailEdit(data); setViewDetailItem(null); }}
           onDelete={(id) => { deleteItem(id); setViewDetailItem(null); }}
         />
       )}

@@ -56,7 +56,7 @@ function EventList() {
     showForm, editIndex,
     filterStatus, setFilterStatus,
     showToast, setShowToast,
-    handleSubmit, startEditing, deleteItem, closeForm, openForm,
+    handleSubmit, startEditing, deleteItem, closeForm, openForm, saveDetailEdit,
     showSnapPrompt, snapPromptTitle, handleSnapSave, dismissSnapPrompt,
     viewDetailItem, setViewDetailItem,
   } = useCategory("events", { normalize: normalizeEvent, schema: eventSchema });
@@ -145,10 +145,21 @@ function EventList() {
         title={"\u{1F39F}\uFE0F Events"}
         addLabel="+ Add Event"
         onAdd={openForm}
-        stats={events.length > 0 ? [
-          { value: events.filter((e) => e.status === "attended").length, label: "attended", color: "var(--color-events)" },
-          { value: events.filter((e) => e.status === "wishlist").length, label: "upcoming", color: "var(--color-text-secondary)" },
-        ] : null}
+        stats={events.length > 0 ? (() => {
+          const attended = events.filter((e) => e.status === "attended");
+          const upcoming = events.filter((e) => e.status === "wishlist");
+          const rated = attended.filter((e) => e.rating > 0);
+          const avgRating = rated.length > 0 ? (rated.reduce((s, e) => s + e.rating, 0) / rated.length).toFixed(1) : null;
+          const venues = new Set(attended.map((e) => e.venue).filter(Boolean));
+          const stats = [
+            { value: attended.length, label: "attended", color: "var(--color-events)" },
+          ];
+          if (venues.size > 0) stats.push({ value: venues.size, label: "venues", color: "var(--color-primary)" });
+          if (avgRating) stats.push({ value: avgRating + "★", label: "avg", color: "var(--color-warning)" });
+          if (upcoming.length > 0) stats.push({ value: upcoming.length, label: "upcoming", color: "var(--color-text-secondary)" });
+          return stats;
+        })() : null}
+        statsLink={{ to: "/events/stats", color: "var(--color-events)" }}
         category="events"
         statusOptions={eventStatuses}
         filterStatus={filterStatus}
@@ -231,7 +242,7 @@ function EventList() {
           category="events"
           schema={eventSchema}
           onClose={() => setViewDetailItem(null)}
-          onSave={() => setViewDetailItem(null)}
+          onSave={(data) => { saveDetailEdit(data); setViewDetailItem(null); }}
           onDelete={(id) => { deleteItem(id); setViewDetailItem(null); }}
         />
       )}

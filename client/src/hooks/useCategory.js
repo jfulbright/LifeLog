@@ -57,6 +57,7 @@ export default function useCategory(category, { migrate, normalize, schema } = {
       try {
         let loaded = await dataService.getItemsWithShared(category);
         if (migrate) loaded = loaded.map(migrate);
+        if (normalize) loaded = loaded.map(normalize);
         loaded = loaded.map((item) =>
           item.id ? item : { ...item, id: crypto.randomUUID() }
         );
@@ -124,6 +125,29 @@ export default function useCategory(category, { migrate, normalize, schema } = {
       const data = normalize ? normalize(rawFormData) : rawFormData;
       const { recommendedToRings, recommendedToContacts } = formData;
       let savedId;
+
+      // Shared item edit: direct Supabase update (bypasses batch-save pipeline)
+      if (editIndex !== null && formData._isShared) {
+        try {
+          await dataService.updateSharedItem(editIndex, data);
+        } catch (err) {
+          console.error("[useCategory] shared item update failed:", err);
+        }
+        setItems((prev) =>
+          prev.map((item) =>
+            item.id === editIndex
+              ? { ...data, id: item.id, _isShared: true, _sharedBy: item._sharedBy, _ownerId: item._ownerId, _category: item._category, _currentUserId: item._currentUserId }
+              : item
+          )
+        );
+        skipNextSave.current = true;
+        setEditIndex(null);
+        setFormData({});
+        setShowForm(false);
+        setShowToast(true);
+        window.dispatchEvent(new Event("data-changed"));
+        return;
+      }
 
       if (editIndex !== null) {
         savedId = editIndex;
@@ -244,6 +268,43 @@ export default function useCategory(category, { migrate, normalize, schema } = {
     setItems((prev) => prev.map((item) => predicate(item) ? { ...item, ...patch } : item));
   }, []);
 
+  const saveDetailEdit = useCallback(
+    async (updatedItem) => {
+      const id = updatedItem.id;
+      if (!id) return;
+
+      const {
+        shareWithCompanionIds,
+        _recommendedCompanions,
+        ...rawData
+      } = updatedItem;
+      const data = normalize ? normalize(rawData) : rawData;
+
+      if (updatedItem._isShared) {
+        try {
+          await dataService.updateSharedItem(id, data);
+        } catch (err) {
+          console.error("[useCategory] shared detail edit failed:", err);
+        }
+        setItems((prev) =>
+          prev.map((item) =>
+            item.id === id
+              ? { ...data, id, _isShared: true, _sharedBy: item._sharedBy, _ownerId: item._ownerId, _category: item._category, _currentUserId: item._currentUserId }
+              : item
+          )
+        );
+        skipNextSave.current = true;
+      } else {
+        setItems((prev) =>
+          prev.map((item) => (item.id === id ? { ...data, id } : item))
+        );
+      }
+      setShowToast(true);
+      window.dispatchEvent(new Event("data-changed"));
+    },
+    [normalize]
+  );
+
   const closeForm = useCallback(() => {
     setFormData({});
     setEditIndex(null);
@@ -282,6 +343,7 @@ export default function useCategory(category, { migrate, normalize, schema } = {
     batchPatch,
     closeForm,
     openForm,
+    saveDetailEdit,
     showSnapPrompt,
     snapPromptTitle,
     handleSnapSave,

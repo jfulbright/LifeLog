@@ -305,35 +305,65 @@ a:hover {
   font-weight: 600;
 }
 
+.status-toggle .btn.active[data-status="pending"] {
+  background-color: var(--color-warning);
+  border-color: var(--color-warning);
+  color: #1D1C1D;
+}
+
+.status-toggle .btn.active[data-status="accepted"] {
+  background-color: var(--color-success);
+  border-color: var(--color-success);
+  color: #fff;
+}
+
+.status-toggle .btn.active[data-status="declined"] {
+  background-color: var(--color-danger);
+  border-color: var(--color-danger);
+  color: #fff;
+}
+
+.status-toggle .btn.active[data-status="attended"],
+.status-toggle .btn.active[data-status="visited"],
+.status-toggle .btn.active[data-status="owned"],
+.status-toggle .btn.active[data-status="watched"],
+.status-toggle .btn.active[data-status="done"],
+.status-toggle .btn.active[data-status="tried"],
+.status-toggle .btn.active[data-status="happened"] {
+  background-color: var(--color-success);
+  border-color: var(--color-success);
+  color: #fff;
+}
+
+.status-toggle .btn.active[data-status="wishlist"],
+.status-toggle .btn.active[data-status="watchlist"] {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.status-toggle .btn.active[data-status="upcoming"] {
+  background-color: var(--color-info);
+  border-color: var(--color-info);
+  color: #fff;
+}
+
+.status-toggle .btn.active[data-status="cellar"],
+.status-toggle .btn.active[data-status="rented"] {
+  background-color: var(--color-info);
+  border-color: var(--color-info);
+  color: #fff;
+}
+
 .status-toggle .btn:not(.active):hover {
   background-color: var(--color-surface-hover);
   border-color: var(--color-text-tertiary);
   color: var(--color-text-primary);
 }
 
-/* Status badge color mapping — Slack brand palette */
-.badge-status-attended,
-.badge-status-visited,
-.badge-status-owned {
-  background-color: var(--color-success) !important;
-  color: #fff !important;
-}
-
-.badge-status-wishlist,
-.badge-status-interested {
-  background-color: var(--color-info) !important;
-  color: #1D1C1D !important;
-}
-
-.badge-status-sold,
-.badge-status-past,
-.badge-status-rented {
-  background-color: var(--color-warning) !important;
-  color: #1D1C1D !important;
-}
-
-.badge-status-cancelled {
-  background-color: var(--color-danger) !important;
+/* Status badge — primary variant override for wishlist (Aubergine) */
+.badge-status.bg-primary {
+  background-color: var(--color-primary) !important;
   color: #fff !important;
 }
 

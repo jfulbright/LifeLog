@@ -40,6 +40,9 @@ export default function CategoryListHeader({
   onFilterChange,
   filterColor,
 
+  // StatsLink (optional — renders inside StatsStrip)
+  statsLink,
+
   // SourceFilterPills (optional)
   sourceFilter,
   onSourceChange,
@@ -64,7 +67,7 @@ export default function CategoryListHeader({
 
       {/* StatsStrip */}
       {stats && stats.length > 0 && (
-        <StatsStrip stats={stats} icon="📊" />
+        <StatsStrip stats={stats} icon="📊" statsLink={statsLink} />
       )}
 
       {/* StatusToggle */}

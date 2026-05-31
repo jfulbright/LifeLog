@@ -1,10 +1,10 @@
 import React from "react";
 
 const SOURCE_OPTIONS = [
-  { id: "all", label: "All" },
-  { id: "mine", label: "Mine" },
-  { id: "shared", label: "Shared" },
-  { id: "recommended", label: "Recommended" },
+  { id: "all", label: "All", emoji: null },
+  { id: "mine", label: "Mine", emoji: null },
+  { id: "shared", label: "Shared", emoji: "\u{1F91D}" },
+  { id: "recommended", label: "Rec'd", emoji: "⭐" },
 ];
 
 function SourceFilterPills({ value, onChange, avatarUrl, sharedCount, recommendedCount }) {
@@ -36,6 +36,8 @@ function SourceFilterPills({ value, onChange, avatarUrl, sharedCount, recommende
               />
             ) : opt.id === "mine" ? (
               <span style={{ marginRight: "0.2rem" }}>👤</span>
+            ) : opt.emoji ? (
+              <span style={{ marginRight: "0.2rem" }}>{opt.emoji}</span>
             ) : null}
             {opt.label}
           </button>
