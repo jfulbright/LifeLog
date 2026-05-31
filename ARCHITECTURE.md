@@ -1,6 +1,6 @@
 # LifeSnaps Architecture
 
-> System reference for the LifeSnaps platform. Last updated: 2026-05-21.
+> System reference for the LifeSnaps platform. Last updated: 2026-05-31.
 
 ---
 
@@ -129,12 +129,18 @@ Every table has RLS enabled. Summary:
 
 ### 4.1 Schema-Driven Pattern
 
-Every category defines a declarative schema (`features/{category}/{category}Schema.js`) that drives form rendering:
+Every category defines a declarative schema (`features/{category}/{category}Schema.js`) that drives both form rendering AND read-mode display:
 
 ```js
 { name: 'fieldName', type: 'text|select|date|city-autocomplete|...', 
   label: 'Display Label', section: 'Details|Reflection', 
-  visibleWhen: { field: 'status', value: 'watched' } }
+  visibleWhen: { field: 'status', value: 'watched' },
+  // Display hints (consumed by renderFieldValue):
+  renderAs: 'stars',     // existing: drives star rating display
+  isLink: true,          // existing: renders as clickable link
+  isCurrency: true,      // existing: formats as $X,XXX
+  displayAs: 'pills',    // new: stars|link|currency|boolean|pills
+}
 ```
 
 Shared field factories:
@@ -142,7 +148,11 @@ Shared field factories:
 - `getCompanionsField()` → contact multi-select
 - Base fields: tags, dates, photos, status
 
-`ItemForm.js` consumes any schema array and renders the complete form — no per-category form logic needed.
+**Write mode:** `ItemForm.js` consumes any schema array and renders the complete form — no per-category form logic needed.
+
+**Read mode:** `renderFieldValue(field, value)` renders any field for display using schema metadata. Used by `EntryView` for detail modals. Supports: stars, links, currency, toggles, arrays, pills.
+
+**Registry:** `helpers/schemaRegistry.js` exports `SCHEMA_MAP` and `CATEGORY_KEYS` — the canonical list of all categories. Adding a new category requires only one entry here.
 
 ### 4.2 Category Table
 
@@ -159,20 +169,45 @@ Shared field factories:
 
 ### 4.3 Shared Components
 
+**Entry display pipeline (card → modal):**
+
 | Component | Role |
 |-----------|------|
-| `ItemForm` | Schema-driven form renderer |
-| `ItemCardList` | Schema-driven card grid |
+| `EntryHeader` | Shared header (thumbnail, title, status badge, date, subtype). Single source of truth used in both card lists and modals. |
+| `EntryView` | Unified entry renderer with `expanded` prop. Compact = card inline; Expanded = full modal content. |
+| `ItemDetailContent` | Thin wrapper: compact EntryView + modal containing expanded EntryView. |
+| `EntryDetailPanel` | Full-screen modal for view/edit mode. |
+| `ItemCardList` | Schema-driven card grid using EntryHeader + ItemDetailContent. |
+
+**Display primitives (single-source components):**
+
+| Component | Role |
+|-----------|------|
+| `StarRating` | Display + interactive star ratings. Props: `rating`, `interactive`, `onChange`. |
+| `StatusBadge` | Status badge with category-aware variant mapping. Props: `category`, `status`. |
+| `Avatar` | User avatar with image URL or initials fallback. Props: `avatarUrl`, `displayName`, `size`, `color`. |
+| `PeoplePills` | Renders companion arrays as ring-colored pills. |
+| `SharingInfo` | Renders visibility ring display. |
+
+**Form & input components:**
+
+| Component | Role |
+|-----------|------|
+| `ItemForm` | Schema-driven form renderer (handles 17+ field types) |
 | `FormPanel` | Slide-over modal wrapper for forms |
-| `EntryDetailPanel` | Read-only detail view |
-| `CategoryListHeader` | Page header with filter + add button |
-| `ContactPicker` | Multi-select from user's contacts |
-| `ShareWithSection` | Companion + ring visibility picker |
+| `PeopleField` | Unified contact picker (modes: companions, recommend, visibility) |
 | `PhotoUploadField` / `PhotoGrid` | Upload + display |
 | `CityAutocomplete` | Mapbox-powered location picker |
+
+**Page shell components:**
+
+| Component | Role |
+|-----------|------|
+| `CategoryListHeader` | Page header with filter + add button |
 | `SaveToast` | Post-save confirmation |
 | `SnapCaptureModal` | Post-save prompt for reflections |
 | `SidebarNav` | App-wide navigation |
+| `SharedMemoriesSection` | Social collaboration card with overlay contributions |
 
 ---
 
@@ -205,6 +240,9 @@ Shape mapping: `itemToRow()` promotes status/start_date to columns, strips trans
 
 - `travelStats.js` — countries visited, cities, trip durations, map data
 - `movieStats.js` — genre breakdown, decades, ratings distribution, watch frequency
+- `eventStats.js` — attendance by type, ratings, venue frequency
+- `activityStats.js` — activity groups, location frequency, ratings
+- `socialMovieStats.js` / `socialEventApi.js` / `socialActivityApi.js` — social overlay aggregation per category
 
 ### 5.4 supabaseClient.js
 
@@ -227,11 +265,22 @@ The core hook used by all 8 category List components. Provides:
 - Auto-persist on items change (debounced, own items only)
 - URL param `?edit=<id>` support for deep-linking into edit mode
 
-### 6.2 usePhotoUpload
+### 6.2 useStatsPage
+
+Shared hook for all stats pages (Events, Activities, Movies). Encapsulates:
+- Data loading (`dataService.getItemsWithShared` + `contactsService.getContacts`)
+- Period filter state (year/month/all)
+- Stats computation via injected `computeStatsFn`
+- Social stats computation via optional `computeSocialStatsFn`
+- Loading states and `hasLinkedContacts` check
+
+Stats pages pass their category-specific compute functions and focus purely on rendering visualizations.
+
+### 6.3 usePhotoUpload
 
 Handles the compress → upload → get-public-URL pipeline for entry photos.
 
-### 6.3 AppDataContext
+### 6.4 AppDataContext
 
 Global state provider:
 - `counts` — per-category item counts
@@ -240,7 +289,7 @@ Global state provider:
 - `profile` — current user display info
 - `refreshCounts()` / `refreshContacts()` — manual invalidation
 
-### 6.4 AuthContext
+### 6.5 AuthContext
 
 - `user` — current Supabase user
 - `signIn(email, password)` / `signUp` / `signOut`
@@ -366,11 +415,31 @@ cd server && npm start   # → http://localhost:5050
 
 ---
 
-## 12. Conventions
+## 12. Shared Utilities (helpers/)
+
+| File | Exports | Purpose |
+|------|---------|---------|
+| `dateUtils.js` | `formatDisplayDate`, `formatDateRange`, `formatMonthYear` | All date formatting (single source) |
+| `categoryMeta.js` | `getCategoryMeta`, `getEntryTitle`, `getEntrySubtitle`, `formatLocation`, `shouldShowCountry` | Category display metadata + entry title/subtitle derivation |
+| `schemaRegistry.js` | `SCHEMA_MAP`, `CATEGORY_KEYS` | Canonical category list and schema imports |
+| `renderFieldValue.js` | `renderFieldValue(field, value)` | Schema-driven field display (stars, links, currency, pills, boolean) |
+| `ringMeta.js` | `RING_META`, `RING_LEVELS` | Ring level colors, labels, emojis |
+| `statusLabels.js` | `getStatusLabel(category, status)` | Category-aware status display text |
+| `operator.js` | `isFieldVisible`, `getSnapshotTeaser`, `getAllSnapshots`, `getItemPhotos` | Field visibility + data extractors |
+| `socialContent.js` | `normalizeSocialContributions`, `enrichItemsWithSocialContent`, `getSocialPreview` | Social overlay normalization |
+| `filterUtils.js` | `filterByStatus`, `getStatusFilterOptions` | Status-based filtering |
+
+---
+
+## 13. Conventions
 
 - **File naming:** PascalCase components, camelCase services/hooks/helpers
 - **CSS:** Custom properties in `index.css` (design tokens), component-scoped styles
 - **Commits:** Conventional format (`feat:`, `fix:`, `refactor:`, `chore:`)
-- **Branches:** `feature/<name>`, `fix/<name>` off `main`
+- **Branches:** `feature/<name>`, `fix/<name>`, `refactor/<name>` off `main`
 - **State:** No global store — React Context for auth/app data, local state via `useCategory` hook
 - **Forms:** Always schema-driven — add fields to schema, not component JSX
+- **Display:** Use shared primitives (`StarRating`, `StatusBadge`, `Avatar`, `PeoplePills`) — never inline duplicate rendering
+- **Dates:** Always use `dateUtils.js` — never define local format functions
+- **Field rendering:** Use `renderFieldValue(field, value)` for read-mode display — add new `displayAs` types there, not in components
+- **New categories:** Add schema file + entry in `categoryMeta` + entry in `schemaRegistry` — no new components needed for basic CRUD
