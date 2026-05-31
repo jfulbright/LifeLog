@@ -8,9 +8,12 @@ import PhotoGrid from "./PhotoGrid";
 import StarRating from "./StarRating";
 import Avatar from "./Avatar";
 
-function ContributorTile({ contribution, onEdit }) {
+const FUTURE_STATUSES = new Set(["wishlist", "watchlist", "want-to", "planned"]);
+
+function ContributorTile({ contribution, onEdit, itemStatus }) {
   const snaps = contribution.snaps || [];
   const photos = contribution.photos || [];
+  const showWhyNotes = FUTURE_STATUSES.has(itemStatus);
 
   return (
     <div className="contributor-tile">
@@ -41,7 +44,7 @@ function ContributorTile({ contribution, onEdit }) {
             {"✨"} {snap}
           </div>
         ))}
-        {contribution.whyNotes && (
+        {showWhyNotes && contribution.whyNotes && (
           <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", marginTop: "0.25rem", fontStyle: "italic" }}>
             {contribution.whyNotes}
           </div>
@@ -105,6 +108,7 @@ function SocialMemoriesCard({ item, contacts, refreshKey, contributions: externa
             key={`${contribution.userId || "owner"}-${contribution.isOwner ? "o" : "c"}`}
             contribution={contribution}
             onEdit={contribution.isMine && onEditOverlay ? onEditOverlay : undefined}
+            itemStatus={item.status}
           />
         ))}
       </div>

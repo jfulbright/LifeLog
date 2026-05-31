@@ -39,7 +39,7 @@ function EntryView({
   const US_VARIANTS = new Set(["US", "USA", "United States", "United States of America", "us", "usa"]);
 
   const allFields = schema.filter((field) => {
-    if (field.hidden || !isFieldVisible(field, item)) return false;
+    if (field.hidden || field.type === "hidden" || !isFieldVisible(field, item)) return false;
     if (headerFieldNames?.has(field.name)) return false;
     if (field.type === "photo") return false;
     if (field.renderAs === "stars") return false;

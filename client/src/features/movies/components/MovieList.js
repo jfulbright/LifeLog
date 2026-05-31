@@ -106,6 +106,7 @@ function MovieList() {
       ...clean,
       status: status || "watchlist",
       startDate: status === "watched" ? new Date().toISOString().slice(0, 10) : "",
+      visibilityRings: [1, 2, 3, 4],
     };
     pendingQuickAdd.current = true;
     setFormData(data);
@@ -351,6 +352,19 @@ function MovieList() {
                 movie={movie}
                 socialBadge={badge}
                 onSelect={handleQuickAdd}
+                onClick={(m) => {
+                  if (existing) {
+                    setViewDetailItem(existing);
+                  } else {
+                    const previewItem = { ...m };
+                    if (socialMatch) {
+                      previewItem._isShared = true;
+                      previewItem._sharedByName = socialMatch._sharedByName;
+                      previewItem._sharedByRing = socialMatch._sharedByRing;
+                    }
+                    setViewDetailItem(previewItem);
+                  }
+                }}
                 actions={existing ? (
                   <Button
                     size="sm"
