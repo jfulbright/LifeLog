@@ -3,6 +3,7 @@ import { Button } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { isFieldVisible } from "../../helpers/operator";
 import { RING_META } from "../../helpers/ringMeta";
+import { renderFieldValue } from "../../helpers/renderFieldValue";
 import collaboratorService from "../../services/collaboratorService";
 import PhotoGrid from "./PhotoGrid";
 import SharedMemoriesSection from "./SharedMemoriesSection";
@@ -163,23 +164,14 @@ function EntryView({
           <div style={{ fontSize: "var(--font-size-xs)", fontWeight: 700, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.5rem" }}>
             Event Details
           </div>
-          {allFields.map((field) => {
-            const value = item[field.name];
-            return (
-              <div key={field.name} style={{ display: "flex", gap: "0.5rem", marginBottom: "0.375rem", fontSize: "var(--font-size-sm)" }}>
-                <span style={{ color: "var(--color-text-tertiary)", minWidth: "5.5rem", flexShrink: 0, fontWeight: 500 }}>{field.label}</span>
-                <span style={{ color: "var(--color-text-primary)" }}>
-                  {field.isLink && typeof value === "string" ? (
-                    <a href={value} target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-primary)" }}>View link</a>
-                  ) : Array.isArray(value) ? (
-                    value.join(", ")
-                  ) : (
-                    value
-                  )}
-                </span>
-              </div>
-            );
-          })}
+          {allFields.map((field) => (
+            <div key={field.name} style={{ display: "flex", gap: "0.5rem", marginBottom: "0.375rem", fontSize: "var(--font-size-sm)" }}>
+              <span style={{ color: "var(--color-text-tertiary)", minWidth: "5.5rem", flexShrink: 0, fontWeight: 500 }}>{field.label}</span>
+              <span style={{ color: "var(--color-text-primary)" }}>
+                {renderFieldValue(field, item[field.name])}
+              </span>
+            </div>
+          ))}
         </div>
       )}
 
