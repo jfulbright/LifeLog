@@ -128,14 +128,13 @@ function MovieList() {
     return map;
   }, [movies]);
 
-  // Social enrichment lookup for search results
+  // Social enrichment lookup for search results — all friends' entries per tmdbId
   const socialByTmdbId = useMemo(() => {
     const shared = movies.filter((m) => m._isShared && m.tmdbId);
     const map = {};
     shared.forEach((m) => {
-      if (!map[m.tmdbId] || (m._socialRating || 0) > (map[m.tmdbId]._socialRating || 0)) {
-        map[m.tmdbId] = m;
-      }
+      if (!map[m.tmdbId]) map[m.tmdbId] = [];
+      map[m.tmdbId].push(m);
     });
     return map;
   }, [movies]);
@@ -257,8 +256,6 @@ function MovieList() {
     <>
       <CategoryListHeader
         title={"\u{1F3AC} Movies"}
-        addLabel="+ Add Movie"
-        onAdd={openForm}
         stats={movies.length > 0 ? [
           { value: watchedCount, label: "watched", color: "var(--color-movies, #E91E63)" },
           { value: watchlistCount, label: "on watchlist", color: "var(--color-text-secondary)" },
@@ -281,33 +278,36 @@ function MovieList() {
       />
 
       {/* Inline TMDB Search Bar */}
-      <div style={{ marginBottom: "1rem" }}>
-        <div className="d-flex gap-2">
-          <input
-            type="text"
-            className="form-control"
-            placeholder="Search TMDB to add a movie..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            style={{ borderRadius: 20, paddingLeft: "1rem" }}
-          />
+      <div style={{ marginBottom: "1.25rem" }}>
+        <div className="d-flex gap-2 align-items-center">
+          <div style={{ position: "relative", flex: 1 }}>
+            <span style={{ position: "absolute", left: "0.85rem", top: "50%", transform: "translateY(-50%)", fontSize: "1rem", color: "var(--color-text-tertiary)", pointerEvents: "none" }}>
+              🔍
+            </span>
+            <input
+              type="text"
+              className="form-control form-control-lg"
+              placeholder="Search for a movie to add..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              style={{ borderRadius: 24, paddingLeft: "2.5rem", fontSize: "var(--font-size-base)", border: "2px solid var(--color-border)" }}
+            />
+          </div>
           {searchActive ? (
             <Button
               variant="outline-secondary"
-              size="sm"
               onClick={clearSearch}
-              style={{ borderRadius: 20, whiteSpace: "nowrap" }}
+              style={{ borderRadius: 24, whiteSpace: "nowrap", padding: "0.5rem 1.25rem" }}
             >
               Clear
             </Button>
           ) : (
             <Button
               variant="primary"
-              size="sm"
               onClick={handleSearch}
               disabled={searchLoading || !searchQuery.trim()}
-              style={{ borderRadius: 20, whiteSpace: "nowrap" }}
+              style={{ borderRadius: 24, whiteSpace: "nowrap", padding: "0.5rem 1.25rem" }}
             >
               {searchLoading ? <Spinner animation="border" size="sm" /> : "Search"}
             </Button>
@@ -332,48 +332,34 @@ function MovieList() {
           </div>
           {filteredSearchResults.map((movie) => {
             const existing = moviesByTmdbId[movie.tmdbId];
-            const socialMatch = socialByTmdbId[movie.tmdbId];
-            const badge = socialMatch
-              ? {
-                  text: `${socialMatch._sharedByName || "Someone in your circles"} rated ${"★".repeat(parseInt(socialMatch.rating, 10) || 0)}`,
-                  ringLevel: socialMatch._sharedByRing,
-                }
-              : null;
-
-            const statusBadge = existing
-              ? existing.status === "watched"
-                ? `Watched${existing.rating ? ` - ${"★".repeat(parseInt(existing.rating, 10))}` : ""}`
-                : "On your watchlist"
+            const socialEntries = socialByTmdbId[movie.tmdbId];
+            const badges = socialEntries
+              ? socialEntries.map((m) => ({
+                  text: `${m._sharedByName || "Someone"} ${"★".repeat(parseInt(m.rating || m._socialRating, 10) || 0)}`,
+                  ringLevel: m._sharedByRing,
+                }))
               : null;
 
             return (
               <MovieResultCard
                 key={movie.tmdbId}
                 movie={movie}
-                socialBadge={badge}
+                socialBadges={badges}
+                existingStatus={existing?.status}
                 onSelect={handleQuickAdd}
                 onClick={(m) => {
                   if (existing) {
                     setViewDetailItem(existing);
                   } else {
                     const previewItem = { ...m };
-                    if (socialMatch) {
+                    if (socialEntries?.length > 0) {
                       previewItem._isShared = true;
-                      previewItem._sharedByName = socialMatch._sharedByName;
-                      previewItem._sharedByRing = socialMatch._sharedByRing;
+                      previewItem._sharedByName = socialEntries[0]._sharedByName;
+                      previewItem._sharedByRing = socialEntries[0]._sharedByRing;
                     }
                     setViewDetailItem(previewItem);
                   }
                 }}
-                actions={existing ? (
-                  <Button
-                    size="sm"
-                    variant="outline-secondary"
-                    onClick={() => setViewDetailItem(existing)}
-                  >
-                    {statusBadge}
-                  </Button>
-                ) : undefined}
               />
             );
           })}
@@ -420,17 +406,17 @@ function MovieList() {
             onDelete={deleteItem}
             onViewDetail={setViewDetailItem}
             renderCompactExtra={(item) => {
-              const social = item.tmdbId && socialByTmdbId[item.tmdbId];
-              if (!social || social.id === item.id) return null;
-              const stars = parseInt(social._socialRating || social.rating, 10);
+              const entries = item.tmdbId && socialByTmdbId[item.tmdbId];
+              if (!entries) return null;
+              const others = entries.filter((m) => m.id !== item.id);
+              if (others.length === 0) return null;
               return (
-                <div style={{
-                  fontSize: "var(--font-size-xs)",
-                  fontWeight: 600,
-                  color: "var(--color-text-tertiary)",
-                  marginTop: "0.2rem",
-                }}>
-                  {social._sharedByName || "Someone in your circles"} rated {"★".repeat(stars || 0)}
+                <div style={{ fontSize: "var(--font-size-xs)", fontWeight: 600, color: "var(--color-text-tertiary)", marginTop: "0.2rem" }}>
+                  {others.map((m, i) => (
+                    <div key={i}>
+                      {m._sharedByName || "Someone"} {"★".repeat(parseInt(m.rating || m._socialRating, 10) || 0)}
+                    </div>
+                  ))}
                 </div>
               );
             }}

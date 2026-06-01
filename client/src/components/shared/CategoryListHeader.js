@@ -59,9 +59,11 @@ export default function CategoryListHeader({
         </h4>
         <div className="d-flex align-items-center gap-2">
           {extraActions}
-          <Button variant="primary" size="sm" onClick={onAdd}>
-            {addLabel}
-          </Button>
+          {onAdd && (
+            <Button variant="primary" size="sm" onClick={onAdd}>
+              {addLabel}
+            </Button>
+          )}
         </div>
       </div>
 

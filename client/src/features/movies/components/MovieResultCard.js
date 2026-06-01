@@ -6,7 +6,7 @@ import { RING_META } from "../../../helpers/ringMeta";
  * Unified result card used across all search/discovery modes.
  * Displays movie info + optional social badge + action buttons.
  */
-function MovieResultCard({ movie, socialBadge, onSelect, onClick, actions }) {
+function MovieResultCard({ movie, socialBadge, socialBadges, onSelect, onClick, actions, existingStatus }) {
   return (
     <div className="search-result-card">
       <div className="d-flex gap-3 align-items-start">
@@ -61,7 +61,14 @@ function MovieResultCard({ movie, socialBadge, onSelect, onClick, actions }) {
                 {movie.overview}
               </div>
             )}
-            {socialBadge && (
+            {socialBadges && socialBadges.length > 0 && (
+              <div style={{ marginTop: "0.35rem", display: "flex", flexDirection: "column", gap: "0.15rem" }}>
+                {socialBadges.map((badge, i) => (
+                  <SocialBadge key={i} badge={badge} />
+                ))}
+              </div>
+            )}
+            {!socialBadges && socialBadge && (
               <SocialBadge badge={socialBadge} />
             )}
           </div>
@@ -71,17 +78,20 @@ function MovieResultCard({ movie, socialBadge, onSelect, onClick, actions }) {
             <>
               <Button
                 size="sm"
-                variant="success"
+                variant={existingStatus === "watched" ? "success" : "outline-success"}
                 onClick={() => onSelect(movie, "watched")}
+                disabled={existingStatus === "watched"}
               >
-                Watched
+                {existingStatus === "watched" ? "✓ Watched" : "Watched"}
               </Button>
               <Button
                 size="sm"
-                variant="outline-primary"
+                variant={existingStatus === "watchlist" ? "warning" : "outline-primary"}
+                className={existingStatus === "watchlist" ? "text-dark" : ""}
                 onClick={() => onSelect(movie, "watchlist")}
+                disabled={existingStatus === "watchlist"}
               >
-                Watchlist
+                {existingStatus === "watchlist" ? "✓ Watchlist" : "Watchlist"}
               </Button>
             </>
           )}
