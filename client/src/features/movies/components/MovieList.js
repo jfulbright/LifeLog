@@ -14,8 +14,6 @@ import CategoryListHeader from "../../../components/shared/CategoryListHeader";
 import { RATING_GROUP } from "../../../components/shared/GroupedDropdownFilter";
 import useCategory from "../../../hooks/useCategory";
 import { useAppData } from "../../../contexts/AppDataContext";
-import { supabase } from "../../../services/supabaseClient";
-import { getSnaps } from "../../../helpers/socialContent";
 import { searchMovies } from "../api/movieApi";
 import {
   getStatusFilterOptions,
@@ -68,53 +66,24 @@ function MovieList() {
 
   const [movieFilter, setMovieFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
-  const [recRatings, setRecRatings] = useState({});
   const { profile } = useAppData();
 
-  // Fetch recommender's rating/snaps for recommended movies (card-level display)
-  useEffect(() => {
-    const recMovies = movies.filter((m) => m._isRecommended && m.recommendedBy);
-    if (recMovies.length === 0) return;
-    let cancelled = false;
-
-    async function loadRecRatings() {
-      const entryIds = [];
-      const idToMovieId = {};
-      recMovies.forEach((m) => {
-        const recs = Array.isArray(m.recommendedBy) ? m.recommendedBy : [m.recommendedBy];
-        recs.forEach((r) => {
-          if (r.entryId) {
-            entryIds.push(r.entryId);
-            if (!idToMovieId[r.entryId]) idToMovieId[r.entryId] = { movieId: m.id, displayName: r.displayName };
-          }
-        });
-      });
-      if (entryIds.length === 0) return;
-
-      const { data: rows } = await supabase
-        .from("items")
-        .select("id, data")
-        .in("id", entryIds);
-
-      if (cancelled || !rows) return;
-      const ratings = {};
-      rows.forEach((row) => {
-        const info = idToMovieId[row.id];
-        if (!info) return;
-        const entry = row.data || {};
-        if (!ratings[info.movieId]) ratings[info.movieId] = [];
-        const snaps = getSnaps(entry);
-        ratings[info.movieId].push({
-          displayName: info.displayName,
-          rating: entry.rating || null,
-          snap: snaps[0] || null,
-        });
-      });
-      setRecRatings(ratings);
-    }
-
-    loadRecRatings().catch(() => {});
-    return () => { cancelled = true; };
+  // Build recommender's rating/snaps from denormalized recommendedBy field (card-level display)
+  const recRatingsByMovieId = useMemo(() => {
+    const map = {};
+    movies.forEach((m) => {
+      if (!m._isRecommended || !m.recommendedBy) return;
+      const recs = Array.isArray(m.recommendedBy) ? m.recommendedBy : [m.recommendedBy];
+      const entries = recs
+        .filter((r) => r.rating || r.snaps?.length > 0)
+        .map((r) => ({
+          displayName: r.displayName || "Someone",
+          rating: r.rating || null,
+          snap: r.snaps?.[0] || null,
+        }));
+      if (entries.length > 0) map[m.id] = entries;
+    });
+    return map;
   }, [movies]);
 
   // Inline TMDB search state
@@ -456,7 +425,7 @@ function MovieList() {
             onViewDetail={setViewDetailItem}
             renderCompactExtra={(item) => {
               const entries = item.tmdbId && socialByTmdbId[item.tmdbId];
-              const recData = recRatings[item.id];
+              const recData = recRatingsByMovieId[item.id];
               const others = entries ? entries.filter((m) => m.id !== item.id) : [];
               if (others.length === 0 && !recData) return null;
               return (

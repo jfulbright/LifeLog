@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { getWatchProviders, getExternalIds, getVideos, getSimilarMovies, getMovieCredits, getPersonCredits } from "../api/movieApi";
 import { getOmdbRatings } from "../api/omdbApi";
-import { supabase } from "../../../services/supabaseClient";
-import { getSnaps, getOwnerPhotos, getOwnerWhyNotes } from "../../../helpers/socialContent";
 import { useAppData } from "../../../contexts/AppDataContext";
 import SocialMemoriesCard from "../../../components/shared/SocialMemoriesCard";
 
@@ -14,57 +12,34 @@ function MovieDetailExtras({ item }) {
   const [directorMovies, setDirectorMovies] = useState([]);
   const [directorName, setDirectorName] = useState("");
   const [cast, setCast] = useState([]);
-  const [recContributions, setRecContributions] = useState([]);
   const [loading, setLoading] = useState(false);
   const { contacts } = useAppData();
 
   const tmdbId = item?.tmdbId;
-  const recommendedBy = item?.recommendedBy;
 
-  // Fetch recommender's entry data for social card
-  useEffect(() => {
-    if (!recommendedBy) return;
+  // Build recommender contributions from denormalized recommendedBy field
+  const recContributions = useMemo(() => {
+    const recommendedBy = item?.recommendedBy;
+    if (!recommendedBy) return [];
     const recs = Array.isArray(recommendedBy) ? recommendedBy : [recommendedBy];
-    if (recs.length === 0) return;
-    let cancelled = false;
-
-    async function loadRecs() {
-      const contributions = [];
-      for (const rec of recs) {
-        if (!rec.entryId) continue;
-        try {
-          const { data: row } = await supabase
-            .from("items")
-            .select("data")
-            .eq("id", rec.entryId)
-            .single();
-          if (row?.data) {
-            const entry = row.data;
-            const contact = contacts?.find((c) => c.linkedUserId === rec.userId);
-            contributions.push({
-              entryId: rec.entryId,
-              userId: rec.userId,
-              displayName: rec.displayName || contact?.displayName || "Someone",
-              isOwner: false,
-              isMine: false,
-              snaps: getSnaps(entry),
-              whyNotes: getOwnerWhyNotes(entry),
-              photos: getOwnerPhotos(entry),
-              rating: entry.rating || null,
-              avatarUrl: contact?.avatarUrl || null,
-              updatedAt: entry.updatedAt || entry.updated_at || null,
-            });
-          }
-        } catch (err) {
-          // Skip failed fetches
-        }
-      }
-      if (!cancelled) setRecContributions(contributions);
-    }
-
-    loadRecs();
-    return () => { cancelled = true; };
-  }, [recommendedBy, contacts]);
+    return recs
+      .filter((r) => r.rating || r.snaps?.length > 0)
+      .map((r) => {
+        const contact = contacts?.find((c) => c.linkedUserId === r.userId);
+        return {
+          entryId: r.entryId || null,
+          userId: r.userId,
+          displayName: r.displayName || contact?.displayName || "Someone",
+          isOwner: false,
+          isMine: false,
+          snaps: r.snaps || [],
+          whyNotes: r.whyNotes || "",
+          photos: r.photos || [],
+          rating: r.rating || null,
+          avatarUrl: contact?.avatarUrl || null,
+        };
+      });
+  }, [item?.recommendedBy, contacts]);
 
   useEffect(() => {
     if (!tmdbId) return;
