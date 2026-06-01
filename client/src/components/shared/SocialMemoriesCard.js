@@ -59,7 +59,7 @@ function ContributorTile({ contribution, onEdit, itemStatus }) {
   );
 }
 
-function SocialMemoriesCard({ item, contacts, refreshKey, contributions: externalContributions, onEditOverlay, expanded = false }) {
+function SocialMemoriesCard({ item, contacts, refreshKey, contributions: externalContributions, onEditOverlay, expanded = false, title: customTitle, subtitle: customSubtitle }) {
   const [contributions, setContributions] = useState(externalContributions || item._socialContributions || []);
 
   useEffect(() => {
@@ -93,11 +93,11 @@ function SocialMemoriesCard({ item, contacts, refreshKey, contributions: externa
     <div style={{ marginTop: "0.75rem", padding: "0.75rem", borderRadius: 8, background: "linear-gradient(135deg, #F9F5FB 0%, #F0F7FE 100%)", border: "1px solid rgba(74, 21, 75, 0.08)" }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.625rem" }}>
         <span style={{ fontWeight: 600, fontSize: "var(--font-size-sm)", color: "var(--color-text-primary)" }}>
-          Shared Memories
+          {customTitle || "Shared Memories"}
         </span>
-        {shareeCount > 0 && (
+        {(customSubtitle || shareeCount > 0) && (
           <span style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)" }}>
-            {shareeCount} collaborator contribution{shareeCount !== 1 ? "s" : ""}
+            {customSubtitle || `${shareeCount} collaborator contribution${shareeCount !== 1 ? "s" : ""}`}
           </span>
         )}
       </div>

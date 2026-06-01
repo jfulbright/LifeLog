@@ -444,7 +444,15 @@ function MovieList() {
                 });
               }
               if (contributions.length === 0) return null;
-              return <SocialMemoriesCard item={item} contributions={contributions} />;
+              const count = contributions.length;
+              return (
+                <SocialMemoriesCard
+                  item={item}
+                  contributions={contributions}
+                  title="From My Circle"
+                  subtitle={`${count} ${count === 1 ? "person" : "people"} rated this`}
+                />
+              );
             }}
           />
         </>

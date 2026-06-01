@@ -154,6 +154,8 @@ function MovieDetailExtras({ item }) {
           contacts={contacts}
           contributions={socialContributions}
           expanded
+          title="From My Circle"
+          subtitle={`${socialContributions.length} ${socialContributions.length === 1 ? "person" : "people"} rated this`}
         />
       )}
 
