@@ -17,29 +17,42 @@ function MovieDetailExtras({ item }) {
 
   const tmdbId = item?.tmdbId;
 
-  // Build recommender contributions from denormalized recommendedBy field
-  const recContributions = useMemo(() => {
+  // Build social contributions from recommendedBy + shared circle data
+  const socialContributions = useMemo(() => {
+    const contributions = [];
+    // Recommender contributions
     const recommendedBy = item?.recommendedBy;
-    if (!recommendedBy) return [];
-    const recs = Array.isArray(recommendedBy) ? recommendedBy : [recommendedBy];
-    return recs
-      .filter((r) => r.rating || r.snaps?.length > 0)
-      .map((r) => {
-        const contact = contacts?.find((c) => c.linkedUserId === r.userId);
-        return {
-          entryId: r.entryId || null,
-          userId: r.userId,
-          displayName: r.displayName || contact?.displayName || "Someone",
-          isOwner: false,
-          isMine: false,
-          snaps: r.snaps || [],
-          whyNotes: r.whyNotes || "",
-          photos: r.photos || [],
-          rating: r.rating || null,
-          avatarUrl: contact?.avatarUrl || null,
-        };
+    if (recommendedBy) {
+      const recs = Array.isArray(recommendedBy) ? recommendedBy : [recommendedBy];
+      recs.forEach((r) => {
+        if (r.rating || r.snaps?.length > 0) {
+          const contact = contacts?.find((c) => c.linkedUserId === r.userId);
+          contributions.push({
+            entryId: r.entryId || null,
+            userId: r.userId,
+            displayName: r.displayName || contact?.displayName || "Someone",
+            isOwner: false,
+            isMine: false,
+            snaps: r.snaps || [],
+            whyNotes: r.whyNotes || "",
+            photos: r.photos || [],
+            rating: r.rating || null,
+            avatarUrl: contact?.avatarUrl || null,
+          });
+        }
       });
-  }, [item?.recommendedBy, contacts]);
+    }
+    // Social circle contributions (friends who also watched this movie)
+    const socialContribs = item?._socialContributions;
+    if (socialContribs) {
+      socialContribs.filter((c) => !c.isOwner && !c.isMine).forEach((c) => {
+        if (!contributions.find((x) => x.userId === c.userId)) {
+          contributions.push(c);
+        }
+      });
+    }
+    return contributions;
+  }, [item?.recommendedBy, item?._socialContributions, contacts]);
 
   useEffect(() => {
     if (!tmdbId) return;
@@ -90,7 +103,7 @@ function MovieDetailExtras({ item }) {
     );
   }
 
-  const hasContent = providers || ratings || trailers.length > 0 || similar.length > 0 || directorMovies.length > 0 || cast.length > 0 || recContributions.length > 0;
+  const hasContent = providers || ratings || trailers.length > 0 || similar.length > 0 || directorMovies.length > 0 || cast.length > 0 || socialContributions.length > 0;
   if (!hasContent && !item.overview) return null;
 
   return (
@@ -134,12 +147,12 @@ function MovieDetailExtras({ item }) {
         </div>
       </div>
 
-      {/* Recommender's social card */}
-      {recContributions.length > 0 && (
+      {/* Social: recommenders + circle ratings */}
+      {socialContributions.length > 0 && (
         <SocialMemoriesCard
           item={item}
           contacts={contacts}
-          contributions={recContributions}
+          contributions={socialContributions}
           expanded
         />
       )}
