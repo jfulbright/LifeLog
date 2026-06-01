@@ -12,6 +12,7 @@ import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
 import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
 import CategoryListHeader from "../../../components/shared/CategoryListHeader";
 import { RATING_GROUP } from "../../../components/shared/GroupedDropdownFilter";
+import SocialMemoriesCard from "../../../components/shared/SocialMemoriesCard";
 import useCategory from "../../../hooks/useCategory";
 import { useAppData } from "../../../contexts/AppDataContext";
 import { searchMovies } from "../api/movieApi";
@@ -68,23 +69,6 @@ function MovieList() {
   const [sourceFilter, setSourceFilter] = useState("all");
   const { profile } = useAppData();
 
-  // Build recommender's rating/snaps from denormalized recommendedBy field (card-level display)
-  const recRatingsByMovieId = useMemo(() => {
-    const map = {};
-    movies.forEach((m) => {
-      if (!m._isRecommended || !m.recommendedBy) return;
-      const recs = Array.isArray(m.recommendedBy) ? m.recommendedBy : [m.recommendedBy];
-      const entries = recs
-        .filter((r) => r.rating || r.snaps?.length > 0)
-        .map((r) => ({
-          displayName: r.displayName || "Someone",
-          rating: r.rating || null,
-          snap: r.snaps?.[0] || null,
-        }));
-      if (entries.length > 0) map[m.id] = entries;
-    });
-    return map;
-  }, [movies]);
 
   // Inline TMDB search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -424,31 +408,43 @@ function MovieList() {
             onDelete={deleteItem}
             onViewDetail={setViewDetailItem}
             renderCompactExtra={(item) => {
+              const contributions = [];
+              // Add recommender contributions
+              const recs = Array.isArray(item.recommendedBy) ? item.recommendedBy : (item.recommendedBy ? [item.recommendedBy] : []);
+              recs.forEach((r) => {
+                if (r.rating || r.snaps?.length > 0) {
+                  contributions.push({
+                    userId: r.userId,
+                    displayName: r.displayName || "Someone",
+                    isOwner: false,
+                    isMine: false,
+                    rating: r.rating || null,
+                    snaps: r.snaps || [],
+                    photos: r.photos || [],
+                    whyNotes: "",
+                    avatarUrl: null,
+                  });
+                }
+              });
+              // Add social circle contributions
               const entries = item.tmdbId && socialByTmdbId[item.tmdbId];
-              const recData = recRatingsByMovieId[item.id];
-              const others = entries ? entries.filter((m) => m.id !== item.id) : [];
-              if (others.length === 0 && !recData) return null;
-              return (
-                <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)", marginTop: "0.35rem", padding: "0.4rem 0.5rem", background: "linear-gradient(135deg, #F9F5FB 0%, #F0F7FE 100%)", borderRadius: 6, border: "1px solid rgba(74, 21, 75, 0.06)" }}>
-                  {recData && recData.map((r, i) => (
-                    <div key={`rec-${i}`} style={{ marginBottom: r.snap ? "0.25rem" : 0 }}>
-                      <span style={{ fontWeight: 700, color: "var(--color-text-primary)" }}>{r.displayName}</span>
-                      {r.rating && <span style={{ marginLeft: "0.3rem" }}>{"★".repeat(r.rating)}</span>}
-                      {r.snap && (
-                        <div style={{ fontStyle: "italic", color: "var(--color-text-secondary)", marginTop: "0.1rem" }}>
-                          &ldquo;{r.snap}&rdquo;
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  {others.map((m, i) => (
-                    <div key={`social-${i}`}>
-                      <span style={{ fontWeight: 700, color: "var(--color-text-primary)" }}>{m._sharedByName || "Someone"}</span>
-                      <span style={{ marginLeft: "0.3rem" }}>{"★".repeat(parseInt(m.rating || m._socialRating, 10) || 0)}</span>
-                    </div>
-                  ))}
-                </div>
-              );
+              if (entries) {
+                entries.filter((m) => m.id !== item.id).forEach((m) => {
+                  contributions.push({
+                    userId: m._sharedByUserId,
+                    displayName: m._sharedByName || "Someone",
+                    isOwner: false,
+                    isMine: false,
+                    rating: parseInt(m.rating || m._socialRating, 10) || null,
+                    snaps: [],
+                    photos: [],
+                    whyNotes: "",
+                    avatarUrl: null,
+                  });
+                });
+              }
+              if (contributions.length === 0) return null;
+              return <SocialMemoriesCard item={item} contributions={contributions} />;
             }}
           />
         </>
