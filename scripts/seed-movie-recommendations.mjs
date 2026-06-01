@@ -158,7 +158,10 @@ function jasonMovies(sarahId) {
     movie(603692, "John Wick: Chapter 4", 2023, "Action, Thriller, Crime", "Chad Stahelski", 4, "2025-06-15"),
     movie(361743, "Top Gun: Maverick", 2022, "Action, Drama", "Joseph Kosinski", 4, "2025-02-14"),
     // Jason unique
-    movie(438631, "Dune", 2021, "Sci-Fi, Adventure", "Denis Villeneuve", 5, "2025-03-10"),
+    movie(438631, "Dune", 2021, "Sci-Fi, Adventure", "Denis Villeneuve", 5, "2025-03-10", {
+      snapshot1: "Denis Villeneuve made the impossible adaptation work",
+      snapshot2: "Hans Zimmer's score is otherworldly",
+    }),
     movie(414906, "The Batman", 2022, "Action, Crime, Mystery", "Matt Reeves", 4, "2025-04-20"),
     movie(329865, "Arrival", 2016, "Sci-Fi, Drama", "Denis Villeneuve", 5, "2025-01-30"),
     movie(546554, "Knives Out", 2019, "Mystery, Comedy, Crime", "Rian Johnson", 4, "2025-05-05"),
@@ -279,7 +282,7 @@ async function main() {
   const sarahMovieData = sarahMovies(jasonId);
   const mikeMovieData = mikeMovies();
 
-  // Jason's "Poor Things" was recommended by Sarah — link to Sarah's entry
+  // Jason's "Poor Things" was recommended by Sarah — denormalize her rating + snaps
   const poorThingsIdx = jasonMovieData.findIndex((m) => m.tmdbId === "792307");
   const sarahPoorThingsEntry = sarahMovieData.find((m) => m.tmdbId === "792307");
   if (poorThingsIdx >= 0 && sarahPoorThingsEntry) {
@@ -288,10 +291,12 @@ async function main() {
       displayName: "Sarah",
       entryId: sarahPoorThingsEntry.id,
       acceptedAt: "2025-09-15T00:00:00.000Z",
+      rating: sarahPoorThingsEntry.rating,
+      snaps: [sarahPoorThingsEntry.snapshot1, sarahPoorThingsEntry.snapshot2].filter(Boolean),
     }];
   }
 
-  // Sarah's "Dune" was recommended by Jason — link to Jason's entry
+  // Sarah's "Dune" was recommended by Jason — denormalize his rating + snaps
   const duneIdx = sarahMovieData.findIndex((m) => m.tmdbId === "438631");
   const jasonDuneEntry = jasonMovieData.find((m) => m.tmdbId === "438631");
   if (duneIdx >= 0 && jasonDuneEntry) {
@@ -300,6 +305,8 @@ async function main() {
       displayName: "Jason",
       entryId: jasonDuneEntry.id,
       acceptedAt: "2025-10-01T00:00:00.000Z",
+      rating: jasonDuneEntry.rating,
+      snaps: [jasonDuneEntry.snapshot1, jasonDuneEntry.snapshot2].filter(Boolean),
     }];
   }
 
