@@ -12,11 +12,16 @@ function ItemDetailContent({
   headerFieldNames,
   onEdit,
   onDelete,
+  onViewDetail,
   renderItemExtras,
 }) {
   const [showModal, setShowModal] = useState(false);
   const { contacts: appContacts } = useAppData();
   const resolvedContacts = contacts || appContacts;
+
+  const handleShowDetails = onViewDetail
+    ? () => onViewDetail(item)
+    : () => setShowModal(true);
 
   return (
     <>
@@ -28,33 +33,35 @@ function ItemDetailContent({
         headerFieldNames={headerFieldNames}
         renderItemExtras={renderItemExtras}
         expanded={false}
-        onShowDetails={() => setShowModal(true)}
+        onShowDetails={handleShowDetails}
       />
 
-      <Modal show={showModal} onHide={() => setShowModal(false)} centered size="lg">
-        <Modal.Body style={{ maxHeight: "85vh", overflowY: "auto", padding: "1.25rem" }}>
-          <EntryHeader
-            item={item}
-            category={category}
-            schema={schema}
-            contacts={resolvedContacts}
-          />
-
-          <div style={{ marginTop: "1rem" }}>
-            <EntryView
+      {!onViewDetail && (
+        <Modal show={showModal} onHide={() => setShowModal(false)} centered size="lg">
+          <Modal.Body style={{ maxHeight: "85vh", overflowY: "auto", padding: "1.25rem" }}>
+            <EntryHeader
               item={item}
               category={category}
               schema={schema}
               contacts={resolvedContacts}
-              headerFieldNames={headerFieldNames}
-              onEdit={() => { setShowModal(false); if (onEdit) onEdit(); }}
-              onDelete={() => { setShowModal(false); if (onDelete) onDelete(); }}
-              renderItemExtras={renderItemExtras}
-              expanded={true}
             />
-          </div>
-        </Modal.Body>
-      </Modal>
+
+            <div style={{ marginTop: "1rem" }}>
+              <EntryView
+                item={item}
+                category={category}
+                schema={schema}
+                contacts={resolvedContacts}
+                headerFieldNames={headerFieldNames}
+                onEdit={() => { setShowModal(false); if (onEdit) onEdit(); }}
+                onDelete={() => { setShowModal(false); if (onDelete) onDelete(); }}
+                renderItemExtras={renderItemExtras}
+                expanded={true}
+              />
+            </div>
+          </Modal.Body>
+        </Modal>
+      )}
     </>
   );
 }

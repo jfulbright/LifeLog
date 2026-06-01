@@ -64,6 +64,7 @@ function ItemCardList({
                   headerFieldNames={headerFieldNames}
                   onEdit={onEdit ? () => onEdit(itemId) : undefined}
                   onDelete={onDelete ? () => onDelete(itemId) : undefined}
+                  onViewDetail={onViewDetail ? () => onViewDetail(item) : undefined}
                   renderItemExtras={renderItemExtras}
                 />
               </div>
