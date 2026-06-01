@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "react-bootstrap";
 import { RING_META } from "../../../helpers/ringMeta";
 
@@ -7,6 +7,8 @@ import { RING_META } from "../../../helpers/ringMeta";
  * Displays movie info + optional social badge + action buttons.
  */
 function MovieResultCard({ movie, socialBadge, socialBadges, onSelect, onClick, actions, existingStatus }) {
+  const [posterFailed, setPosterFailed] = useState(false);
+
   return (
     <div className="search-result-card">
       <div className="d-flex gap-3 align-items-start">
@@ -15,7 +17,7 @@ function MovieResultCard({ movie, socialBadge, socialBadges, onSelect, onClick, 
           onClick={onClick ? () => onClick(movie) : undefined}
           style={onClick ? { cursor: "pointer" } : undefined}
         >
-          {movie.posterUrl && (
+          {movie.posterUrl && !posterFailed ? (
             <img
               src={movie.posterUrl}
               alt={movie.title}
@@ -26,7 +28,12 @@ function MovieResultCard({ movie, socialBadge, socialBadges, onSelect, onClick, 
                 borderRadius: 4,
                 flexShrink: 0,
               }}
+              onError={() => setPosterFailed(true)}
             />
+          ) : (
+            <div style={{ width: 50, height: 75, borderRadius: 4, flexShrink: 0, background: "var(--color-movies, #E91E63)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.25rem" }}>
+              🎬
+            </div>
           )}
           <div className="flex-grow-1">
             <strong style={{ color: "var(--color-text-primary)" }}>

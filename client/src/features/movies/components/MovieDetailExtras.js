@@ -116,6 +116,7 @@ function MovieDetailExtras({ item }) {
             src={item.posterUrl}
             alt={item.title}
             style={{ width: 100, height: 150, objectFit: "cover", borderRadius: 8, flexShrink: 0 }}
+            onError={(e) => { e.target.style.display = "none"; }}
           />
         )}
         <div style={{ flex: 1, minWidth: 0 }}>

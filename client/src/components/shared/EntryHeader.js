@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { getCategoryMeta, getEntryTitle, getEntrySubtitle } from "../../helpers/categoryMeta";
 import { formatDisplayDate } from "../../helpers/dateUtils";
 import StatusBadge from "./StatusBadge";
@@ -27,6 +27,8 @@ function EntryHeader({ item, category, schema, contacts, onClick }) {
   const typeEmoji = typeValue ? (EVENT_TYPE_EMOJI[typeValue] || meta.icon) : null;
 
   const thumbSrc = item.photo1 || item.posterUrl || item.photoLink;
+  const [imgFailed, setImgFailed] = useState(false);
+  const showImg = thumbSrc && !imgFailed;
 
   return (
     <div
@@ -36,13 +38,14 @@ function EntryHeader({ item, category, schema, contacts, onClick }) {
     >
       <div
         className="item-card-thumb"
-        style={{ backgroundColor: thumbSrc ? "transparent" : meta.color }}
+        style={{ backgroundColor: showImg ? "transparent" : meta.color }}
       >
-        {thumbSrc ? (
+        {showImg ? (
           <img
             src={thumbSrc}
             alt=""
             style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }}
+            onError={() => setImgFailed(true)}
           />
         ) : (
           <span role="img" aria-hidden="true">{meta.icon}</span>
