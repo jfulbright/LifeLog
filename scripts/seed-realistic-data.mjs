@@ -47,7 +47,7 @@ function watchlist(tmdbId, title, year, genre, director, posterPath, extras = {}
   };
 }
 
-function jasonMovies() {
+function jasonMovies(sarahId) {
   return [
     movie(278, "The Shawshank Redemption", 1994, "Drama, Crime", "Frank Darabont", "/9cjIGRiQoJ9yLI48ME0YSn56Nti.jpg", 5, "2025-01-15", { snapshot1: "Hope is a good thing, maybe the best of things" }),
     movie(27205, "Inception", 2010, "Sci-Fi, Action", "Christopher Nolan", "/oYuLEt3zVCKq57qu2F8dT7NIa6f.jpg", 5, "2025-02-10", { snapshot1: "Still thinking about that spinning top", companions: [{ displayName: "Sarah", type: "contact" }] }),
@@ -65,6 +65,8 @@ function jasonMovies() {
     movie(120467, "The Grand Budapest Hotel", 2014, "Comedy, Drama", "Wes Anderson", "/eWDyYtBnQ9ZUymEWibZ9ie7WAYT.jpg", 4, "2025-08-03"),
     watchlist(915935, "Anatomy of a Fall", 2023, "Drama, Thriller", "Justine Triet", "/kQs6gmNorCIxbUmFZFmMODcxEYh.jpg"),
     watchlist(823464, "Godzilla x Kong", 2024, "Action, Sci-Fi", "Adam Wingard", "/z1p34vh7dEOnLDV4jC1kCZpBnmI.jpg"),
+    watchlist(792307, "Poor Things", 2023, "Sci-Fi, Comedy", "Yorgos Lanthimos", "/kCGlIMHnOm8JPXq3rXM6c5wMxcT.jpg", { recommendedBy: [{ userId: sarahId, displayName: "Sarah", acceptedAt: "2025-05-20T10:00:00.000Z" }] }),
+    watchlist(666277, "Past Lives", 2023, "Drama, Romance", "Celine Song", "/k3waqVXSnvCKWFEnaBMsXKMVLFS.jpg", { recommendedBy: [{ userId: sarahId, displayName: "Sarah", acceptedAt: "2025-05-22T10:00:00.000Z" }] }),
   ];
 }
 
@@ -224,6 +226,126 @@ function mikeActivities() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// CELLAR — Wines + Whiskeys
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function jasonCellar() {
+  return [
+    { id: crypto.randomUUID(), category: "cellar", status: "tried", start_date: "2025-03-15", data: { subType: "wine", wineName: "Opus One 2019", winery: "Opus One", vintage: "2019", wineType: "Red", varietal: "Cabernet Sauvignon", region: "Napa Valley", country: "US", city: "Napa", state: "California", occasion: "Special Occasion", rating: 5, snapshot1: "Smooth as silk — best cab I've ever had", snapshot2: "Anniversary dinner splurge that was worth every penny", pricePerBottle: 400 } },
+    { id: crypto.randomUUID(), category: "cellar", status: "tried", start_date: "2025-06-20", data: { subType: "wine", wineName: "Château Margaux 2015", winery: "Château Margaux", vintage: "2015", wineType: "Red", varietal: "Blend", region: "Bordeaux", country: "FR", city: "Florence", state: "Tuscany", occasion: "Restaurant", rating: 5, snapshot1: "Opened at a restaurant in Florence — life-changing moment", pricePerBottle: 650 } },
+    { id: crypto.randomUUID(), category: "cellar", status: "tried", start_date: "2025-01-28", data: { subType: "whiskey", whiskyName: "Lagavulin 16", distillery: "Lagavulin", whiskyType: "Scotch", ageStatement: "16 Year", abv: "43.0", region: "Islay", country: "GB", nose: "Peat smoke, sea salt, dried fruit", palate: "Rich smoky sweetness, brine, dark chocolate", finish: "Long, warming, lingering campfire smoke", rating: 5, snapshot1: "Ron Swanson was right — this is the drink", occasion: "Everyday" } },
+    { id: crypto.randomUUID(), category: "cellar", status: "tried", start_date: "2025-05-10", data: { subType: "whiskey", whiskyName: "Blanton's Single Barrel", distillery: "Buffalo Trace", whiskyType: "Bourbon", ageStatement: "NAS", abv: "46.5", caskType: "Ex-Bourbon", region: "Kentucky", country: "US", nose: "Caramel, vanilla, orange peel", palate: "Brown sugar, baking spices, toasted oak", finish: "Medium, honey and light pepper", rating: 4, snapshot1: "Finally found a bottle — lived up to the hype", occasion: "Tasting" } },
+    { id: crypto.randomUUID(), category: "cellar", status: "cellar", data: { subType: "wine", wineName: "Caymus Special Selection 2018", winery: "Caymus Vineyards", vintage: "2018", wineType: "Red", varietal: "Cabernet Sauvignon", region: "Napa Valley", country: "US", bottleCount: 3, purchasePrice: 185, purchaseLocation: "Total Wine", drinkAfter: "2026-01-01", drinkBy: "2035-12-31", storageLocation: "Home Cellar", purchaseOccasion: "Bought a case after the tasting room visit" } },
+    { id: crypto.randomUUID(), category: "cellar", status: "cellar", data: { subType: "whiskey", whiskyName: "Yamazaki 18", distillery: "Suntory Yamazaki", whiskyType: "Japanese", ageStatement: "18 Year", abv: "43.0", region: "Osaka", country: "JP", bottleCount: 1, purchasePrice: 450, purchaseLocation: "Duty Free — Narita Airport", storageLocation: "Home Cellar", purchaseOccasion: "Grabbed it at Narita during the Tokyo trip — can't find it stateside" } },
+    { id: crypto.randomUUID(), category: "cellar", status: "wishlist", data: { subType: "wine", wineName: "Screaming Eagle Cabernet 2020", winery: "Screaming Eagle", vintage: "2020", wineType: "Red", varietal: "Cabernet Sauvignon", region: "Napa Valley", country: "US", wishlistReason: "Grail wine — need to get on the mailing list", pricePerBottle: 3500 } },
+    { id: crypto.randomUUID(), category: "cellar", status: "wishlist", data: { subType: "whiskey", whiskyName: "Pappy Van Winkle 15 Year", distillery: "Old Rip Van Winkle", whiskyType: "Bourbon", ageStatement: "15 Year", region: "Kentucky", country: "US", wishlistReason: "Unicorn bottle — enter every lottery I can find" } },
+  ];
+}
+
+function sarahCellar() {
+  return [
+    { id: crypto.randomUUID(), category: "cellar", status: "tried", start_date: "2025-05-22", data: { subType: "wine", wineName: "Whispering Angel Rosé 2023", winery: "Château d'Esclans", vintage: "2023", wineType: "Rosé", varietal: "Grenache", region: "Provence", country: "FR", city: "Paris", occasion: "Restaurant", rating: 4, snapshot1: "Perfect summer wine — drinking this on a Paris rooftop was everything", pricePerBottle: 22 } },
+    { id: crypto.randomUUID(), category: "cellar", status: "tried", start_date: "2025-09-15", data: { subType: "wine", wineName: "Cloudy Bay Sauvignon Blanc 2022", winery: "Cloudy Bay", vintage: "2022", wineType: "White", varietal: "Sauvignon Blanc", region: "Marlborough", country: "NZ", occasion: "Dinner Party", rating: 4, snapshot1: "Crisp, tropical, perfect with seafood", pricePerBottle: 28 } },
+    { id: crypto.randomUUID(), category: "cellar", status: "tried", start_date: "2025-02-14", data: { subType: "wine", wineName: "Veuve Clicquot Yellow Label", winery: "Veuve Clicquot", vintage: "NV", wineType: "Sparkling", varietal: "Blend", region: "Champagne", country: "FR", city: "Tulum", occasion: "Special Occasion", rating: 5, snapshot1: "Valentine's Day champagne on the beach at sunset", pricePerBottle: 55 } },
+    { id: crypto.randomUUID(), category: "cellar", status: "tried", start_date: "2025-07-04", data: { subType: "wine", wineName: "Duckhorn Merlot 2020", winery: "Duckhorn Vineyards", vintage: "2020", wineType: "Red", varietal: "Merlot", region: "Napa Valley", country: "US", occasion: "Dinner Party", rating: 4, snapshot1: "Velvety and rich — everyone at dinner loved it", pricePerBottle: 58 } },
+    { id: crypto.randomUUID(), category: "cellar", status: "cellar", data: { subType: "wine", wineName: "Dom Pérignon 2012", winery: "Dom Pérignon", vintage: "2012", wineType: "Sparkling", varietal: "Blend", region: "Champagne", country: "FR", bottleCount: 2, purchasePrice: 220, purchaseLocation: "Wine.com", storageLocation: "Wine Fridge", purchaseOccasion: "Saving for a big celebration" } },
+    { id: crypto.randomUUID(), category: "cellar", status: "wishlist", data: { subType: "wine", wineName: "Sassicaia 2019", winery: "Tenuta San Guido", vintage: "2019", wineType: "Red", varietal: "Cabernet Sauvignon", region: "Tuscany", country: "IT", wishlistReason: "The Super Tuscan that started it all" } },
+  ];
+}
+
+function mikeCellar() {
+  return [
+    { id: crypto.randomUUID(), category: "cellar", status: "tried", start_date: "2025-03-01", data: { subType: "whiskey", whiskyName: "Ardbeg Uigeadail", distillery: "Ardbeg", whiskyType: "Scotch", ageStatement: "NAS", abv: "54.2", caskType: "Ex-Bourbon + Sherry Butt", region: "Islay", country: "GB", nose: "Intense peat, dark fruits, espresso", palate: "Smoke, Christmas cake, treacle, dried figs", finish: "Incredibly long, smoky-sweet, lingering", rating: 5, snapshot1: "This replaced Lagavulin as my #1 — the sherry cask influence is unreal", occasion: "Tasting" } },
+    { id: crypto.randomUUID(), category: "cellar", status: "tried", start_date: "2025-06-15", data: { subType: "whiskey", whiskyName: "Hibiki Harmony", distillery: "Suntory", whiskyType: "Japanese", ageStatement: "NAS", abv: "43.0", region: "Japan", country: "JP", nose: "Rose, lychee, light honey", palate: "Gentle orange peel, white chocolate, sandalwood", finish: "Subtle, clean, delicate", rating: 4, snapshot1: "Incredibly smooth and refined — like drinking silk", occasion: "Gift" } },
+    { id: crypto.randomUUID(), category: "cellar", status: "tried", start_date: "2025-08-22", data: { subType: "whiskey", whiskyName: "Eagle Rare 10", distillery: "Buffalo Trace", whiskyType: "Bourbon", ageStatement: "10 Year", abv: "45.0", region: "Kentucky", country: "US", nose: "Toffee, orange zest, oak", palate: "Rich caramel, vanilla, honey, leather", finish: "Medium-long, warm cinnamon", rating: 4, snapshot1: "Best bourbon under $40 — period", occasion: "Everyday" } },
+    { id: crypto.randomUUID(), category: "cellar", status: "tried", start_date: "2025-04-10", data: { subType: "wine", wineName: "The Prisoner Red Blend 2021", winery: "The Prisoner Wine Company", vintage: "2021", wineType: "Red", varietal: "Blend", region: "Napa Valley", country: "US", occasion: "Dinner Party", rating: 4, snapshot1: "Dark fruit bomb — people always ask what this is", pricePerBottle: 48 } },
+    { id: crypto.randomUUID(), category: "cellar", status: "cellar", data: { subType: "whiskey", whiskyName: "GlenDronach 21 Parliament", distillery: "GlenDronach", whiskyType: "Scotch", ageStatement: "21 Year", abv: "48.0", caskType: "Sherry Butt", region: "Highland", country: "GB", bottleCount: 1, purchasePrice: 280, purchaseLocation: "Total Wine", storageLocation: "Home Cellar", purchaseOccasion: "Last bottle on the shelf — had to grab it" } },
+    { id: crypto.randomUUID(), category: "cellar", status: "wishlist", data: { subType: "whiskey", whiskyName: "Macallan 25 Sherry Oak", distillery: "The Macallan", whiskyType: "Scotch", ageStatement: "25 Year", region: "Speyside", country: "GB", wishlistReason: "The holy grail of sherry-matured scotch" } },
+  ];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CARS — Owned and wishlist vehicles
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function jasonCars() {
+  return [
+    { id: crypto.randomUUID(), category: "cars", status: "owned", start_date: "2022-03-15", data: { make: "Tesla", model: "Model 3", year: "2022", trim: "Long Range", bodyClass: "Sedan", fuelType: "Electric", driveType: "All-Wheel Drive", transmission: "Automatic", doors: 4, startDate: "2022-03-15", purchasePrice: 52000, snapshot1: "The instant torque never gets old", snapshot2: "Road trip to Big Sur — 0 gas stops", rating: 5, visibilityRings: [1, 2, 3, 4] } },
+    { id: crypto.randomUUID(), category: "cars", status: "owned", start_date: "2018-06-01", data: { make: "Toyota", model: "4Runner", year: "2018", trim: "TRD Off-Road", bodyClass: "SUV", fuelType: "Gasoline", engineCylinders: 6, displacement: "4.0", driveType: "Four-Wheel Drive", transmission: "Automatic", doors: 4, startDate: "2018-06-01", endDate: "2022-02-28", purchasePrice: 38000, soldPrice: 35000, snapshot1: "Took this beast everywhere — Moab, Big Bend, every ski trip", snapshot2: "Sold it when I got the Tesla but still miss it sometimes", rating: 5, visibilityRings: [1, 2, 3, 4] } },
+    { id: crypto.randomUUID(), category: "cars", status: "wishlist", data: { make: "Porsche", model: "911", year: "2025", trim: "Carrera S", bodyClass: "Coupe", fuelType: "Gasoline", engineCylinders: 6, driveType: "Rear-Wheel Drive" } },
+  ];
+}
+
+function sarahCars() {
+  return [
+    { id: crypto.randomUUID(), category: "cars", status: "owned", start_date: "2023-09-10", data: { make: "BMW", model: "X3", year: "2023", trim: "xDrive30i", bodyClass: "SUV", fuelType: "Gasoline", engineCylinders: 4, displacement: "2.0", driveType: "All-Wheel Drive", transmission: "Automatic", doors: 4, startDate: "2023-09-10", purchasePrice: 48000, snapshot1: "Perfect size — nimble enough for the city, big enough for road trips", rating: 4, visibilityRings: [1, 2, 3, 4] } },
+    { id: crypto.randomUUID(), category: "cars", status: "owned", start_date: "2019-01-15", data: { make: "Volkswagen", model: "Golf GTI", year: "2019", trim: "SE", bodyClass: "Hatchback", fuelType: "Gasoline", engineCylinders: 4, displacement: "2.0", driveType: "Front-Wheel Drive", transmission: "Manual", doors: 4, startDate: "2019-01-15", endDate: "2023-08-30", purchasePrice: 29000, soldPrice: 22000, snapshot1: "So much fun to drive — that turbo kick in 2nd gear", snapshot2: "Only car I've had with a manual — miss the engagement", rating: 5, visibilityRings: [1, 2, 3, 4] } },
+    { id: crypto.randomUUID(), category: "cars", status: "wishlist", data: { make: "Mercedes-Benz", model: "EQS SUV", year: "2025", trim: "450+", bodyClass: "SUV", fuelType: "Electric", driveType: "All-Wheel Drive" } },
+  ];
+}
+
+function mikeCars() {
+  return [
+    { id: crypto.randomUUID(), category: "cars", status: "owned", start_date: "2021-11-20", data: { make: "Ford", model: "Bronco", year: "2021", trim: "Badlands", bodyClass: "SUV", fuelType: "Gasoline", engineCylinders: 4, displacement: "2.7", driveType: "Four-Wheel Drive", transmission: "Automatic", doors: 4, startDate: "2021-11-20", purchasePrice: 45000, snapshot1: "This thing eats trails for breakfast — Rubicon, Moab, you name it", snapshot2: "Doors off, top off, music up — summer perfection", rating: 5, visibilityRings: [1, 2, 3, 4] } },
+    { id: crypto.randomUUID(), category: "cars", status: "owned", start_date: "2024-05-01", data: { make: "Rivian", model: "R1T", year: "2024", trim: "Adventure", bodyClass: "Pickup Truck", fuelType: "Electric", driveType: "All-Wheel Drive", transmission: "Automatic", doors: 4, startDate: "2024-05-01", purchasePrice: 73000, snapshot1: "Camp mode + gear tunnel = the ultimate adventure vehicle", snapshot2: "Towed my bikes to Whistler — 300 mile range with a trailer", rating: 5, visibilityRings: [1, 2, 3, 4] } },
+    { id: crypto.randomUUID(), category: "cars", status: "wishlist", data: { make: "Land Rover", model: "Defender", year: "2025", trim: "V8", bodyClass: "SUV", fuelType: "Gasoline", engineCylinders: 8, driveType: "All-Wheel Drive" } },
+  ];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// HOMES — Owned, rented, wishlist
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function jasonHomes() {
+  return [
+    { id: crypto.randomUUID(), category: "homes", status: "owned", data: { type: "House", address: "742 Evergreen Terrace", city: "Austin", state: "Texas", country: "United States", sqft: 2400, bedrooms: 4, bathrooms: 3, yearsLived: 3, purchaseDate: "2022-06-15", purchasePrice: 520000, snapshot1: "First house — the backyard sold me instantly", snapshot2: "Renovated the kitchen last year and it's now my favorite room", rating: 5, visibilityRings: [1, 2] } },
+    { id: crypto.randomUUID(), category: "homes", status: "rented", data: { type: "Apartment", address: "1200 Main St Apt 4B", city: "Denver", state: "Colorado", country: "United States", sqft: 900, bedrooms: 1, bathrooms: 1, yearsLived: 2, monthlyRent: 1800, startDate: "2020-03-01", snapshot1: "Tiny but the rooftop views of the Rockies made up for it", snapshot2: "Walking distance to everything — miss that convenience", rating: 4, visibilityRings: [1, 2, 3, 4] } },
+    { id: crypto.randomUUID(), category: "homes", status: "rented", data: { type: "Apartment", address: "450 W 34th St Apt 12C", city: "New York", state: "New York", country: "United States", sqft: 650, bedrooms: 1, bathrooms: 1, yearsLived: 3, monthlyRent: 2800, startDate: "2017-08-01", snapshot1: "NYC studio life — learned to cook in a kitchen smaller than a closet", rating: 3, visibilityRings: [1, 2, 3, 4] } },
+    { id: crypto.randomUUID(), category: "homes", status: "wishlist", data: { type: "House", city: "Park City", state: "Utah", country: "United States", sqft: 3200, bedrooms: 4, bathrooms: 4 } },
+  ];
+}
+
+function sarahHomes() {
+  return [
+    { id: crypto.randomUUID(), category: "homes", status: "owned", data: { type: "Condo", address: "88 Congress Ave Unit 1502", city: "Austin", state: "Texas", country: "United States", sqft: 1600, bedrooms: 2, bathrooms: 2, yearsLived: 2, purchaseDate: "2023-11-01", purchasePrice: 425000, snapshot1: "Downtown views + walking distance to everything I need", snapshot2: "The rooftop pool is my happy place", rating: 5, visibilityRings: [1, 2] } },
+    { id: crypto.randomUUID(), category: "homes", status: "rented", data: { type: "Apartment", address: "2200 Westlake Dr Apt 7A", city: "Austin", state: "Texas", country: "United States", sqft: 1100, bedrooms: 2, bathrooms: 2, yearsLived: 3, monthlyRent: 2200, startDate: "2020-08-01", snapshot1: "Lake Austin views from the balcony — watched sunsets every night", rating: 4, visibilityRings: [1, 2, 3, 4] } },
+    { id: crypto.randomUUID(), category: "homes", status: "wishlist", data: { type: "House", city: "Amalfi", country: "Italy", bedrooms: 3, bathrooms: 2 } },
+  ];
+}
+
+function mikeHomes() {
+  return [
+    { id: crypto.randomUUID(), category: "homes", status: "rented", data: { type: "House", address: "1847 Barton Springs Rd", city: "Austin", state: "Texas", country: "United States", sqft: 1800, bedrooms: 3, bathrooms: 2, yearsLived: 2, monthlyRent: 2600, startDate: "2023-04-01", snapshot1: "The garage finally fits all my gear — bikes, boards, skis", snapshot2: "Barton Springs is a 5 minute walk", rating: 4, visibilityRings: [1, 2, 3, 4] } },
+    { id: crypto.randomUUID(), category: "homes", status: "rented", data: { type: "Apartment", address: "600 Rainey St Apt 2204", city: "Austin", state: "Texas", country: "United States", sqft: 1000, bedrooms: 1, bathrooms: 1, yearsLived: 2, monthlyRent: 2100, startDate: "2021-02-01", snapshot1: "Rainey Street at your doorstep — great for your 20s, terrible for sleep", rating: 3, visibilityRings: [1, 2, 3, 4] } },
+    { id: crypto.randomUUID(), category: "homes", status: "wishlist", data: { type: "House", city: "Whitefish", state: "Montana", country: "United States", sqft: 2800, bedrooms: 3, bathrooms: 3 } },
+  ];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// KIDS — Milestones (Jason + Sarah only — Mike has no kids in the seed)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function jasonKids(childContactId) {
+  return [
+    { id: crypto.randomUUID(), category: "kids", status: "happened", start_date: "2025-05-23", data: { milestoneType: "school", title: "Last Day of 3rd Grade", childContactId, schoolName: "Barton Hills Elementary", grade: "3rd Grade", schoolEvent: "Last Day", startDate: "2025-05-23", snapshot1: "He ran out screaming 'FREEDOM' — couldn't stop laughing", snapshot2: "Already taller than half the 4th graders", rating: 5, visibilityRings: [1, 2] } },
+    { id: crypto.randomUUID(), category: "kids", status: "happened", start_date: "2025-03-15", data: { milestoneType: "sports", title: "First Soccer Goal", childContactId, sport: "Soccer", teamName: "Austin Wildcats", season: "Spring 2025", position: "Forward", sportsEvent: "Game", result: "Won 4-2 — scored the opener", startDate: "2025-03-15", snapshot1: "The look on his face when it went in — pure joy", snapshot2: "Whole team dogpiled him", rating: 5, visibilityRings: [1, 2] } },
+    { id: crypto.randomUUID(), category: "kids", status: "happened", start_date: "2025-01-18", data: { milestoneType: "firsts", title: "First Time Skiing Alone", childContactId, firstWhat: "First time skiing a blue run without help", significance: "Big deal", startDate: "2025-01-18", locationName: "Vail Mountain", snapshot1: "Watched him carve down the whole run by himself — proud dad moment", rating: 5, visibilityRings: [1, 2] } },
+    { id: crypto.randomUUID(), category: "kids", status: "happened", start_date: "2025-04-12", data: { milestoneType: "performance", title: "Spring Piano Recital", childContactId, performanceType: "Music", performanceName: "Spring Recital 2025", role: "Piano — Für Elise", startDate: "2025-04-12", locationName: "School Auditorium", snapshot1: "Nailed it without a single mistake — months of practice paid off", rating: 5, visibilityRings: [1, 2] } },
+    { id: crypto.randomUUID(), category: "kids", status: "happened", start_date: "2025-09-01", data: { milestoneType: "school", title: "First Day of 4th Grade", childContactId, schoolName: "Barton Hills Elementary", grade: "4th Grade", schoolEvent: "First Day", startDate: "2025-09-01", snapshot1: "New backpack, nervous smile, grew 2 inches over summer", visibilityRings: [1, 2] } },
+    { id: crypto.randomUUID(), category: "kids", status: "upcoming", data: { milestoneType: "sports", title: "Fall Soccer Tournament", childContactId, sport: "Soccer", teamName: "Austin Wildcats", season: "Fall 2025", sportsEvent: "Tournament", startDate: "2025-11-15", locationName: "Round Rock Multiplex" } },
+  ];
+}
+
+function sarahKids(childContactId) {
+  return [
+    { id: crypto.randomUUID(), category: "kids", status: "happened", start_date: "2025-06-01", data: { milestoneType: "achievement", title: "Honor Roll — Spring 2025", childContactId, achievementType: "Academic", achievementName: "Honor Roll", startDate: "2025-06-01", snapshot1: "Straight A's all year — so proud of her dedication", rating: 5, visibilityRings: [1, 2] } },
+    { id: crypto.randomUUID(), category: "kids", status: "happened", start_date: "2025-04-20", data: { milestoneType: "performance", title: "Dance Recital — The Nutcracker", childContactId, performanceType: "Dance", performanceName: "Spring Dance Showcase", role: "Clara", startDate: "2025-04-20", locationName: "Long Center for the Arts", snapshot1: "She was Clara! Opening night nerves but she absolutely shone", snapshot2: "Standing ovation — I was a mess", rating: 5, visibilityRings: [1, 2] } },
+    { id: crypto.randomUUID(), category: "kids", status: "happened", start_date: "2025-02-10", data: { milestoneType: "firsts", title: "First Sleepover", childContactId, firstWhat: "First sleepover at a friend's house", significance: "Everyday win", startDate: "2025-02-10", snapshot1: "She was so brave — only one FaceTime call at bedtime", visibilityRings: [1, 2] } },
+    { id: crypto.randomUUID(), category: "kids", status: "upcoming", data: { milestoneType: "school", title: "5th Grade Graduation", childContactId, schoolName: "Zilker Elementary", grade: "5th Grade", schoolEvent: "Graduation", startDate: "2026-06-05" } },
+  ];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // MAIN — Seed everything + social features
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -250,13 +372,26 @@ async function main() {
     { email: USERS.sarah.email, name: "Sarah", ringLevel: 4, userId: sarahId },
   ]);
 
+  // ── Child contacts (for Kids entries) ──
+  const jasonChildId = crypto.randomUUID();
+  const sarahChildId = crypto.randomUUID();
+  await jasonClient.from("contacts").upsert(
+    { id: jasonChildId, owner_id: jasonId, display_name: "Ethan", is_child: true, birthday: "2016-07-14", email: null, invite_status: "accepted" },
+    { onConflict: "id" }
+  );
+  await sarahClient.from("contacts").upsert(
+    { id: sarahChildId, owner_id: sarahId, display_name: "Lily", is_child: true, birthday: "2015-03-22", email: null, invite_status: "accepted" },
+    { onConflict: "id" }
+  );
+  console.log("  Child contacts created (Jason→Ethan, Sarah→Lily)");
+
   // ── Items ──
   const allEntries = {};
 
-  for (const [name, client, userId, moviesFn, eventsFn, travelFn, activitiesFn] of [
-    ["Jason", jasonClient, jasonId, jasonMovies, jasonEvents, jasonTravel, jasonActivities],
-    ["Sarah", sarahClient, sarahId, sarahMovies, sarahEvents, sarahTravel, sarahActivities],
-    ["Mike", mikeClient, mikeId, mikeMovies, mikeEvents, mikeTravel, mikeActivities],
+  for (const [name, client, userId, moviesFn, eventsFn, travelFn, activitiesFn, cellarFn, carsFn, homesFn, kidsFn] of [
+    ["Jason", jasonClient, jasonId, () => jasonMovies(sarahId), jasonEvents, jasonTravel, jasonActivities, jasonCellar, jasonCars, jasonHomes, () => jasonKids(jasonChildId)],
+    ["Sarah", sarahClient, sarahId, sarahMovies, sarahEvents, sarahTravel, sarahActivities, sarahCellar, sarahCars, sarahHomes, () => sarahKids(sarahChildId)],
+    ["Mike", mikeClient, mikeId, mikeMovies, mikeEvents, mikeTravel, mikeActivities, mikeCellar, mikeCars, mikeHomes, null],
   ]) {
     console.log(`\n  Seeding ${name}...`);
     const entries = [];
@@ -288,6 +423,36 @@ async function main() {
     const { data: aData, error: aErr } = await client.from("items").insert(actRows).select("id");
     console.log(`    Activities: ${aErr ? `ERROR ${aErr.message}` : `${aData.length} created`}`);
     entries.push(...(aData || []));
+
+    // Cellar — inject status + id into data JSONB
+    const cellar = cellarFn();
+    const cellarRows = cellar.map(c => ({ ...c, user_id: userId, data: { ...c.data, id: c.id, status: c.status } }));
+    const { data: cData, error: cErr } = await client.from("items").insert(cellarRows).select("id");
+    console.log(`    Cellar: ${cErr ? `ERROR ${cErr.message}` : `${cData.length} created`}`);
+    entries.push(...(cData || []));
+
+    // Cars — inject status + id into data JSONB
+    const cars = carsFn();
+    const carRows = cars.map(c => ({ ...c, user_id: userId, data: { ...c.data, id: c.id, status: c.status } }));
+    const { data: carData, error: carErr } = await client.from("items").insert(carRows).select("id");
+    console.log(`    Cars: ${carErr ? `ERROR ${carErr.message}` : `${carData.length} created`}`);
+    entries.push(...(carData || []));
+
+    // Homes — inject status + id into data JSONB
+    const homes = homesFn();
+    const homeRows = homes.map(h => ({ ...h, user_id: userId, data: { ...h.data, id: h.id, status: h.status } }));
+    const { data: hData, error: hErr } = await client.from("items").insert(homeRows).select("id");
+    console.log(`    Homes: ${hErr ? `ERROR ${hErr.message}` : `${hData.length} created`}`);
+    entries.push(...(hData || []));
+
+    // Kids — inject status + id into data JSONB (Jason + Sarah only)
+    if (kidsFn) {
+      const kids = kidsFn();
+      const kidRows = kids.map(k => ({ ...k, user_id: userId, data: { ...k.data, id: k.id, status: k.status } }));
+      const { data: kData, error: kErr } = await client.from("items").insert(kidRows).select("id");
+      console.log(`    Kids: ${kErr ? `ERROR ${kErr.message}` : `${kData.length} created`}`);
+      entries.push(...(kData || []));
+    }
 
     allEntries[name] = { client, userId, movieIds: (mData || []).map(d => d.id), eventIds: (eData || []).map(d => d.id), travelIds: (tData || []).map(d => d.id), activityIds: (aData || []).map(d => d.id) };
   }
@@ -351,12 +516,21 @@ async function main() {
     console.log("    ✓ Jason's ACL Festival → Sarah+Mike accepted, both have overlays");
   }
 
-  // 6. Mike shares his movie (The Raid) with Jason (pending — incoming for Jason)
+  // 6. Mike shares his movie (The Raid) with Jason (accepted) — movie collaboration
   if (M.movieIds[7]) {
     await mikeClient.from("collaborators").insert({
-      entry_id: M.movieIds[7], entry_category: "movies", owner_id: mikeId, collaborator_user_id: jasonId, status: "pending", can_edit: true, invited_at: new Date().toISOString(),
+      entry_id: M.movieIds[7], entry_category: "movies", owner_id: mikeId, collaborator_user_id: jasonId, status: "accepted", can_edit: true, invited_at: new Date().toISOString(), accepted_at: new Date().toISOString(),
     });
-    console.log("    ✓ Mike's The Raid → Jason pending (incoming collab)");
+    await jasonClient.from("overlays").upsert({ entry_id: M.movieIds[7], user_id: jasonId, snapshot1: "The hallway fight scene is insane — watched it three times", rating: 5, updated_at: new Date().toISOString() }, { onConflict: "entry_id,user_id" });
+    console.log("    ✓ Mike's The Raid → Jason accepted with overlay");
+  }
+
+  // 7. Mike shares Top Gun: Maverick with Jason (pending — incoming for Jason)
+  if (M.movieIds[6]) {
+    await mikeClient.from("collaborators").insert({
+      entry_id: M.movieIds[6], entry_category: "movies", owner_id: mikeId, collaborator_user_id: jasonId, status: "pending", can_edit: true, invited_at: new Date().toISOString(),
+    });
+    console.log("    ✓ Mike's Top Gun: Maverick → Jason pending (incoming collab)");
   }
 
   // ────────────────────────────────────────────────────────────────────────────
@@ -366,11 +540,12 @@ async function main() {
   const recs = [];
 
   // Active (pending) recommendations TO Jason
-  if (S.movieIds[6]) recs.push({ from_user_id: sarahId, entry_id: S.movieIds[6], entry_category: "movies", to_user_id: jasonId, status: "active" }); // Past Lives
   if (M.eventIds[1]) recs.push({ from_user_id: mikeId, entry_id: M.eventIds[1], entry_category: "events", to_user_id: jasonId, status: "active" }); // Metallica
   if (M.travelIds[0]) recs.push({ from_user_id: mikeId, entry_id: M.travelIds[0], entry_category: "travel", to_user_id: jasonId, status: "active" }); // Patagonia
+  if (M.movieIds[8]) recs.push({ from_user_id: mikeId, entry_id: M.movieIds[8], entry_category: "movies", to_user_id: jasonId, status: "active" }); // Sicario
 
-  // Accepted recommendations (Jason already added to his list)
+  // Accepted recommendations (Jason already added to his list — has recommendedBy in data)
+  if (S.movieIds[6]) recs.push({ from_user_id: sarahId, entry_id: S.movieIds[6], entry_category: "movies", to_user_id: jasonId, status: "accepted" }); // Past Lives
   if (S.movieIds[10]) recs.push({ from_user_id: sarahId, entry_id: S.movieIds[10], entry_category: "movies", to_user_id: jasonId, status: "accepted" }); // Poor Things
   if (S.activityIds[0]) recs.push({ from_user_id: sarahId, entry_id: S.activityIds[0], entry_category: "activities", to_user_id: jasonId, status: "accepted" }); // Angels Landing
 
@@ -397,6 +572,35 @@ async function main() {
     if (errors.length) console.log(`    WARN: Some rec inserts failed: ${errors.map(e => e.message).join(", ")}`);
     console.log(`    ✓ ${recs.length} recommendations created (active/accepted/dismissed across categories)`);
   }
+
+  // ── Patch recommendedBy with denormalized rating + snaps ──────────────────
+  // Our UI reads rating/snaps directly from recommendedBy (RLS blocks cross-user fetch)
+
+  // Jason's "Poor Things" (idx 16) ← Sarah's entry (idx 10)
+  const jasonPoorThingsId = J.movieIds[16];
+  const sarahPoorThingsId = S.movieIds[10];
+  if (jasonPoorThingsId && sarahPoorThingsId) {
+    const { data: jEntry } = await jasonClient.from("items").select("data").eq("id", jasonPoorThingsId).single();
+    if (jEntry) {
+      await jasonClient.from("items").update({
+        data: { ...jEntry.data, recommendedBy: [{ userId: sarahId, displayName: "Sarah", entryId: sarahPoorThingsId, acceptedAt: "2025-05-20T10:00:00.000Z", rating: 5, snaps: ["Emma Stone is fearless in this"] }] }
+      }).eq("id", jasonPoorThingsId);
+    }
+  }
+
+  // Jason's "Past Lives" (idx 17) ← Sarah's entry (idx 6)
+  const jasonPastLivesId = J.movieIds[17];
+  const sarahPastLivesId = S.movieIds[6];
+  if (jasonPastLivesId && sarahPastLivesId) {
+    const { data: jEntry } = await jasonClient.from("items").select("data").eq("id", jasonPastLivesId).single();
+    if (jEntry) {
+      await jasonClient.from("items").update({
+        data: { ...jEntry.data, recommendedBy: [{ userId: sarahId, displayName: "Sarah", entryId: sarahPastLivesId, acceptedAt: "2025-05-22T10:00:00.000Z", rating: 5, snaps: ["The ending bench scene broke me", "In-yun is such a beautiful concept"] }] }
+      }).eq("id", jasonPastLivesId);
+    }
+  }
+
+  console.log("    ✓ Patched recommendedBy with denormalized rating + snaps");
 
   console.log("\n\x1b[32m  ✓ Done! Seeded realistic data for all 3 users.\x1b[0m\n");
 }
