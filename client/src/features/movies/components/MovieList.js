@@ -14,6 +14,8 @@ import CategoryListHeader from "../../../components/shared/CategoryListHeader";
 import { RATING_GROUP } from "../../../components/shared/GroupedDropdownFilter";
 import useCategory from "../../../hooks/useCategory";
 import { useAppData } from "../../../contexts/AppDataContext";
+import { supabase } from "../../../services/supabaseClient";
+import { getSnaps } from "../../../helpers/socialContent";
 import { searchMovies } from "../api/movieApi";
 import {
   getStatusFilterOptions,
@@ -66,7 +68,54 @@ function MovieList() {
 
   const [movieFilter, setMovieFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
+  const [recRatings, setRecRatings] = useState({});
   const { profile } = useAppData();
+
+  // Fetch recommender's rating/snaps for recommended movies (card-level display)
+  useEffect(() => {
+    const recMovies = movies.filter((m) => m._isRecommended && m.recommendedBy);
+    if (recMovies.length === 0) return;
+    let cancelled = false;
+
+    async function loadRecRatings() {
+      const entryIds = [];
+      const idToMovieId = {};
+      recMovies.forEach((m) => {
+        const recs = Array.isArray(m.recommendedBy) ? m.recommendedBy : [m.recommendedBy];
+        recs.forEach((r) => {
+          if (r.entryId) {
+            entryIds.push(r.entryId);
+            if (!idToMovieId[r.entryId]) idToMovieId[r.entryId] = { movieId: m.id, displayName: r.displayName };
+          }
+        });
+      });
+      if (entryIds.length === 0) return;
+
+      const { data: rows } = await supabase
+        .from("items")
+        .select("id, data")
+        .in("id", entryIds);
+
+      if (cancelled || !rows) return;
+      const ratings = {};
+      rows.forEach((row) => {
+        const info = idToMovieId[row.id];
+        if (!info) return;
+        const entry = row.data || {};
+        if (!ratings[info.movieId]) ratings[info.movieId] = [];
+        const snaps = getSnaps(entry);
+        ratings[info.movieId].push({
+          displayName: info.displayName,
+          rating: entry.rating || null,
+          snap: snaps[0] || null,
+        });
+      });
+      setRecRatings(ratings);
+    }
+
+    loadRecRatings().catch(() => {});
+    return () => { cancelled = true; };
+  }, [movies]);
 
   // Inline TMDB search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -407,14 +456,26 @@ function MovieList() {
             onViewDetail={setViewDetailItem}
             renderCompactExtra={(item) => {
               const entries = item.tmdbId && socialByTmdbId[item.tmdbId];
-              if (!entries) return null;
-              const others = entries.filter((m) => m.id !== item.id);
-              if (others.length === 0) return null;
+              const recData = recRatings[item.id];
+              const others = entries ? entries.filter((m) => m.id !== item.id) : [];
+              if (others.length === 0 && !recData) return null;
               return (
-                <div style={{ fontSize: "var(--font-size-xs)", fontWeight: 600, color: "var(--color-text-tertiary)", marginTop: "0.2rem" }}>
+                <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)", marginTop: "0.35rem", padding: "0.4rem 0.5rem", background: "linear-gradient(135deg, #F9F5FB 0%, #F0F7FE 100%)", borderRadius: 6, border: "1px solid rgba(74, 21, 75, 0.06)" }}>
+                  {recData && recData.map((r, i) => (
+                    <div key={`rec-${i}`} style={{ marginBottom: r.snap ? "0.25rem" : 0 }}>
+                      <span style={{ fontWeight: 700, color: "var(--color-text-primary)" }}>{r.displayName}</span>
+                      {r.rating && <span style={{ marginLeft: "0.3rem" }}>{"★".repeat(r.rating)}</span>}
+                      {r.snap && (
+                        <div style={{ fontStyle: "italic", color: "var(--color-text-secondary)", marginTop: "0.1rem" }}>
+                          &ldquo;{r.snap}&rdquo;
+                        </div>
+                      )}
+                    </div>
+                  ))}
                   {others.map((m, i) => (
-                    <div key={i}>
-                      {m._sharedByName || "Someone"} {"★".repeat(parseInt(m.rating || m._socialRating, 10) || 0)}
+                    <div key={`social-${i}`}>
+                      <span style={{ fontWeight: 700, color: "var(--color-text-primary)" }}>{m._sharedByName || "Someone"}</span>
+                      <span style={{ marginLeft: "0.3rem" }}>{"★".repeat(parseInt(m.rating || m._socialRating, 10) || 0)}</span>
                     </div>
                   ))}
                 </div>

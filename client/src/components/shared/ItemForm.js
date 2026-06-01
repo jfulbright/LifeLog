@@ -268,7 +268,7 @@ function ItemForm({
     !!formData?.artist;
 
   const visibleFields = schema
-    .filter((field) => !field.hidden && isFieldVisible(field, formData))
+    .filter((field) => !field.hidden && field.type !== "hidden" && isFieldVisible(field, formData))
     .sort((a, b) => (a.order || 0) - (b.order || 0));
 
   const allGroupedFields = visibleFields.reduce((acc, field) => {
