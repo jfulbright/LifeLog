@@ -125,6 +125,7 @@ export function makeMovie(overrides = {}) {
       year: 2025,
       genre: "Drama",
       rating: 4,
+      visibilityRings: [1, 2, 3, 4],
       ...overrides.data,
     },
     ...overrides,
@@ -141,9 +142,29 @@ export function makeMovieWatchlist(overrides = {}) {
       director: `Director ${n}`,
       year: 2025,
       genre: "Sci-Fi",
+      visibilityRings: [1, 2, 3, 4],
       ...overrides.data,
     },
     ...overrides,
+  };
+}
+
+export function makeMovieRecommended(recommenders = [], overrides = {}) {
+  const n = seq();
+  const { data: dataOverrides, ...rest } = overrides;
+  return {
+    category: "movies",
+    status: "watchlist",
+    data: {
+      title: `Recommended Movie ${n}`,
+      director: `Director ${n}`,
+      year: 2025,
+      genre: "Drama",
+      visibilityRings: [1, 2, 3, 4],
+      recommendedBy: recommenders,
+      ...dataOverrides,
+    },
+    ...rest,
   };
 }
 
