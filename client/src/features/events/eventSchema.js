@@ -1,6 +1,7 @@
 import { baseSchema } from "../../helpers/common.schema";
 import { getStatusValues } from "../../helpers/statusLabels";
 import { getReflectionFields, getCompanionsField } from "../../helpers/reflection.schema";
+import { getLocationFields } from "../../helpers/location.schema";
 
 export const EVENT_TYPES = [
   { value: "concert", label: "Concert" },
@@ -279,35 +280,7 @@ const eventSchema = [
   },
 
   // ── Where ─────────────────────────────────────────────────────────────────
-  {
-    name: "country",
-    label: "Country",
-    type: "select",
-    optional: true,
-    defaultValue: "US",
-    section: "Where",
-    order: 25,
-  },
-  {
-    name: "city",
-    label: "City",
-    type: "city-autocomplete",
-    optional: true,
-    placeholder: "e.g. Austin",
-    section: "Where",
-    order: 26,
-  },
-  {
-    name: "state",
-    label: "State / Region",
-    type: "state-or-region",
-    optional: true,
-    section: "Where",
-    order: 27,
-  },
-  { name: "lat", label: "Lat", type: "text", hidden: true },
-  { name: "lng", label: "Lng", type: "text", hidden: true },
-  { name: "continent", label: "Continent", type: "text", hidden: true },
+  ...getLocationFields({ section: "Where", startOrder: 25 }),
 
   // ── Trip ──────────────────────────────────────────────────────────────────
   { name: "linkedTripId", label: "Linked Trip ID", type: "text", hidden: true },
@@ -329,6 +302,7 @@ const eventSchema = [
   getCompanionsField("attended"),
   {
     name: "visibilityControl",
+    label: "🔒 Who can see this",
     type: "visible-to",
     optional: true,
     section: "Social",
@@ -337,11 +311,12 @@ const eventSchema = [
   },
   {
     name: "recommendation",
-    label: "Recommend this",
+    label: "⭐ Recommend to",
     type: "recommend",
     optional: true,
     section: "Social",
     order: 61,
+    fullWidth: true,
   },
 
   // ── Base fields (tags, hidden metadata) ─────────────────────────────────────

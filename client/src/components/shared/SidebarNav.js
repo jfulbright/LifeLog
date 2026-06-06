@@ -6,7 +6,7 @@ import { useAppData } from "../../contexts/AppDataContext";
 const socialItems = [
   { path: "/people", label: "My People", icon: "👥" },
   { path: "/shared", label: "Shared Experiences", icon: "🤝", badge: "notifications" },
-  { path: "/recommendations", label: "Recommendations", icon: "⭐" },
+  { path: "/recommendations", label: "Recommendations", icon: "⭐", badge: "recommendations" },
 ];
 
 const categoryItems = [
@@ -20,7 +20,7 @@ const categoryItems = [
   { path: "/kids", key: "kids", label: "Kids" },
 ];
 
-function SidebarNav({ counts = {}, notificationCount = 0, user, onSignOut, onItemClick }) {
+function SidebarNav({ counts = {}, notificationCount = 0, recommendationCount = 0, user, onSignOut, onItemClick }) {
   const { profile } = useAppData();
   const displayName = profile?.display_name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "My Profile";
   const avatarUrl = profile?.avatar_url;
@@ -92,6 +92,11 @@ function SidebarNav({ counts = {}, notificationCount = 0, user, onSignOut, onIte
             {item.badge === "notifications" && notificationCount > 0 && (
               <span className="sidebar-nav-count sidebar-nav-count--alert">
                 {notificationCount}
+              </span>
+            )}
+            {item.badge === "recommendations" && recommendationCount > 0 && (
+              <span className="sidebar-nav-count sidebar-nav-count--alert">
+                {recommendationCount}
               </span>
             )}
           </NavLink>

@@ -98,6 +98,7 @@ const movieSchema = [
   },
   {
     name: "visibilityControl",
+    label: "🔒 Who can see this",
     type: "visible-to",
     optional: true,
     section: "Social",
@@ -106,11 +107,12 @@ const movieSchema = [
   },
   {
     name: "recommendation",
-    label: "Recommend this movie",
+    label: "⭐ Recommend to",
     type: "recommend",
     optional: true,
     section: "Social",
     order: 61,
+    fullWidth: true,
   },
 
   // Tags

@@ -43,6 +43,7 @@ export function buildOwnerContribution(item, contacts = []) {
     whyNotes,
     photos,
     rating: item?.rating || null,
+    avatarUrl: item?._ownerAvatarUrl || contact?.avatarUrl || null,
     updatedAt: item?.updatedAt || item?.updated_at || item?.createdAt || null,
   };
 }
@@ -60,6 +61,7 @@ export function buildOverlayContribution(overlay, item, contacts = []) {
     whyNotes: overlay?.why_notes || "",
     photos: getOverlayPhotos(overlay),
     rating: overlay?.rating || null,
+    avatarUrl: overlay?._profileAvatarUrl || contact?.avatarUrl || null,
     updatedAt: overlay?.updated_at || overlay?.created_at || null,
   };
 }
@@ -95,42 +97,58 @@ export async function enrichItemsWithSocialContent(items, contacts = []) {
 
   const overlays = await overlayService.getOverlaysForEntries(list.map((item) => item.id));
 
-  // Resolve unknown overlay authors via profile lookup
-  const unknownUserIds = overlays
+  // Resolve unknown user profiles (overlay authors + item owners)
+  const overlayUserIds = overlays
     .map((o) => o.user_id)
     .filter((uid) => uid && !contacts.find((c) => c.linkedUserId === uid));
-  const uniqueUnknownIds = [...new Set(unknownUserIds)];
+  const ownerUserIds = list
+    .map((item) => item._ownerId || item._sharedBy)
+    .filter((uid) => uid && !contacts.find((c) => c.linkedUserId === uid));
+  const uniqueUnknownIds = [...new Set([...overlayUserIds, ...ownerUserIds])];
 
   let profileNames = {};
+  let profileAvatars = {};
   if (uniqueUnknownIds.length > 0) {
     try {
       const { supabase } = await import("../services/supabaseClient");
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, display_name")
+        .select("id, display_name, avatar_url")
         .in("id", uniqueUnknownIds);
       if (profiles) {
-        profiles.forEach((p) => { profileNames[p.id] = p.display_name; });
+        profiles.forEach((p) => {
+          profileNames[p.id] = p.display_name;
+          profileAvatars[p.id] = p.avatar_url || null;
+        });
       }
     } catch {}
   }
 
-  // Attach profile names to overlays for display fallback
   const enrichedOverlays = overlays.map((o) => ({
     ...o,
     _profileName: profileNames[o.user_id] || null,
+    _profileAvatarUrl: profileAvatars[o.user_id] || null,
   }));
 
   return list.map((item) => {
-    const socialContributions = normalizeSocialContributions(item, enrichedOverlays, contacts);
+    const ownerId = item._ownerId || item._sharedBy;
+    const enrichedItem = {
+      ...item,
+      _ownerAvatarUrl: item._ownerAvatarUrl || profileAvatars[ownerId] || null,
+      _ownerName: item._ownerName || profileNames[ownerId] || null,
+    };
+    const socialContributions = normalizeSocialContributions(enrichedItem, enrichedOverlays, contacts);
     const mine = socialContributions.find((contribution) => contribution.isMine && !contribution.isOwner);
     const shareeCount = socialContributions.filter((contribution) => !contribution.isOwner).length;
 
     return {
-      ...item,
+      ...enrichedItem,
       _socialContributions: socialContributions,
       _myOverlayContribution: mine || null,
       _shareeContributionCount: shareeCount,
+      _isRecommended: Array.isArray(enrichedItem.recommendedBy)
+        ? enrichedItem.recommendedBy.length > 0
+        : !!(enrichedItem.recommendedBy && typeof enrichedItem.recommendedBy === "object"),
     };
   });
 }

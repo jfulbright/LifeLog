@@ -29,6 +29,7 @@ function KidsForm({ formData, setFormData, onSubmit, onCancel }) {
       onCancel={onCancel}
       title="Log a Milestone"
       buttonText="Milestone"
+      hideSections={formData?._isShared ? ["Social", "Snapshots", "Photos"] : undefined}
     />
   );
 }

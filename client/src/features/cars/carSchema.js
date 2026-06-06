@@ -187,6 +187,7 @@ const carSchema = [
   // ── Social (Visible To) ──────────────────────────────────────────────────────
   {
     name: "visibilityControl",
+    label: "🔒 Who can see this",
     type: "visible-to",
     optional: true,
     section: "Social",

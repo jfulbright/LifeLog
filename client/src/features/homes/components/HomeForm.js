@@ -16,6 +16,7 @@ function HomeForm({ formData, setFormData, onSubmit }) {
       onSubmit={onSubmit}
       title="Add Home"
       buttonText="Save Home"
+      hideSections={formData?._isShared ? ["Social", "Snapshots", "Photos"] : undefined}
     />
   );
 }

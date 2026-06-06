@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { getWatchProviders, getExternalIds, getVideos, getSimilarMovies, getMovieCredits, getPersonCredits } from "../api/movieApi";
 import { getOmdbRatings } from "../api/omdbApi";
+import { useAppData } from "../../../contexts/AppDataContext";
+import SocialMemoriesCard from "../../../components/shared/SocialMemoriesCard";
 
 function MovieDetailExtras({ item }) {
   const [providers, setProviders] = useState(null);
@@ -9,9 +11,48 @@ function MovieDetailExtras({ item }) {
   const [similar, setSimilar] = useState([]);
   const [directorMovies, setDirectorMovies] = useState([]);
   const [directorName, setDirectorName] = useState("");
+  const [cast, setCast] = useState([]);
   const [loading, setLoading] = useState(false);
+  const { contacts } = useAppData();
 
   const tmdbId = item?.tmdbId;
+
+  // Build social contributions from recommendedBy + shared circle data
+  const socialContributions = useMemo(() => {
+    const contributions = [];
+    // Recommender contributions
+    const recommendedBy = item?.recommendedBy;
+    if (recommendedBy) {
+      const recs = Array.isArray(recommendedBy) ? recommendedBy : [recommendedBy];
+      recs.forEach((r) => {
+        if (r.rating || r.snaps?.length > 0) {
+          const contact = contacts?.find((c) => c.linkedUserId === r.userId);
+          contributions.push({
+            entryId: r.entryId || null,
+            userId: r.userId,
+            displayName: r.displayName || contact?.displayName || "Someone",
+            isOwner: false,
+            isMine: false,
+            snaps: r.snaps || [],
+            whyNotes: r.whyNotes || "",
+            photos: r.photos || [],
+            rating: r.rating || null,
+            avatarUrl: contact?.avatarUrl || null,
+          });
+        }
+      });
+    }
+    // Social circle contributions (friends who also watched this movie)
+    const socialContribs = item?._socialContributions;
+    if (socialContribs) {
+      socialContribs.filter((c) => !c.isOwner && !c.isMine).forEach((c) => {
+        if (!contributions.find((x) => x.userId === c.userId)) {
+          contributions.push(c);
+        }
+      });
+    }
+    return contributions;
+  }, [item?.recommendedBy, item?._socialContributions, contacts]);
 
   useEffect(() => {
     if (!tmdbId) return;
@@ -31,6 +72,7 @@ function MovieDetailExtras({ item }) {
       setProviders(prov);
       setTrailers(vids);
       setSimilar(sim);
+      setCast(credits?.cast || []);
 
       if (extIds?.imdbId) {
         const omdb = await getOmdbRatings(extIds.imdbId).catch(() => null);
@@ -61,11 +103,64 @@ function MovieDetailExtras({ item }) {
     );
   }
 
-  const hasContent = providers || ratings || trailers.length > 0 || similar.length > 0 || directorMovies.length > 0;
-  if (!hasContent) return null;
+  const hasContent = providers || ratings || trailers.length > 0 || similar.length > 0 || directorMovies.length > 0 || cast.length > 0 || socialContributions.length > 0;
+  if (!hasContent && !item.overview) return null;
 
   return (
     <div style={{ marginTop: "1rem", borderTop: "1px solid var(--color-border)", paddingTop: "1rem" }}>
+
+      {/* Movie Info: poster + overview + metadata */}
+      <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
+        {item.posterUrl && (
+          <img
+            src={item.posterUrl}
+            alt={item.title}
+            style={{ width: 100, height: 150, objectFit: "cover", borderRadius: 8, flexShrink: 0 }}
+            onError={(e) => { e.target.style.display = "none"; }}
+          />
+        )}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {item.overview && (
+            <p style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", margin: "0 0 0.5rem 0", lineHeight: 1.5 }}>
+              {item.overview}
+            </p>
+          )}
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", fontSize: "var(--font-size-sm)" }}>
+            {(directorName || item.director) && (
+              <div>
+                <span style={{ color: "var(--color-text-tertiary)", fontWeight: 500 }}>Director</span>{" "}
+                <span style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>{directorName || item.director}</span>
+              </div>
+            )}
+            {cast.length > 0 && (
+              <div>
+                <span style={{ color: "var(--color-text-tertiary)", fontWeight: 500 }}>Cast</span>{" "}
+                <span style={{ color: "var(--color-text-primary)" }}>{cast.map((c) => c.name).join(", ")}</span>
+              </div>
+            )}
+            {item.runtime && (
+              <div>
+                <span style={{ color: "var(--color-text-tertiary)", fontWeight: 500 }}>Runtime</span>{" "}
+                <span style={{ color: "var(--color-text-primary)" }}>{item.runtime}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Social: recommenders + circle ratings */}
+      {socialContributions.length > 0 && (
+        <SocialMemoriesCard
+          item={item}
+          contacts={contacts}
+          contributions={socialContributions}
+          expanded
+          title="From My Circle"
+          subtitle={`${socialContributions.length} ${socialContributions.length === 1 ? "person" : "people"} rated this`}
+        />
+      )}
+
+      {/* Ratings row */}
       {ratings && (
         <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "0.75rem" }}>
           {ratings.imdbRating && (

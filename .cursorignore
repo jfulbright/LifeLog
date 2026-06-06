@@ -1,0 +1,6 @@
+# Exclude build artifacts and dependencies
+node_modules/
+client/build/
+
+# Exclude archived plans (if ever moved to project level)
+.cursor/plans/archive/

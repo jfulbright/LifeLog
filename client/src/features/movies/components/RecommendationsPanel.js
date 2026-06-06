@@ -24,7 +24,7 @@ function RecommendationsPanel({ ownMovies, onSelect }) {
     return () => { cancelled = true; };
   }, []);
 
-  const ownTmdbIds = new Set(ownMovies.filter((m) => m.status === "watched").map((m) => m.tmdbId).filter(Boolean));
+  const ownTmdbIds = new Set(ownMovies.map((m) => m.tmdbId).filter(Boolean));
 
   const filtered = recs
     .filter((r) => {
@@ -106,7 +106,7 @@ function RecommendationsPanel({ ownMovies, onSelect }) {
                   <Button size="sm" variant="success" onClick={() => onSelect(rec, "watched")}>
                     Watched
                   </Button>
-                  <Button size="sm" variant="outline-warning" className="text-dark" onClick={() => onSelect(rec, "watchlist")}>
+                  <Button size="sm" variant="outline-primary" onClick={() => onSelect(rec, "watchlist")}>
                     Watchlist
                   </Button>
                   <Button size="sm" variant="outline-secondary" onClick={() => handleDismiss(rec._recId)}>

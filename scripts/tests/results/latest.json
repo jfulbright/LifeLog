@@ -1,0 +1,1298 @@
+{
+  "timestamp": "2026-05-31T23:32:49.440Z",
+  "elapsed": "17.0s",
+  "totals": {
+    "passed": 111,
+    "failed": 0,
+    "skipped": 0
+  },
+  "files": [
+    {
+      "name": "01-entry-creation",
+      "passed": 30,
+      "failed": 0,
+      "skipped": 0,
+      "results": [
+        {
+          "name": "Jason: Event (attended)",
+          "status": "PASS",
+          "detail": "id=94dd9463-6299-4311-9852-d01d190185ae"
+        },
+        {
+          "name": "Jason: Event (wishlist)",
+          "status": "PASS",
+          "detail": "id=ecacd32c-d997-4236-8798-b8bbbb91782e"
+        },
+        {
+          "name": "Jason: Travel (visited)",
+          "status": "PASS",
+          "detail": "id=b862627f-3f73-4881-b2ce-51b7428c0f13"
+        },
+        {
+          "name": "Jason: Travel (wishlist)",
+          "status": "PASS",
+          "detail": "id=c26ab371-b900-406e-ae28-2a15f1639392"
+        },
+        {
+          "name": "Jason: Activity (done)",
+          "status": "PASS",
+          "detail": "id=caa7260d-ccaf-49cd-9fbf-d6da05c308db"
+        },
+        {
+          "name": "Jason: Activity (wishlist)",
+          "status": "PASS",
+          "detail": "id=8898f6f2-cbb2-4654-a325-6a660cb24207"
+        },
+        {
+          "name": "Jason: Car (owned)",
+          "status": "PASS",
+          "detail": "id=80d319f6-b343-4b61-93b1-ae2eb69278af"
+        },
+        {
+          "name": "Jason: Car (wishlist)",
+          "status": "PASS",
+          "detail": "id=84a975f0-5007-4d6e-8ac5-676cc27d138d"
+        },
+        {
+          "name": "Sarah: Movie (watched)",
+          "status": "PASS",
+          "detail": "id=685f1c73-bc30-41a4-9316-e2c3521eaa1d"
+        },
+        {
+          "name": "Sarah: Movie (watchlist)",
+          "status": "PASS",
+          "detail": "id=28b3f569-6b9e-44b4-8024-13babdcc6578"
+        },
+        {
+          "name": "Sarah: Home (owned)",
+          "status": "PASS",
+          "detail": "id=65dfb76b-0ad3-47ed-b97d-c5a225a27535"
+        },
+        {
+          "name": "Sarah: Home (rented)",
+          "status": "PASS",
+          "detail": "id=c4ae440a-e978-4ee4-b29d-8e7269a16bdf"
+        },
+        {
+          "name": "Sarah: Cellar (wine tried)",
+          "status": "PASS",
+          "detail": "id=b8dadcff-aad1-47be-9679-9589cd7f205f"
+        },
+        {
+          "name": "Sarah: Cellar (whiskey in cellar)",
+          "status": "PASS",
+          "detail": "id=f96cd7e7-07e2-4240-a5df-6b2a069ad547"
+        },
+        {
+          "name": "Sarah: Kids (happened)",
+          "status": "PASS",
+          "detail": "id=edb48000-1e08-4c9d-9dbf-007695b19f24"
+        },
+        {
+          "name": "Sarah: Kids (upcoming)",
+          "status": "PASS",
+          "detail": "id=619648bc-b7f4-4942-a1e2-27219b2b8a19"
+        },
+        {
+          "name": "Mike: Event (attended)",
+          "status": "PASS",
+          "detail": "id=d534812b-b5c5-46c8-88ab-b1d990edd4c9"
+        },
+        {
+          "name": "Mike: Travel (visited)",
+          "status": "PASS",
+          "detail": "id=b8841f9d-011f-4dc1-8e71-42568d829cad"
+        },
+        {
+          "name": "Mike: Movie (watched)",
+          "status": "PASS",
+          "detail": "id=d839cc93-2292-43e6-8095-f426e199f097"
+        },
+        {
+          "name": "Mike: Activity (done)",
+          "status": "PASS",
+          "detail": "id=4d0d1ed1-15bf-4c42-9bda-2bf01a5a8121"
+        },
+        {
+          "name": "Jason events count",
+          "status": "PASS",
+          "detail": "2 items (expected ≥2)"
+        },
+        {
+          "name": "Jason travel count",
+          "status": "PASS",
+          "detail": "2 items (expected ≥2)"
+        },
+        {
+          "name": "Jason activities count",
+          "status": "PASS",
+          "detail": "2 items (expected ≥2)"
+        },
+        {
+          "name": "Jason cars count",
+          "status": "PASS",
+          "detail": "2 items (expected ≥2)"
+        },
+        {
+          "name": "Sarah movies count",
+          "status": "PASS",
+          "detail": "2 items (expected ≥2)"
+        },
+        {
+          "name": "Sarah homes count",
+          "status": "PASS",
+          "detail": "2 items (expected ≥2)"
+        },
+        {
+          "name": "Sarah cellar count",
+          "status": "PASS",
+          "detail": "2 items (expected ≥2)"
+        },
+        {
+          "name": "Sarah kids count",
+          "status": "PASS",
+          "detail": "2 items (expected ≥2)"
+        },
+        {
+          "name": "Mike events count",
+          "status": "PASS",
+          "detail": "1 items (expected ≥1)"
+        },
+        {
+          "name": "Mike travel count",
+          "status": "PASS",
+          "detail": "1 items (expected ≥1)"
+        }
+      ]
+    },
+    {
+      "name": "02-collaboration-flow",
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0,
+      "results": [
+        {
+          "name": "Setup: entries created",
+          "status": "PASS",
+          "detail": "event=72cb225f-dc47-4b5f-8cc5-284ca33f3f01, travel=1fbef0b7-17ab-407e-b8a5-38bf469b9255, movie=e5ce346e-fc04-4e45-8c75-292f191d3473"
+        },
+        {
+          "name": "Share event with Jason",
+          "status": "PASS",
+          "detail": "collab_id=5f80322f-0135-40dc-b97b-1f9fcbee490b, status=pending"
+        },
+        {
+          "name": "Share event with Mike",
+          "status": "PASS",
+          "detail": "collab_id=24c62fa1-1c34-4dc0-894d-6bc17ae14593, status=pending"
+        },
+        {
+          "name": "Jason sees pending collab",
+          "status": "PASS",
+          "detail": "id=5f80322f-0135-40dc-b97b-1f9fcbee490b"
+        },
+        {
+          "name": "Mike sees pending collab",
+          "status": "PASS",
+          "detail": "id=24c62fa1-1c34-4dc0-894d-6bc17ae14593"
+        },
+        {
+          "name": "Jason accepts collab",
+          "status": "PASS",
+          "detail": "status=accepted"
+        },
+        {
+          "name": "Jason reads shared entry after accept",
+          "status": "PASS",
+          "detail": "title=\"Collab Test Concert\""
+        },
+        {
+          "name": "Mike declines collab",
+          "status": "PASS",
+          "detail": "status=declined"
+        },
+        {
+          "name": "Mike cannot read entry after decline",
+          "status": "PASS",
+          "detail": "RLS correctly blocks"
+        },
+        {
+          "name": "Share travel with Jason",
+          "status": "PASS",
+          "detail": "collab_id=cd5411d0-8f59-4298-98df-c2a7692ffb7e"
+        },
+        {
+          "name": "Jason accepts travel collab",
+          "status": "PASS",
+          "detail": "accepted"
+        },
+        {
+          "name": "Jason accepts movie collab",
+          "status": "PASS",
+          "detail": "accepted"
+        },
+        {
+          "name": "Mike accepts movie collab",
+          "status": "PASS",
+          "detail": "accepted"
+        },
+        {
+          "name": "Jason accepted collabs count",
+          "status": "PASS",
+          "detail": "3 across [travel, events, movies]"
+        },
+        {
+          "name": "Mike accepted collabs count",
+          "status": "PASS",
+          "detail": "1 (declined event, accepted movie)"
+        }
+      ]
+    },
+    {
+      "name": "03-recommendation-flow",
+      "passed": 13,
+      "failed": 0,
+      "skipped": 0,
+      "results": [
+        {
+          "name": "Setup: entries created",
+          "status": "PASS",
+          "detail": "movie=2f08c3ba-d3d2-486c-9f0a-f1d0b3ea4b22, event=1d59f5e3-b3e8-461b-b609-b0fcefe2ee53"
+        },
+        {
+          "name": "Sarah recommends movie to Jason (direct)",
+          "status": "PASS",
+          "detail": "rec_id=b3c21a41-fa55-46f7-af4c-568b3d2a150c"
+        },
+        {
+          "name": "Jason sees direct recommendation",
+          "status": "PASS",
+          "detail": "from f5154a06-0c6d-40b2-9ad0-a2d3227e054b"
+        },
+        {
+          "name": "Sarah recommends event to ring 4",
+          "status": "PASS",
+          "detail": "rec_id=feb7bec7-ef9b-42f9-8ee4-db1545ac0da9"
+        },
+        {
+          "name": "Sarah recommends event to ring 3",
+          "status": "PASS",
+          "detail": "rec_id=9a75a584-ee91-4f53-898e-fc9aa50c2be4"
+        },
+        {
+          "name": "Jason in Sarah's contacts",
+          "status": "PASS",
+          "detail": "ring=4"
+        },
+        {
+          "name": "Mike in Sarah's contacts",
+          "status": "PASS",
+          "detail": "ring=3"
+        },
+        {
+          "name": "Jason sees ring-based rec",
+          "status": "PASS",
+          "detail": "1 rec(s) at ring 4"
+        },
+        {
+          "name": "Jason accepts movie rec",
+          "status": "PASS",
+          "detail": "status → accepted"
+        },
+        {
+          "name": "New entry created from rec acceptance",
+          "status": "PASS",
+          "detail": "id=3fea96ed-d17e-4eb1-a375-7c784e190963, has recommendedBy provenance"
+        },
+        {
+          "name": "Mike dismisses rec",
+          "status": "PASS",
+          "detail": "status → dismissed"
+        },
+        {
+          "name": "No entry created from dismissed rec",
+          "status": "PASS",
+          "detail": "Correct — dismiss means no action"
+        },
+        {
+          "name": "Sarah's sent recs summary",
+          "status": "PASS",
+          "detail": "active=2, accepted=1, dismissed=1, total=4"
+        }
+      ]
+    },
+    {
+      "name": "04-ring-visibility",
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0,
+      "results": [
+        {
+          "name": "Jason is ring 4 in Sarah's contacts",
+          "status": "PASS",
+          "detail": "ring=4"
+        },
+        {
+          "name": "Mike is ring 3 in Sarah's contacts",
+          "status": "PASS",
+          "detail": "ring=3"
+        },
+        {
+          "name": "Mike is ring 2 in Jason's contacts",
+          "status": "PASS",
+          "detail": "ring=2"
+        },
+        {
+          "name": "Jason recommends to ring 2",
+          "status": "PASS",
+          "detail": "rec_id=a63d4122-30a4-482b-a040-5d986afe6d5f"
+        },
+        {
+          "name": "Mike receives ring-2 rec from Jason",
+          "status": "PASS",
+          "detail": "1 rec(s)"
+        },
+        {
+          "name": "Sarah does NOT receive ring-2 rec",
+          "status": "PASS",
+          "detail": "Correct — she's ring 4"
+        },
+        {
+          "name": "Change Mike's ring 2→4 in Jason's contacts",
+          "status": "PASS",
+          "detail": "Updated"
+        },
+        {
+          "name": "Existing ring-2 rec persists after ring change",
+          "status": "PASS",
+          "detail": "status=active"
+        },
+        {
+          "name": "Jason recommends to ring 4",
+          "status": "PASS",
+          "detail": "rec_id=5620c650-9924-48e0-b003-e658ad2fda6f"
+        },
+        {
+          "name": "Sarah receives ring-4 rec from Jason",
+          "status": "PASS",
+          "detail": "1 rec(s)"
+        }
+      ]
+    },
+    {
+      "name": "05-edit-and-overlay",
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0,
+      "results": [
+        {
+          "name": "Setup: shared entry created",
+          "status": "PASS",
+          "detail": "id=228d2116-efb2-42db-90b6-40a663e9e9fd, shared with Jason + Mike (pre-accepted)"
+        },
+        {
+          "name": "Jason adds overlay",
+          "status": "PASS",
+          "detail": "id=3aed5346-dc2a-431e-8231-4f23ae81fb88, rating=4"
+        },
+        {
+          "name": "Mike adds overlay",
+          "status": "PASS",
+          "detail": "id=918fbc87-e41e-4411-b37e-1ca3868988c5, rating=5"
+        },
+        {
+          "name": "Sarah reads all overlays",
+          "status": "PASS",
+          "detail": "2 overlays (Jason + Mike)"
+        },
+        {
+          "name": "Jason sees Mike's overlay (peer visibility)",
+          "status": "PASS",
+          "detail": "2 total overlays visible"
+        },
+        {
+          "name": "Jason edits shared entry (venue/city)",
+          "status": "PASS",
+          "detail": "Updated venue and city"
+        },
+        {
+          "name": "Owner's reflections preserved after collab edit",
+          "status": "PASS",
+          "detail": "snapshot1=\"Sarah's original snap\", rating=5"
+        },
+        {
+          "name": "Collaborator's structural edit visible",
+          "status": "PASS",
+          "detail": "venue=\"Stubb's BBQ (corrected spelling)\""
+        },
+        {
+          "name": "Overlay upsert: no duplicates",
+          "status": "PASS",
+          "detail": "Exactly 1 overlay for Jason on this entry"
+        },
+        {
+          "name": "Jason sees Sarah's edit on reload",
+          "status": "PASS",
+          "detail": "artist=\"The Overlays (ft. Special Guest)\""
+        }
+      ]
+    },
+    {
+      "name": "06-delete-and-leave",
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0,
+      "results": [
+        {
+          "name": "Setup: 2 shared entries created",
+          "status": "PASS",
+          "detail": "ids=[0d75b328-db0e-4be4-b815-bdccb6ab9557, d8e7038e-50f9-4301-b023-5b9201f69176]"
+        },
+        {
+          "name": "Jason cannot delete shared entry (not owner)",
+          "status": "PASS",
+          "detail": "Entry still exists after delete attempt"
+        },
+        {
+          "name": "Jason leaves shared entry",
+          "status": "PASS",
+          "detail": "status → declined"
+        },
+        {
+          "name": "Entry invisible to Jason after leaving",
+          "status": "PASS",
+          "detail": "RLS correctly blocks"
+        },
+        {
+          "name": "Entry still visible to owner (Sarah) after Jason leaves",
+          "status": "PASS",
+          "detail": "OK"
+        },
+        {
+          "name": "Entry still visible to Mike after Jason leaves",
+          "status": "PASS",
+          "detail": "OK"
+        },
+        {
+          "name": "Before delete",
+          "status": "PASS",
+          "detail": "2 collab rows, 2 overlay rows"
+        },
+        {
+          "name": "Sarah deletes shared entry",
+          "status": "PASS",
+          "detail": "Entry removed"
+        },
+        {
+          "name": "Collaborator rows cascaded on delete",
+          "status": "PASS",
+          "detail": "All removed"
+        },
+        {
+          "name": "Overlay rows cascaded on delete",
+          "status": "PASS",
+          "detail": "All removed"
+        }
+      ]
+    },
+    {
+      "name": "07-isolation-security",
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "results": [
+        {
+          "name": "Setup: Sarah's private entry created",
+          "status": "PASS",
+          "detail": "id=301a971a-4935-4b25-89e2-0e0e7f30a3a8"
+        },
+        {
+          "name": "Mike cannot read Sarah's private entry",
+          "status": "PASS",
+          "detail": "RLS blocks correctly"
+        },
+        {
+          "name": "Mike cannot read overlays on unrelated entry",
+          "status": "PASS",
+          "detail": "RLS blocks correctly"
+        },
+        {
+          "name": "Pending collaborator cannot UPDATE entry",
+          "status": "PASS",
+          "detail": "Update had no effect (0 rows matched)"
+        },
+        {
+          "name": "Non-owner cannot insert collaborator row",
+          "status": "PASS",
+          "detail": "Error: new row violates row-level security policy for table \"collaborators\""
+        },
+        {
+          "name": "Mike cannot delete Jason's overlay",
+          "status": "PASS",
+          "detail": "Delete had no effect"
+        },
+        {
+          "name": "Declined collaborator cannot read entry",
+          "status": "PASS",
+          "detail": "RLS correctly blocks"
+        }
+      ]
+    },
+    {
+      "name": "08-scale-performance",
+      "passed": 16,
+      "failed": 0,
+      "skipped": 0,
+      "results": [
+        {
+          "name": "Seed Jason entries",
+          "status": "PASS",
+          "detail": "50 created"
+        },
+        {
+          "name": "Seed Sarah entries",
+          "status": "PASS",
+          "detail": "50 created"
+        },
+        {
+          "name": "Seed Mike entries",
+          "status": "PASS",
+          "detail": "50 created"
+        },
+        {
+          "name": "Collabs Sarah→Jason",
+          "status": "PASS",
+          "detail": "15 rows"
+        },
+        {
+          "name": "Collabs Sarah→Mike",
+          "status": "PASS",
+          "detail": "15 rows"
+        },
+        {
+          "name": "Collabs Jason→Mike",
+          "status": "PASS",
+          "detail": "15 rows"
+        },
+        {
+          "name": "Recs from Jason",
+          "status": "PASS",
+          "detail": "10 created"
+        },
+        {
+          "name": "Recs from Sarah",
+          "status": "PASS",
+          "detail": "10 created"
+        },
+        {
+          "name": "Recs from Mike",
+          "status": "PASS",
+          "detail": "10 created"
+        },
+        {
+          "name": "Seed overlays",
+          "status": "PASS",
+          "detail": "10 created"
+        },
+        {
+          "name": "getItemsWithShared(events)",
+          "status": "PASS",
+          "detail": "225ms (< 500ms threshold)"
+        },
+        {
+          "name": "getItemsWithShared(travel)",
+          "status": "PASS",
+          "detail": "224ms (< 500ms threshold)"
+        },
+        {
+          "name": "getItemsWithShared(movies)",
+          "status": "PASS",
+          "detail": "219ms (< 500ms threshold)"
+        },
+        {
+          "name": "getMyRecommendations (with ring resolution)",
+          "status": "PASS",
+          "detail": "145ms (< 1000ms threshold)"
+        },
+        {
+          "name": "getOverlaysForEntries (20 entries)",
+          "status": "PASS",
+          "detail": "87ms (< 300ms threshold)"
+        },
+        {
+          "name": "Full category load (items+collabs+overlays)",
+          "status": "PASS",
+          "detail": "288ms (< 2000ms threshold)"
+        }
+      ]
+    }
+  ],
+  "results": [
+    {
+      "name": "Jason: Event (attended)",
+      "status": "PASS",
+      "detail": "id=94dd9463-6299-4311-9852-d01d190185ae",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Jason: Event (wishlist)",
+      "status": "PASS",
+      "detail": "id=ecacd32c-d997-4236-8798-b8bbbb91782e",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Jason: Travel (visited)",
+      "status": "PASS",
+      "detail": "id=b862627f-3f73-4881-b2ce-51b7428c0f13",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Jason: Travel (wishlist)",
+      "status": "PASS",
+      "detail": "id=c26ab371-b900-406e-ae28-2a15f1639392",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Jason: Activity (done)",
+      "status": "PASS",
+      "detail": "id=caa7260d-ccaf-49cd-9fbf-d6da05c308db",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Jason: Activity (wishlist)",
+      "status": "PASS",
+      "detail": "id=8898f6f2-cbb2-4654-a325-6a660cb24207",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Jason: Car (owned)",
+      "status": "PASS",
+      "detail": "id=80d319f6-b343-4b61-93b1-ae2eb69278af",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Jason: Car (wishlist)",
+      "status": "PASS",
+      "detail": "id=84a975f0-5007-4d6e-8ac5-676cc27d138d",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Sarah: Movie (watched)",
+      "status": "PASS",
+      "detail": "id=685f1c73-bc30-41a4-9316-e2c3521eaa1d",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Sarah: Movie (watchlist)",
+      "status": "PASS",
+      "detail": "id=28b3f569-6b9e-44b4-8024-13babdcc6578",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Sarah: Home (owned)",
+      "status": "PASS",
+      "detail": "id=65dfb76b-0ad3-47ed-b97d-c5a225a27535",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Sarah: Home (rented)",
+      "status": "PASS",
+      "detail": "id=c4ae440a-e978-4ee4-b29d-8e7269a16bdf",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Sarah: Cellar (wine tried)",
+      "status": "PASS",
+      "detail": "id=b8dadcff-aad1-47be-9679-9589cd7f205f",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Sarah: Cellar (whiskey in cellar)",
+      "status": "PASS",
+      "detail": "id=f96cd7e7-07e2-4240-a5df-6b2a069ad547",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Sarah: Kids (happened)",
+      "status": "PASS",
+      "detail": "id=edb48000-1e08-4c9d-9dbf-007695b19f24",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Sarah: Kids (upcoming)",
+      "status": "PASS",
+      "detail": "id=619648bc-b7f4-4942-a1e2-27219b2b8a19",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Mike: Event (attended)",
+      "status": "PASS",
+      "detail": "id=d534812b-b5c5-46c8-88ab-b1d990edd4c9",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Mike: Travel (visited)",
+      "status": "PASS",
+      "detail": "id=b8841f9d-011f-4dc1-8e71-42568d829cad",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Mike: Movie (watched)",
+      "status": "PASS",
+      "detail": "id=d839cc93-2292-43e6-8095-f426e199f097",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Mike: Activity (done)",
+      "status": "PASS",
+      "detail": "id=4d0d1ed1-15bf-4c42-9bda-2bf01a5a8121",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Jason events count",
+      "status": "PASS",
+      "detail": "2 items (expected ≥2)",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Jason travel count",
+      "status": "PASS",
+      "detail": "2 items (expected ≥2)",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Jason activities count",
+      "status": "PASS",
+      "detail": "2 items (expected ≥2)",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Jason cars count",
+      "status": "PASS",
+      "detail": "2 items (expected ≥2)",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Sarah movies count",
+      "status": "PASS",
+      "detail": "2 items (expected ≥2)",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Sarah homes count",
+      "status": "PASS",
+      "detail": "2 items (expected ≥2)",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Sarah cellar count",
+      "status": "PASS",
+      "detail": "2 items (expected ≥2)",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Sarah kids count",
+      "status": "PASS",
+      "detail": "2 items (expected ≥2)",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Mike events count",
+      "status": "PASS",
+      "detail": "1 items (expected ≥1)",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Mike travel count",
+      "status": "PASS",
+      "detail": "1 items (expected ≥1)",
+      "file": "01-entry-creation"
+    },
+    {
+      "name": "Setup: entries created",
+      "status": "PASS",
+      "detail": "event=72cb225f-dc47-4b5f-8cc5-284ca33f3f01, travel=1fbef0b7-17ab-407e-b8a5-38bf469b9255, movie=e5ce346e-fc04-4e45-8c75-292f191d3473",
+      "file": "02-collaboration-flow"
+    },
+    {
+      "name": "Share event with Jason",
+      "status": "PASS",
+      "detail": "collab_id=5f80322f-0135-40dc-b97b-1f9fcbee490b, status=pending",
+      "file": "02-collaboration-flow"
+    },
+    {
+      "name": "Share event with Mike",
+      "status": "PASS",
+      "detail": "collab_id=24c62fa1-1c34-4dc0-894d-6bc17ae14593, status=pending",
+      "file": "02-collaboration-flow"
+    },
+    {
+      "name": "Jason sees pending collab",
+      "status": "PASS",
+      "detail": "id=5f80322f-0135-40dc-b97b-1f9fcbee490b",
+      "file": "02-collaboration-flow"
+    },
+    {
+      "name": "Mike sees pending collab",
+      "status": "PASS",
+      "detail": "id=24c62fa1-1c34-4dc0-894d-6bc17ae14593",
+      "file": "02-collaboration-flow"
+    },
+    {
+      "name": "Jason accepts collab",
+      "status": "PASS",
+      "detail": "status=accepted",
+      "file": "02-collaboration-flow"
+    },
+    {
+      "name": "Jason reads shared entry after accept",
+      "status": "PASS",
+      "detail": "title=\"Collab Test Concert\"",
+      "file": "02-collaboration-flow"
+    },
+    {
+      "name": "Mike declines collab",
+      "status": "PASS",
+      "detail": "status=declined",
+      "file": "02-collaboration-flow"
+    },
+    {
+      "name": "Mike cannot read entry after decline",
+      "status": "PASS",
+      "detail": "RLS correctly blocks",
+      "file": "02-collaboration-flow"
+    },
+    {
+      "name": "Share travel with Jason",
+      "status": "PASS",
+      "detail": "collab_id=cd5411d0-8f59-4298-98df-c2a7692ffb7e",
+      "file": "02-collaboration-flow"
+    },
+    {
+      "name": "Jason accepts travel collab",
+      "status": "PASS",
+      "detail": "accepted",
+      "file": "02-collaboration-flow"
+    },
+    {
+      "name": "Jason accepts movie collab",
+      "status": "PASS",
+      "detail": "accepted",
+      "file": "02-collaboration-flow"
+    },
+    {
+      "name": "Mike accepts movie collab",
+      "status": "PASS",
+      "detail": "accepted",
+      "file": "02-collaboration-flow"
+    },
+    {
+      "name": "Jason accepted collabs count",
+      "status": "PASS",
+      "detail": "3 across [travel, events, movies]",
+      "file": "02-collaboration-flow"
+    },
+    {
+      "name": "Mike accepted collabs count",
+      "status": "PASS",
+      "detail": "1 (declined event, accepted movie)",
+      "file": "02-collaboration-flow"
+    },
+    {
+      "name": "Setup: entries created",
+      "status": "PASS",
+      "detail": "movie=2f08c3ba-d3d2-486c-9f0a-f1d0b3ea4b22, event=1d59f5e3-b3e8-461b-b609-b0fcefe2ee53",
+      "file": "03-recommendation-flow"
+    },
+    {
+      "name": "Sarah recommends movie to Jason (direct)",
+      "status": "PASS",
+      "detail": "rec_id=b3c21a41-fa55-46f7-af4c-568b3d2a150c",
+      "file": "03-recommendation-flow"
+    },
+    {
+      "name": "Jason sees direct recommendation",
+      "status": "PASS",
+      "detail": "from f5154a06-0c6d-40b2-9ad0-a2d3227e054b",
+      "file": "03-recommendation-flow"
+    },
+    {
+      "name": "Sarah recommends event to ring 4",
+      "status": "PASS",
+      "detail": "rec_id=feb7bec7-ef9b-42f9-8ee4-db1545ac0da9",
+      "file": "03-recommendation-flow"
+    },
+    {
+      "name": "Sarah recommends event to ring 3",
+      "status": "PASS",
+      "detail": "rec_id=9a75a584-ee91-4f53-898e-fc9aa50c2be4",
+      "file": "03-recommendation-flow"
+    },
+    {
+      "name": "Jason in Sarah's contacts",
+      "status": "PASS",
+      "detail": "ring=4",
+      "file": "03-recommendation-flow"
+    },
+    {
+      "name": "Mike in Sarah's contacts",
+      "status": "PASS",
+      "detail": "ring=3",
+      "file": "03-recommendation-flow"
+    },
+    {
+      "name": "Jason sees ring-based rec",
+      "status": "PASS",
+      "detail": "1 rec(s) at ring 4",
+      "file": "03-recommendation-flow"
+    },
+    {
+      "name": "Jason accepts movie rec",
+      "status": "PASS",
+      "detail": "status → accepted",
+      "file": "03-recommendation-flow"
+    },
+    {
+      "name": "New entry created from rec acceptance",
+      "status": "PASS",
+      "detail": "id=3fea96ed-d17e-4eb1-a375-7c784e190963, has recommendedBy provenance",
+      "file": "03-recommendation-flow"
+    },
+    {
+      "name": "Mike dismisses rec",
+      "status": "PASS",
+      "detail": "status → dismissed",
+      "file": "03-recommendation-flow"
+    },
+    {
+      "name": "No entry created from dismissed rec",
+      "status": "PASS",
+      "detail": "Correct — dismiss means no action",
+      "file": "03-recommendation-flow"
+    },
+    {
+      "name": "Sarah's sent recs summary",
+      "status": "PASS",
+      "detail": "active=2, accepted=1, dismissed=1, total=4",
+      "file": "03-recommendation-flow"
+    },
+    {
+      "name": "Jason is ring 4 in Sarah's contacts",
+      "status": "PASS",
+      "detail": "ring=4",
+      "file": "04-ring-visibility"
+    },
+    {
+      "name": "Mike is ring 3 in Sarah's contacts",
+      "status": "PASS",
+      "detail": "ring=3",
+      "file": "04-ring-visibility"
+    },
+    {
+      "name": "Mike is ring 2 in Jason's contacts",
+      "status": "PASS",
+      "detail": "ring=2",
+      "file": "04-ring-visibility"
+    },
+    {
+      "name": "Jason recommends to ring 2",
+      "status": "PASS",
+      "detail": "rec_id=a63d4122-30a4-482b-a040-5d986afe6d5f",
+      "file": "04-ring-visibility"
+    },
+    {
+      "name": "Mike receives ring-2 rec from Jason",
+      "status": "PASS",
+      "detail": "1 rec(s)",
+      "file": "04-ring-visibility"
+    },
+    {
+      "name": "Sarah does NOT receive ring-2 rec",
+      "status": "PASS",
+      "detail": "Correct — she's ring 4",
+      "file": "04-ring-visibility"
+    },
+    {
+      "name": "Change Mike's ring 2→4 in Jason's contacts",
+      "status": "PASS",
+      "detail": "Updated",
+      "file": "04-ring-visibility"
+    },
+    {
+      "name": "Existing ring-2 rec persists after ring change",
+      "status": "PASS",
+      "detail": "status=active",
+      "file": "04-ring-visibility"
+    },
+    {
+      "name": "Jason recommends to ring 4",
+      "status": "PASS",
+      "detail": "rec_id=5620c650-9924-48e0-b003-e658ad2fda6f",
+      "file": "04-ring-visibility"
+    },
+    {
+      "name": "Sarah receives ring-4 rec from Jason",
+      "status": "PASS",
+      "detail": "1 rec(s)",
+      "file": "04-ring-visibility"
+    },
+    {
+      "name": "Setup: shared entry created",
+      "status": "PASS",
+      "detail": "id=228d2116-efb2-42db-90b6-40a663e9e9fd, shared with Jason + Mike (pre-accepted)",
+      "file": "05-edit-and-overlay"
+    },
+    {
+      "name": "Jason adds overlay",
+      "status": "PASS",
+      "detail": "id=3aed5346-dc2a-431e-8231-4f23ae81fb88, rating=4",
+      "file": "05-edit-and-overlay"
+    },
+    {
+      "name": "Mike adds overlay",
+      "status": "PASS",
+      "detail": "id=918fbc87-e41e-4411-b37e-1ca3868988c5, rating=5",
+      "file": "05-edit-and-overlay"
+    },
+    {
+      "name": "Sarah reads all overlays",
+      "status": "PASS",
+      "detail": "2 overlays (Jason + Mike)",
+      "file": "05-edit-and-overlay"
+    },
+    {
+      "name": "Jason sees Mike's overlay (peer visibility)",
+      "status": "PASS",
+      "detail": "2 total overlays visible",
+      "file": "05-edit-and-overlay"
+    },
+    {
+      "name": "Jason edits shared entry (venue/city)",
+      "status": "PASS",
+      "detail": "Updated venue and city",
+      "file": "05-edit-and-overlay"
+    },
+    {
+      "name": "Owner's reflections preserved after collab edit",
+      "status": "PASS",
+      "detail": "snapshot1=\"Sarah's original snap\", rating=5",
+      "file": "05-edit-and-overlay"
+    },
+    {
+      "name": "Collaborator's structural edit visible",
+      "status": "PASS",
+      "detail": "venue=\"Stubb's BBQ (corrected spelling)\"",
+      "file": "05-edit-and-overlay"
+    },
+    {
+      "name": "Overlay upsert: no duplicates",
+      "status": "PASS",
+      "detail": "Exactly 1 overlay for Jason on this entry",
+      "file": "05-edit-and-overlay"
+    },
+    {
+      "name": "Jason sees Sarah's edit on reload",
+      "status": "PASS",
+      "detail": "artist=\"The Overlays (ft. Special Guest)\"",
+      "file": "05-edit-and-overlay"
+    },
+    {
+      "name": "Setup: 2 shared entries created",
+      "status": "PASS",
+      "detail": "ids=[0d75b328-db0e-4be4-b815-bdccb6ab9557, d8e7038e-50f9-4301-b023-5b9201f69176]",
+      "file": "06-delete-and-leave"
+    },
+    {
+      "name": "Jason cannot delete shared entry (not owner)",
+      "status": "PASS",
+      "detail": "Entry still exists after delete attempt",
+      "file": "06-delete-and-leave"
+    },
+    {
+      "name": "Jason leaves shared entry",
+      "status": "PASS",
+      "detail": "status → declined",
+      "file": "06-delete-and-leave"
+    },
+    {
+      "name": "Entry invisible to Jason after leaving",
+      "status": "PASS",
+      "detail": "RLS correctly blocks",
+      "file": "06-delete-and-leave"
+    },
+    {
+      "name": "Entry still visible to owner (Sarah) after Jason leaves",
+      "status": "PASS",
+      "detail": "OK",
+      "file": "06-delete-and-leave"
+    },
+    {
+      "name": "Entry still visible to Mike after Jason leaves",
+      "status": "PASS",
+      "detail": "OK",
+      "file": "06-delete-and-leave"
+    },
+    {
+      "name": "Before delete",
+      "status": "PASS",
+      "detail": "2 collab rows, 2 overlay rows",
+      "file": "06-delete-and-leave"
+    },
+    {
+      "name": "Sarah deletes shared entry",
+      "status": "PASS",
+      "detail": "Entry removed",
+      "file": "06-delete-and-leave"
+    },
+    {
+      "name": "Collaborator rows cascaded on delete",
+      "status": "PASS",
+      "detail": "All removed",
+      "file": "06-delete-and-leave"
+    },
+    {
+      "name": "Overlay rows cascaded on delete",
+      "status": "PASS",
+      "detail": "All removed",
+      "file": "06-delete-and-leave"
+    },
+    {
+      "name": "Setup: Sarah's private entry created",
+      "status": "PASS",
+      "detail": "id=301a971a-4935-4b25-89e2-0e0e7f30a3a8",
+      "file": "07-isolation-security"
+    },
+    {
+      "name": "Mike cannot read Sarah's private entry",
+      "status": "PASS",
+      "detail": "RLS blocks correctly",
+      "file": "07-isolation-security"
+    },
+    {
+      "name": "Mike cannot read overlays on unrelated entry",
+      "status": "PASS",
+      "detail": "RLS blocks correctly",
+      "file": "07-isolation-security"
+    },
+    {
+      "name": "Pending collaborator cannot UPDATE entry",
+      "status": "PASS",
+      "detail": "Update had no effect (0 rows matched)",
+      "file": "07-isolation-security"
+    },
+    {
+      "name": "Non-owner cannot insert collaborator row",
+      "status": "PASS",
+      "detail": "Error: new row violates row-level security policy for table \"collaborators\"",
+      "file": "07-isolation-security"
+    },
+    {
+      "name": "Mike cannot delete Jason's overlay",
+      "status": "PASS",
+      "detail": "Delete had no effect",
+      "file": "07-isolation-security"
+    },
+    {
+      "name": "Declined collaborator cannot read entry",
+      "status": "PASS",
+      "detail": "RLS correctly blocks",
+      "file": "07-isolation-security"
+    },
+    {
+      "name": "Seed Jason entries",
+      "status": "PASS",
+      "detail": "50 created",
+      "file": "08-scale-performance"
+    },
+    {
+      "name": "Seed Sarah entries",
+      "status": "PASS",
+      "detail": "50 created",
+      "file": "08-scale-performance"
+    },
+    {
+      "name": "Seed Mike entries",
+      "status": "PASS",
+      "detail": "50 created",
+      "file": "08-scale-performance"
+    },
+    {
+      "name": "Collabs Sarah→Jason",
+      "status": "PASS",
+      "detail": "15 rows",
+      "file": "08-scale-performance"
+    },
+    {
+      "name": "Collabs Sarah→Mike",
+      "status": "PASS",
+      "detail": "15 rows",
+      "file": "08-scale-performance"
+    },
+    {
+      "name": "Collabs Jason→Mike",
+      "status": "PASS",
+      "detail": "15 rows",
+      "file": "08-scale-performance"
+    },
+    {
+      "name": "Recs from Jason",
+      "status": "PASS",
+      "detail": "10 created",
+      "file": "08-scale-performance"
+    },
+    {
+      "name": "Recs from Sarah",
+      "status": "PASS",
+      "detail": "10 created",
+      "file": "08-scale-performance"
+    },
+    {
+      "name": "Recs from Mike",
+      "status": "PASS",
+      "detail": "10 created",
+      "file": "08-scale-performance"
+    },
+    {
+      "name": "Seed overlays",
+      "status": "PASS",
+      "detail": "10 created",
+      "file": "08-scale-performance"
+    },
+    {
+      "name": "getItemsWithShared(events)",
+      "status": "PASS",
+      "detail": "225ms (< 500ms threshold)",
+      "file": "08-scale-performance"
+    },
+    {
+      "name": "getItemsWithShared(travel)",
+      "status": "PASS",
+      "detail": "224ms (< 500ms threshold)",
+      "file": "08-scale-performance"
+    },
+    {
+      "name": "getItemsWithShared(movies)",
+      "status": "PASS",
+      "detail": "219ms (< 500ms threshold)",
+      "file": "08-scale-performance"
+    },
+    {
+      "name": "getMyRecommendations (with ring resolution)",
+      "status": "PASS",
+      "detail": "145ms (< 1000ms threshold)",
+      "file": "08-scale-performance"
+    },
+    {
+      "name": "getOverlaysForEntries (20 entries)",
+      "status": "PASS",
+      "detail": "87ms (< 300ms threshold)",
+      "file": "08-scale-performance"
+    },
+    {
+      "name": "Full category load (items+collabs+overlays)",
+      "status": "PASS",
+      "detail": "288ms (< 2000ms threshold)",
+      "file": "08-scale-performance"
+    }
+  ]
+}

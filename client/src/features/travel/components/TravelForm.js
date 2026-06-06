@@ -18,6 +18,7 @@ function TravelForm({ formData, setFormData, onSubmit, onCancel }) {
       onCancel={onCancel}
       title="Add a Trip"
       buttonText="Trip"
+      hideSections={formData?._isShared ? ["Social", "Snapshots", "Photos"] : undefined}
     />
   );
 }

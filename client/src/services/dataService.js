@@ -166,6 +166,36 @@ const dataService = {
     return updated;
   },
 
+  async updateSharedItem(id, item) {
+    const cleanItem = stripTransientFields(item);
+    const userId = await getCurrentUserId();
+    const now = new Date().toISOString();
+
+    // Read existing data first to merge (preserves owner's snapshots/photos/rating)
+    const { data: existing, error: readError } = await supabase
+      .from("items")
+      .select("data")
+      .eq("id", id)
+      .single();
+
+    if (readError) throw readError;
+
+    const mergedData = { ...(existing?.data || {}), ...cleanItem, last_edited_at: now, last_edited_by: userId };
+
+    const { error } = await supabase
+      .from("items")
+      .update({
+        data: mergedData,
+        status: cleanItem.status || null,
+        start_date: cleanItem.startDate || null,
+        updated_at: now,
+      })
+      .eq("id", id);
+
+    if (error) throw error;
+    return mergedData;
+  },
+
   async deleteItem(category, id) {
     // Best-effort photo cleanup before removing the DB row.
     // Only runs for Supabase-backed categories (not localStorage ones).

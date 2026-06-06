@@ -126,6 +126,20 @@ const collaboratorService = {
   },
 
   /**
+   * Get all collaborator rows for an entry the current user owns (any status).
+   * Used to hydrate the share toggle when re-editing an owned item.
+   */
+  async getCollaboratorsForOwnedEntry(entryId) {
+    const { data, error } = await supabase
+      .from("collaborators")
+      .select("collaborator_contact_id, collaborator_user_id, status")
+      .eq("entry_id", entryId);
+
+    if (error) return [];
+    return data || [];
+  },
+
+  /**
    * Get collaborators for a specific entry (for showing "group album" overlays).
    */
   async getCollaboratorsForEntry(entryId) {
@@ -133,10 +147,44 @@ const collaboratorService = {
       .from("collaborators")
       .select("*")
       .eq("entry_id", entryId)
-      .eq("status", "accepted");
+      .in("status", ["accepted", "pending"]);
 
     if (error) return [];
-    return data || [];
+    const rows = data || [];
+
+    const ownerId = rows[0]?.owner_id;
+    const collabUserIds = rows.map((r) => r.collaborator_user_id).filter(Boolean);
+    const allUserIds = [...new Set([...collabUserIds, ownerId].filter(Boolean))];
+
+    let profileMap = {};
+    if (allUserIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url")
+        .in("id", allUserIds);
+      (profiles || []).forEach((p) => { profileMap[p.id] = p; });
+    }
+
+    const enrichedRows = rows.map((r) => ({
+      ...r,
+      _profileName: profileMap[r.collaborator_user_id]?.display_name || null,
+      _profileAvatarUrl: profileMap[r.collaborator_user_id]?.avatar_url || null,
+    }));
+
+    if (ownerId) {
+      enrichedRows.unshift({
+        id: `owner-${ownerId}`,
+        entry_id: entryId,
+        owner_id: ownerId,
+        collaborator_user_id: ownerId,
+        status: "accepted",
+        _isOwner: true,
+        _profileName: profileMap[ownerId]?.display_name || null,
+        _profileAvatarUrl: profileMap[ownerId]?.avatar_url || null,
+      });
+    }
+
+    return enrichedRows;
   },
 
   /**

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Row, Col } from "react-bootstrap";
-import categoryMeta from "../helpers/categoryMeta";
+import categoryMeta, { getEntryTitle } from "../helpers/categoryMeta";
 import { getSnapshotTeaser } from "../helpers/operator";
 import { enrichItemsWithSocialContent, getAllSocialSnaps } from "../helpers/socialContent";
 import dataService from "../services/dataService";
@@ -11,27 +11,7 @@ import { codeToFlag } from "../data/countries";
 import { useAuth } from "../contexts/AuthContext";
 import { useAppData } from "../contexts/AppDataContext";
 import EntryDetailPanel from "../components/shared/EntryDetailPanel";
-import eventSchema from "../features/events/eventSchema";
-import travelSchema from "../features/travel/travelSchema";
-import carSchema from "../features/cars/carSchema";
-import homeSchema from "../features/homes/homeSchema";
-import activitySchema from "../features/activities/activitySchema";
-import cellarSchema from "../features/cellar/cellarSchema";
-import kidsSchema from "../features/kids/kidsSchema";
-import movieSchema from "../features/movies/movieSchema";
-
-const SCHEMA_MAP = {
-  events: eventSchema,
-  travel: travelSchema,
-  cars: carSchema,
-  homes: homeSchema,
-  activities: activitySchema,
-  cellar: cellarSchema,
-  kids: kidsSchema,
-  movies: movieSchema,
-};
-
-const CATEGORY_KEYS = ["events", "travel", "activities", "movies", "cellar", "cars", "homes", "kids"];
+import { SCHEMA_MAP, CATEGORY_KEYS } from "../helpers/schemaRegistry";
 
 const categories = CATEGORY_KEYS.map((key) => ({
   key,
@@ -157,9 +137,7 @@ function Dashboard() {
           id: item.id,
           category: cat.key,
           label: cat.label,
-          title:
-            (cat.meta.getPrimaryDisplay ? cat.meta.getPrimaryDisplay(item) : null) ||
-            item[cat.meta.primaryField] || item.title || item.artist || "Untitled",
+          title: getEntryTitle(cat.key, item),
           snapshot: snapItems[0].text,
           displayName: snapItems[0].displayName,
           date: item.startDate || item.createdAt || "",

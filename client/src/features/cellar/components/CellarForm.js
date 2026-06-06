@@ -189,6 +189,7 @@ function CellarForm({ formData, setFormData, onSubmit, onCancel }) {
         onCancel={onCancel}
         title={subType === "whiskey" ? "Add a Whiskey" : "Add a Wine"}
         buttonText={subType === "whiskey" ? "Whiskey" : "Wine"}
+        hideSections={formData?._isShared ? ["Social", "Snapshots", "Photos"] : undefined}
       />
     </div>
   );

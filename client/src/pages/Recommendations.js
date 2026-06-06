@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Button, Badge } from "react-bootstrap";
+import StarRating from "../components/shared/StarRating";
 import recommendationService from "../services/recommendationService";
 import profileService from "../services/profileService";
 import dataService from "../services/dataService";
 import { getCategoryMeta } from "../helpers/categoryMeta";
+import statusLabels from "../helpers/statusLabels";
+import { findMatchingOwnedItem, mergeRecommender } from "../helpers/recommendationMatcher";
 
 function Recommendations() {
   const [enriched, setEnriched] = useState([]);
@@ -22,7 +25,6 @@ function Recommendations() {
       const enrichedData = await Promise.all(
         recs.map(async (rec) => {
           const profile = await profileService.getProfileByUserId(rec.from_user_id);
-          // Fetch the entry data
           const { data: entryRow } = await (await import("../services/supabaseClient")).supabase
             .from("items")
             .select("data, category")
@@ -39,7 +41,26 @@ function Recommendations() {
         })
       );
 
-      setEnriched(enrichedData.filter((r) => r.entry));
+      const withEntries = enrichedData.filter((r) => r.entry);
+
+      // Dedup: auto-merge recommendations for items the user already owns
+      const categories = [...new Set(withEntries.map((r) => r.category))];
+      const ownedByCategory = {};
+      for (const cat of categories) {
+        ownedByCategory[cat] = await dataService.getItems(cat);
+      }
+
+      const genuinelyNew = [];
+      for (const rec of withEntries) {
+        const match = findMatchingOwnedItem(rec.entry, rec.category, ownedByCategory[rec.category]);
+        if (match) {
+          autoMerge(rec, match);
+        } else {
+          genuinelyNew.push(rec);
+        }
+      }
+
+      setEnriched(genuinelyNew);
     } catch (err) {
       console.error("[Recommendations] load failed:", err);
     } finally {
@@ -47,25 +68,45 @@ function Recommendations() {
     }
   }
 
-  async function handleAddToWishlist(rec) {
+  async function autoMerge(rec, existingItem) {
+    try {
+      await recommendationService.acceptRecommendation(rec.id);
+      const newRecommender = {
+        userId: rec.from_user_id,
+        displayName: rec.recommenderName,
+        entryId: rec.entry_id,
+      };
+      const updatedRecommendedBy = mergeRecommender(existingItem.recommendedBy, newRecommender);
+      await dataService.updateItem(rec.category, existingItem.id, {
+        ...existingItem,
+        recommendedBy: updatedRecommendedBy,
+      });
+    } catch (err) {
+      console.error("[Recommendations] autoMerge failed:", err);
+    }
+  }
+
+  async function handleAccept(rec, status) {
     try {
       const entry = rec.entry;
 
-      // Create a new wishlist entry pre-populated from the recommendation
       const newEntry = {
         id: crypto.randomUUID(),
-        status: "wishlist",
-        recommendedBy: {
+        status,
+        recommendedBy: [{
           userId: rec.from_user_id,
           displayName: rec.recommenderName,
           entryId: rec.entry_id,
-        },
+          acceptedAt: new Date().toISOString(),
+        }],
       };
 
-      // Copy relevant fields based on category
       const fieldsToCopy = ["title", "city", "state", "country", "venue",
         "artist", "teams", "showName", "comedian", "festivalName", "eventName",
-        "eventType", "sport", "league", "theater"];
+        "eventType", "sport", "league", "theater",
+        "tmdbId", "posterUrl", "genre", "year", "director", "overview",
+        "wineName", "winery", "subType", "varietal", "region", "vintage",
+        "activityType", "location"];
 
       fieldsToCopy.forEach((field) => {
         if (entry[field]) newEntry[field] = entry[field];
@@ -77,7 +118,7 @@ function Recommendations() {
       setEnriched((prev) => prev.filter((r) => r.id !== rec.id));
       window.dispatchEvent(new Event("data-changed"));
     } catch (err) {
-      console.error("[Recommendations] addToWishlist failed:", err);
+      console.error("[Recommendations] accept failed:", err);
     }
   }
 
@@ -159,7 +200,7 @@ function Recommendations() {
               <RecommendationCard
                 key={rec.id}
                 rec={rec}
-                onAddToWishlist={() => handleAddToWishlist(rec)}
+                onAccept={(status) => handleAccept(rec, status)}
                 onDismiss={() => handleDismiss(rec)}
               />
             ))}
@@ -170,7 +211,24 @@ function Recommendations() {
   );
 }
 
-function RecommendationCard({ rec, onAddToWishlist, onDismiss }) {
+function getAcceptActions(category) {
+  const labels = statusLabels[category];
+  if (!labels) return [{ status: "wishlist", label: "Add to Wishlist", variant: "primary" }];
+
+  const actions = Object.entries(labels).map(([status, label]) => ({
+    status,
+    label: status === "wishlist" || status === "watchlist" ? `Add to ${label}` : label,
+  }));
+
+  const wishlistIdx = actions.findIndex((a) => a.status === "wishlist" || a.status === "watchlist");
+  if (wishlistIdx > 0) {
+    const [item] = actions.splice(wishlistIdx, 1);
+    actions.unshift(item);
+  }
+  return actions;
+}
+
+function RecommendationCard({ rec, onAccept, onDismiss }) {
   const meta = getCategoryMeta(rec.category);
   const entry = rec.entry;
 
@@ -184,6 +242,7 @@ function RecommendationCard({ rec, onAddToWishlist, onDismiss }) {
     .join(", ");
 
   const snapshot = entry.snapshot1 || entry.snapshot2 || entry.snapshot3;
+  const actions = getAcceptActions(rec.category);
 
   return (
     <div
@@ -264,16 +323,23 @@ function RecommendationCard({ rec, onAddToWishlist, onDismiss }) {
 
       {/* Rating */}
       {entry.rating && (
-        <div style={{ marginBottom: "0.75rem", color: "#f5a623", letterSpacing: "0.05em" }}>
-          {"★".repeat(parseInt(entry.rating))}{"☆".repeat(5 - parseInt(entry.rating))}
+        <div style={{ marginBottom: "0.75rem" }}>
+          <StarRating rating={entry.rating} />
         </div>
       )}
 
       {/* Actions */}
-      <div className="d-flex gap-2">
-        <Button size="sm" variant="primary" onClick={onAddToWishlist}>
-          Add to Wishlist
-        </Button>
+      <div className="d-flex gap-2 flex-wrap">
+        {actions.map((action, i) => (
+          <Button
+            key={action.status}
+            size="sm"
+            variant={i === 0 ? "primary" : "outline-primary"}
+            onClick={() => onAccept(action.status)}
+          >
+            {action.label}
+          </Button>
+        ))}
         <Button size="sm" variant="outline-secondary" onClick={onDismiss}>
           Dismiss
         </Button>

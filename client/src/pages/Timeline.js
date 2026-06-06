@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Badge } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import categoryMeta from "../helpers/categoryMeta";
-import { getStatusLabel } from "../helpers/statusLabels";
+import { formatDisplayDate } from "../helpers/dateUtils";
+import StatusBadge from "../components/shared/StatusBadge";
 import { getSnapshotTeaser } from "../helpers/operator";
 import dataService from "../services/dataService";
 import PrivacyIndicator, { isEntryShared } from "../components/shared/PrivacyIndicator";
@@ -10,28 +10,8 @@ import SourceFilterPills from "../components/shared/SourceFilterPills";
 import EntryDetailPanel from "../components/shared/EntryDetailPanel";
 import StatsStrip from "../components/shared/StatsStrip";
 import { useAppData } from "../contexts/AppDataContext";
-import eventSchema from "../features/events/eventSchema";
-import travelSchema from "../features/travel/travelSchema";
-import carSchema from "../features/cars/carSchema";
-import homeSchema from "../features/homes/homeSchema";
-import activitySchema from "../features/activities/activitySchema";
-import cellarSchema from "../features/cellar/cellarSchema";
-import kidsSchema from "../features/kids/kidsSchema";
-import movieSchema from "../features/movies/movieSchema";
+import { SCHEMA_MAP, CATEGORY_KEYS } from "../helpers/schemaRegistry";
 import { enrichItemsWithSocialContent, getSocialPreview } from "../helpers/socialContent";
-
-const SCHEMA_MAP = {
-  events: eventSchema,
-  travel: travelSchema,
-  cars: carSchema,
-  homes: homeSchema,
-  activities: activitySchema,
-  cellar: cellarSchema,
-  kids: kidsSchema,
-  movies: movieSchema,
-};
-
-const CATEGORY_KEYS = ["events", "travel", "cars", "homes", "activities", "cellar", "kids", "movies"];
 
 const categories = CATEGORY_KEYS.map((key) => ({
   key,
@@ -294,7 +274,7 @@ function Timeline() {
                         <PrivacyIndicator item={entry.rawItem || entry} style={{ marginLeft: "0.4rem" }} />
                       </div>
                       <div className="timeline-entry-meta">
-                        {formatDate(entry.date)}
+                        {formatDisplayDate(entry.date)}
                         {entry.subtitle && ` \u2022 ${entry.subtitle}`}
                         {" \u2022 "}
                         {entry.label}
@@ -310,22 +290,7 @@ function Timeline() {
                         </div>
                       )}
                     </div>
-                    {entry.status && (
-                      <Badge
-                        bg={
-                          ["attended", "visited", "owned", "done", "tried"].includes(entry.status)
-                            ? "success"
-                            : entry.status === "wishlist"
-                            ? "warning"
-                            : "secondary"
-                        }
-                        className={`badge-status ${
-                          entry.status === "wishlist" ? "text-dark" : ""
-                        }`}
-                      >
-                        {getStatusLabel(entry.category, entry.status)}
-                      </Badge>
-                    )}
+                    <StatusBadge category={entry.category} status={entry.status} />
                   </div>
                 </div>
               ))}
@@ -351,17 +316,6 @@ function Timeline() {
       )}
     </div>
   );
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return "";
-  const d = new Date(dateStr + "T00:00:00");
-  if (isNaN(d.getTime())) return dateStr;
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
 }
 
 export default Timeline;

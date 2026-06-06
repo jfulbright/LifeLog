@@ -1,6 +1,7 @@
 import { baseSchema } from "../../helpers/common.schema";
 import { getStatusValues } from "../../helpers/statusLabels";
 import { getReflectionFields, getCompanionsField } from "../../helpers/reflection.schema";
+import { getLocationFields } from "../../helpers/location.schema";
 
 const travelFields = [
   {
@@ -23,42 +24,7 @@ const travelFields = [
   },
 
   // ── Where ───────────────────────────────────────────────────────────────────
-  {
-    name: "country",
-    label: "Country",
-    type: "select",
-    optional: true,
-    defaultValue: "US",
-    section: "Where",
-    order: 10,
-  },
-  {
-    name: "city",
-    label: "City",
-    type: "city-autocomplete",
-    optional: true,
-    placeholder: "e.g. Tokyo",
-    section: "Where",
-    order: 11,
-  },
-  {
-    // Context-aware: US/CA → state dropdown, elsewhere → free text region
-    name: "state",
-    label: "State / Region",
-    type: "state-or-region",
-    optional: true,
-    section: "Where",
-    order: 12,
-  },
-  // Hidden fields auto-populated by city autocomplete / country picker
-  { name: "lat", label: "Lat", type: "text", hidden: true },
-  { name: "lng", label: "Lng", type: "text", hidden: true },
-  {
-    name: "continent",
-    label: "Continent",
-    type: "text",
-    hidden: true,
-  },
+  ...getLocationFields({ section: "Where", startOrder: 10 }),
   {
     name: "tripId",
     label: "Itinerary ID",
@@ -132,6 +98,7 @@ const travelFields = [
   getCompanionsField("visited"),
   {
     name: "visibilityControl",
+    label: "🔒 Who can see this",
     type: "visible-to",
     optional: true,
     section: "Social",
@@ -140,11 +107,12 @@ const travelFields = [
   },
   {
     name: "recommendation",
-    label: "Recommend this place",
+    label: "⭐ Recommend to",
     type: "recommend",
     optional: true,
     section: "Social",
     order: 61,
+    fullWidth: true,
   },
 
   // ── Details ───────────────────────────────────────────────────────────────────

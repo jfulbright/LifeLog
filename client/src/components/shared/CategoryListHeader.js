@@ -40,6 +40,9 @@ export default function CategoryListHeader({
   onFilterChange,
   filterColor,
 
+  // StatsLink (optional — renders inside StatsStrip)
+  statsLink,
+
   // SourceFilterPills (optional)
   sourceFilter,
   onSourceChange,
@@ -56,15 +59,17 @@ export default function CategoryListHeader({
         </h4>
         <div className="d-flex align-items-center gap-2">
           {extraActions}
-          <Button variant="primary" size="sm" onClick={onAdd}>
-            {addLabel}
-          </Button>
+          {onAdd && (
+            <Button variant="primary" size="sm" onClick={onAdd}>
+              {addLabel}
+            </Button>
+          )}
         </div>
       </div>
 
       {/* StatsStrip */}
       {stats && stats.length > 0 && (
-        <StatsStrip stats={stats} icon="📊" />
+        <StatsStrip stats={stats} icon="📊" statsLink={statsLink} />
       )}
 
       {/* StatusToggle */}

@@ -1,6 +1,7 @@
 import { baseSchema } from "../../helpers/common.schema";
 import { getStatusValues } from "../../helpers/statusLabels";
 import { getReflectionFields, getCompanionsField } from "../../helpers/reflection.schema";
+import { getLocationFields } from "../../helpers/location.schema";
 
 export const ACTIVITY_TYPES = {
   snow: {
@@ -59,35 +60,7 @@ const activityFields = [
     section: "Where",
     order: 10,
   },
-  {
-    name: "country",
-    label: "Country",
-    type: "select",
-    optional: true,
-    defaultValue: "US",
-    section: "Where",
-    order: 11,
-  },
-  {
-    name: "city",
-    label: "City",
-    type: "city-autocomplete",
-    optional: true,
-    placeholder: "e.g. Whistler",
-    section: "Where",
-    order: 12,
-  },
-  {
-    name: "state",
-    label: "State / Region",
-    type: "state-or-region",
-    optional: true,
-    section: "Where",
-    order: 13,
-  },
-  { name: "lat", label: "Lat", type: "text", hidden: true },
-  { name: "lng", label: "Lng", type: "text", hidden: true },
-  { name: "continent", label: "Continent", type: "text", hidden: true },
+  ...getLocationFields({ section: "Where", startOrder: 11 }),
   {
     name: "difficulty",
     label: "Difficulty",
@@ -166,6 +139,7 @@ const activityFields = [
   getCompanionsField("done"),
   {
     name: "visibilityControl",
+    label: "🔒 Who can see this",
     type: "visible-to",
     optional: true,
     section: "Social",
@@ -174,11 +148,12 @@ const activityFields = [
   },
   {
     name: "recommendation",
-    label: "Recommend this activity",
+    label: "⭐ Recommend to",
     type: "recommend",
     optional: true,
     section: "Social",
     order: 61,
+    fullWidth: true,
   },
 
   // Details

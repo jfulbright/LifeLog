@@ -75,6 +75,7 @@ export const isFieldVisible = (field, formData) => {
   if (!field.visibleWhen) return true;
 
   return Object.entries(field.visibleWhen).every(([key, expectedValue]) => {
+    if (typeof expectedValue === "function") return expectedValue(formData[key]);
     return Array.isArray(expectedValue)
       ? expectedValue.includes(formData[key])
       : formData[key] === expectedValue;

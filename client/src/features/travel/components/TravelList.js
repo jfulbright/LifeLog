@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { Button, Badge, Modal, Form } from "react-bootstrap";
+import { Button, Modal, Form } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
 import TravelForm from "../../../features/travel/components/TravelForm";
 import ItemCardList from "../../../components/shared/ItemCardList";
@@ -10,8 +10,11 @@ import WorldMapView from "../../../features/travel/components/WorldMapView";
 import PhotoGrid from "../../../components/shared/PhotoGrid";
 import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
 import CategoryListHeader from "../../../components/shared/CategoryListHeader";
+import StarRating from "../../../components/shared/StarRating";
+import StatusBadge from "../../../components/shared/StatusBadge";
 import travelSchema from "../../../features/travel/travelSchema";
 import useCategory from "../../../hooks/useCategory";
+import { formatDisplayDate, formatDateRange } from "../../../helpers/dateUtils";
 import { useAppData } from "../../../contexts/AppDataContext";
 import { codeToFlag, getCountryName } from "../../../data/countries";
 import dataService from "../../../services/dataService";
@@ -68,19 +71,7 @@ function ItineraryHeader({ items, tripName, tripId, onAddStop, isCollapsed, onTo
     ? Math.round((new Date(lastDate + "T00:00:00") - new Date(firstDate + "T00:00:00")) / 86400000) + 1
     : null;
 
-  const formatDateRange = () => {
-    if (!firstDate) return null;
-    const s = new Date(firstDate + "T00:00:00");
-    const opts = { month: "short", day: "numeric" };
-    if (!lastDate || lastDate === firstDate) {
-      return s.toLocaleDateString("en-US", { ...opts, year: "numeric" });
-    }
-    const e = new Date(lastDate + "T00:00:00");
-    if (s.getFullYear() !== e.getFullYear()) {
-      return `${s.toLocaleDateString("en-US", { ...opts, year: "numeric" })} – ${e.toLocaleDateString("en-US", { ...opts, year: "numeric" })}`;
-    }
-    return `${s.toLocaleDateString("en-US", opts)} – ${e.toLocaleDateString("en-US", { ...opts, year: "numeric" })}`;
-  };
+  const tripDateRange = () => formatDateRange(firstDate, lastDate);
 
   const stops = sorted.map((item) => {
     const city = item.city || getCountryName(item.country) || "Stop";
@@ -88,7 +79,7 @@ function ItineraryHeader({ items, tripName, tripId, onAddStop, isCollapsed, onTo
     return `${flag} ${city}`;
   }).join(" → ");
 
-  const dateRange = formatDateRange();
+  const dateRange = tripDateRange();
 
   const handleRenameSubmit = () => {
     if (renameValue.trim()) onRename(tripId, renameValue.trim());
@@ -278,12 +269,6 @@ function ItineraryHeader({ items, tripName, tripId, onAddStop, isCollapsed, onTo
 function LinkedActivityRow({ activity }) {
   const [expanded, setExpanded] = useState(false);
 
-  const formatDate = (d) => {
-    if (!d) return null;
-    return new Date(d + "T00:00:00").toLocaleDateString("en-US", {
-      month: "short", day: "numeric", year: "numeric",
-    });
-  };
 
   const snapshots = [activity.snapshot1, activity.snapshot2, activity.snapshot3].filter(Boolean);
 
@@ -300,7 +285,7 @@ function LinkedActivityRow({ activity }) {
         )}
         {activity.startDate && (
           <span style={{ color: "var(--color-text-tertiary)", fontSize: "var(--font-size-xs)" }}>
-            {formatDate(activity.startDate)}
+            {formatDisplayDate(activity.startDate)}
           </span>
         )}
         <button
@@ -327,9 +312,9 @@ function LinkedActivityRow({ activity }) {
           {activity.startDate && (
             <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)", marginBottom: "0.2rem" }}>
               <span style={{ fontWeight: 600 }}>Date: </span>
-              {formatDate(activity.startDate)}
+              {formatDisplayDate(activity.startDate)}
               {activity.endDate && activity.endDate !== activity.startDate
-                ? ` – ${formatDate(activity.endDate)}`
+                ? ` – ${formatDisplayDate(activity.endDate)}`
                 : ""}
             </div>
           )}
@@ -340,9 +325,8 @@ function LinkedActivityRow({ activity }) {
             </div>
           )}
           {activity.rating && (
-            <div style={{ fontSize: "var(--font-size-xs)", color: "#f5a623", marginBottom: "0.2rem" }}>
-              {"★".repeat(parseInt(activity.rating, 10))}
-              {"☆".repeat(5 - parseInt(activity.rating, 10))}
+            <div style={{ marginBottom: "0.2rem" }}>
+              <StarRating rating={activity.rating} />
             </div>
           )}
           {snapshots.map((snap, i) => (
@@ -375,14 +359,6 @@ function TripDetailPeek({ trip, linkedActivities, onEdit, onClose }) {
   const snapshots = [trip.snapshot1, trip.snapshot2, trip.snapshot3].filter(Boolean);
   const linked = linkedActivities.filter((a) => a.linkedTripId === trip.id);
 
-  const formatDate = (d) => {
-    if (!d) return null;
-    return new Date(d + "T00:00:00").toLocaleDateString("en-US", {
-      month: "short", day: "numeric", year: "numeric",
-    });
-  };
-
-  const statusVariant = trip.status === "visited" ? "success" : trip.status === "wishlist" ? "warning" : "secondary";
 
   return (
     <div style={{
@@ -396,9 +372,7 @@ function TripDetailPeek({ trip, linkedActivities, onEdit, onClose }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.2rem" }}>
-            <Badge bg={statusVariant} className={statusVariant === "warning" ? "text-dark" : ""}>
-              {trip.status}
-            </Badge>
+            <StatusBadge category="travel" status={trip.status} />
             <span style={{ fontWeight: 700, fontSize: "var(--font-size-sm)" }}>
               {trip.title || location || "Trip"}
             </span>
@@ -410,8 +384,8 @@ function TripDetailPeek({ trip, linkedActivities, onEdit, onClose }) {
           )}
           {trip.startDate && (
             <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)", marginTop: "0.15rem" }}>
-              {formatDate(trip.startDate)}
-              {trip.endDate && trip.endDate !== trip.startDate ? ` – ${formatDate(trip.endDate)}` : ""}
+              {formatDisplayDate(trip.startDate)}
+              {trip.endDate && trip.endDate !== trip.startDate ? ` – ${formatDisplayDate(trip.endDate)}` : ""}
             </div>
           )}
         </div>
@@ -623,16 +597,12 @@ function TravelList() {
         title={"\u2708\uFE0F Travel"}
         addLabel="+ Add Trip"
         onAdd={openForm}
-        extraActions={<>
-          <Link to="/travel/stats" className="btn btn-sm btn-outline-secondary">
-            {"\u{1F4CA}"} Stats
-          </Link>
-          {allUngrouped.length >= 2 && (
-            <Button variant="outline-secondary" size="sm" onClick={openItineraryModal}>
-              {"\u{1F5FA}\uFE0F"} Create Itinerary
-            </Button>
-          )}
-        </>}
+        extraActions={allUngrouped.length >= 2 ? (
+          <Button variant="outline-secondary" size="sm" onClick={openItineraryModal}>
+            {"\u{1F5FA}\uFE0F"} Create Itinerary
+          </Button>
+        ) : null}
+        statsLink={{ to: "/travel/stats", color: "var(--color-travel)" }}
         stats={(() => {
           const stats = computeTravelStats(travels);
           if (stats.totalTrips === 0) return null;
@@ -722,9 +692,7 @@ function TravelList() {
                   onMouseEnter={(e) => { if (trip.id) e.currentTarget.style.background = "var(--color-surface-hover)"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}
                 >
-                  <Badge bg={trip.status === "visited" ? "success" : "warning"} className={trip.status === "wishlist" ? "text-dark" : ""}>
-                    {trip.status}
-                  </Badge>
+                  <StatusBadge category="travel" status={trip.status} />
                   <span style={{ fontWeight: 600, flex: 1 }}>{trip.title || trip.city || "Trip"}</span>
                   {trip.startDate && (
                     <span style={{ color: "var(--color-text-tertiary)" }}>

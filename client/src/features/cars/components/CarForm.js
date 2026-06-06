@@ -66,6 +66,7 @@ function CarForm({ formData, setFormData, onSubmit }) {
         onSubmit={onSubmit}
         title="Add a Car"
         buttonText="Car"
+        hideSections={formData?._isShared ? ["Social", "Snapshots", "Photos"] : undefined}
       />
     </>
   );

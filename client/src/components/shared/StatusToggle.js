@@ -13,6 +13,7 @@ function StatusToggle({ category, options, value, onChange }) {
           key={status}
           type="button"
           className={`btn btn-sm ${value === status ? "active" : ""}`}
+          data-status={status === "all" ? undefined : status}
           onClick={() => onChange(status)}
         >
           {getStatusLabel(category, status)}

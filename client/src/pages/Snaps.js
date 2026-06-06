@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import categoryMeta from "../helpers/categoryMeta";
+import { formatDisplayDate } from "../helpers/dateUtils";
 import { getAllSnapshots, getItemPhotos } from "../helpers/operator";
 import {
   enrichItemsWithSocialContent,
@@ -13,25 +14,7 @@ import StatsStrip from "../components/shared/StatsStrip";
 import { isEntryShared } from "../components/shared/PrivacyIndicator";
 import EntryDetailPanel from "../components/shared/EntryDetailPanel";
 import { useAppData } from "../contexts/AppDataContext";
-import eventSchema from "../features/events/eventSchema";
-import travelSchema from "../features/travel/travelSchema";
-import carSchema from "../features/cars/carSchema";
-import homeSchema from "../features/homes/homeSchema";
-import activitySchema from "../features/activities/activitySchema";
-import cellarSchema from "../features/cellar/cellarSchema";
-import kidsSchema from "../features/kids/kidsSchema";
-
-const SCHEMA_MAP = {
-  events: eventSchema,
-  travel: travelSchema,
-  cars: carSchema,
-  homes: homeSchema,
-  activities: activitySchema,
-  cellar: cellarSchema,
-  kids: kidsSchema,
-};
-
-const CATEGORY_KEYS = ["events", "travel", "cars", "homes", "activities", "cellar", "kids"];
+import { SCHEMA_MAP, CATEGORY_KEYS } from "../helpers/schemaRegistry";
 
 const categories = CATEGORY_KEYS.map((key) => ({
   key,
@@ -43,17 +26,6 @@ const VIEW_TABS = [
   { id: "snaps", label: "✨ Snaps" },
   { id: "photos", label: "📷 Photos" },
 ];
-
-function formatDate(dateStr) {
-  if (!dateStr) return "";
-  const d = new Date(dateStr + "T00:00:00");
-  if (isNaN(d.getTime())) return dateStr;
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
 
 function Snaps() {
   const [activeView, setActiveView] = useState("all");
@@ -373,7 +345,7 @@ function SnapCard({ item, onViewDetail }) {
         {item.date && (
           <>
             <span className="snap-card-divider">&middot;</span>
-            <span>{formatDate(item.date)}</span>
+            <span>{formatDisplayDate(item.date)}</span>
           </>
         )}
       </div>
@@ -405,7 +377,7 @@ function PhotoCard({ item, compact = false, onViewDetail }) {
         {item.date && (
           <>
             <span className="snap-card-divider">&middot;</span>
-            <span>{formatDate(item.date)}</span>
+            <span>{formatDisplayDate(item.date)}</span>
           </>
         )}
       </div>

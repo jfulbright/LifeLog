@@ -3,70 +3,16 @@ import { Button, Badge } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import collaboratorService from "../services/collaboratorService";
 import overlayService from "../services/overlayService";
-import OverlayForm from "../components/shared/OverlayForm";
+import SharedMemoriesSection from "../components/shared/SharedMemoriesSection";
 import { useAppData } from "../contexts/AppDataContext";
-import categoryMeta from "../helpers/categoryMeta";
-
-/**
- * SharedFeed — Phase 7b
- *
- * Shows entries that have been shared with contacts (via ring visibility or
- * individual tags). Each entry appears with a status:
- *   - "pending"  → tagged but not yet accepted
- *   - "accepted" → accepted; user can add their own overlays (Phase 7c)
- *   - "declined" → declined; hidden from feed
- *
- * NOTE: Until Phase 6 auth is added, this simulates the tagged person's view
- * by showing entries you've shared outward. Once Phase 6 links real accounts,
- * the API will filter entries directed at the authenticated user.
- */
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function getEntryDisplayTitle(entry) {
-  const meta = categoryMeta[entry._category];
-  if (meta?.getPrimaryDisplay) {
-    const display = meta.getPrimaryDisplay(entry);
-    if (display) return display;
-  }
-  if (meta?.primaryField && entry[meta.primaryField]) {
-    return entry[meta.primaryField];
-  }
-  if (entry.artist) return entry.artist;
-  if (entry.title) return entry.title;
-  if (entry.activityType) return entry.activityType;
-  if (entry.wineName) return entry.wineName;
-  if (entry.whiskyName) return entry.whiskyName;
-  if (entry.make) return `${entry.make}${entry.model ? " " + entry.model : ""}`.trim();
-  return entry.type || "Entry";
-}
-
-function getEntrySubtitle(entry) {
-  const meta = categoryMeta[entry._category];
-  if (meta?.getSecondaryDisplay) {
-    const display = meta.getSecondaryDisplay(entry);
-    if (display) return display;
-  }
-  if (meta?.secondaryFields) {
-    const parts = meta.secondaryFields.map((f) => entry[f]).filter(Boolean);
-    if (parts.length > 0) return parts.join(", ");
-  }
-  const parts = [];
-  if (entry.venue) parts.push(entry.venue);
-  if (entry.city) parts.push(entry.city);
-  if (entry.country && entry.country !== "US") parts.push(entry.country);
-  return parts.join(", ");
-}
-
-function formatDateRange(entry) {
-  if (!entry.startDate) return null;
-  if (!entry.endDate || entry.startDate === entry.endDate) return entry.startDate;
-  return `${entry.startDate} — ${entry.endDate}`;
-}
+import { useSocialData } from "../contexts/SocialDataContext";
+import categoryMeta, { getEntryTitle, getEntrySubtitle } from "../helpers/categoryMeta";
+import { formatDateRange } from "../helpers/dateUtils";
+import StarRating from "../components/shared/StarRating";
 
 // ── Shared Entry Card ─────────────────────────────────────────────────────────
 
-function SharedEntryCard({ entry, tag, contacts, onAccept, onDecline, onViewOverlays, onEditShared, onLeaveShare }) {
+function SharedEntryCard({ entry, tag, contacts, onAccept, onDecline, onViewOverlays, onEditShared, onLeaveShare, existingOverlay, onOverlaySaved }) {
   const meta = categoryMeta[entry._category] || {};
 
   // Find who shared this with us
@@ -89,77 +35,45 @@ function SharedEntryCard({ entry, tag, contacts, onAccept, onDecline, onViewOver
         marginBottom: "0.75rem",
       }}
     >
-      <div style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem" }}>
-        <div
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 10,
-            background: meta.color || "var(--color-primary)",
-            color: "#fff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "1.25rem",
-            flexShrink: 0,
-          }}
-        >
-          {meta.icon || "📝"}
-        </div>
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-            <span style={{ fontWeight: 700, fontSize: "var(--font-size-base)", color: "var(--color-text-primary)" }}>
-              {getEntryDisplayTitle(entry)}
+      {/* Row 1: Title + visibility + status badges (right-aligned) */}
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+        <span style={{ fontWeight: 700, fontSize: "var(--font-size-base)", color: "var(--color-text-primary)" }}>
+          {getEntryTitle(entry._category, entry)}
+        </span>
+        {(entry.shareWithCompanionIds?.length > 0 || entry.visibilityRings?.length > 0) && (
+          <span style={{ fontSize: "0.85rem" }}>👥</span>
+        )}
+        <span style={{ marginLeft: "auto", display: "flex", gap: "0.375rem", alignItems: "center" }}>
+          {entry.status && (
+            <span style={{
+              fontSize: "0.6rem",
+              fontWeight: 700,
+              padding: "0.1rem 0.4rem",
+              borderRadius: 6,
+              background: entry.status === "wishlist" ? "var(--color-primary)" : "var(--color-success)",
+              color: "#fff",
+              textTransform: "capitalize",
+            }}>
+              {entry.status}
             </span>
-            {entry.status && (
-              <span style={{
-                fontSize: "0.6rem",
-                fontWeight: 700,
-                padding: "0.1rem 0.4rem",
-                borderRadius: 6,
-                background: entry.status === "wishlist" ? "var(--color-warning)" : "var(--color-success)",
-                color: entry.status === "wishlist" ? "#1D1C1D" : "#fff",
-                textTransform: "capitalize",
-              }}>
-                {entry.status}
-              </span>
-            )}
-            <StatusBadge status={tagStatus} />
-          </div>
-
-          {getEntrySubtitle(entry) && (
-            <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", marginTop: "0.125rem" }}>
-              {getEntrySubtitle(entry)}
-            </div>
           )}
+          <StatusBadge status={tagStatus} />
+        </span>
+      </div>
 
-          <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)", marginTop: "0.25rem", display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-            {formatDateRange(entry) && <span>📅 {formatDateRange(entry)}</span>}
-            <span>
-              Shared by <strong>{sharedByName}</strong>
-            </span>
-          </div>
-
-          {entry.snapshot1 && (
-            <div
-              style={{
-                marginTop: "0.5rem",
-                fontStyle: "italic",
-                fontSize: "var(--font-size-sm)",
-                color: "var(--color-text-secondary)",
-                borderLeft: "2px solid var(--color-border)",
-                paddingLeft: "0.625rem",
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              }}
-            >
-              "{entry.snapshot1}"
-            </div>
-          )}
+      {/* Row 2: Location */}
+      {getEntrySubtitle(entry._category, entry) && (
+        <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", marginTop: "0.25rem" }}>
+          {getEntrySubtitle(entry._category, entry)}
         </div>
+      )}
+
+      {/* Row 3: Date + Shared By */}
+      <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)", marginTop: "0.375rem", display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
+        {formatDateRange(entry.startDate, entry.endDate) && <span>{"📅"} {formatDateRange(entry.startDate, entry.endDate)}</span>}
+        <span>
+          {"🤝"} Shared with you by <span style={{ color: "var(--color-primary)", fontWeight: 600 }}>{sharedByName}</span>
+        </span>
       </div>
 
       {tagStatus === "pending" && (
@@ -188,7 +102,7 @@ function SharedEntryCard({ entry, tag, contacts, onAccept, onDecline, onViewOver
 
       {tagStatus === "accepted" && (
         <div style={{ marginTop: "0.875rem", paddingTop: "0.75rem", borderTop: "1px solid var(--color-border)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
             <Link
               to={`/${entry._category || "travel"}`}
               style={{ fontSize: "var(--font-size-xs)", color: "var(--color-primary)", fontWeight: 600, textDecoration: "none" }}
@@ -204,7 +118,12 @@ function SharedEntryCard({ entry, tag, contacts, onAccept, onDecline, onViewOver
               Leave
             </Button>
           </div>
-          <OverlayForm entryId={entry.id} entryStatus={entry.status} onSaved={() => {}} />
+
+          <SharedMemoriesSection
+            item={{ ...entry, _isShared: true, _myOverlayContribution: existingOverlay }}
+            contacts={contacts}
+            onOverlaySaved={() => { if (onOverlaySaved) onOverlaySaved(entry.id); }}
+          />
         </div>
       )}
     </div>
@@ -247,7 +166,7 @@ function OverlayPanel({ entry, tag, overlays, contacts, onClose, onSave }) {
   const [rating, setRating] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const title = getEntryDisplayTitle(entry);
+  const title = getEntryTitle(entry._category, entry);
 
   useEffect(() => {
     let cancelled = false;
@@ -341,18 +260,7 @@ function OverlayPanel({ entry, tag, overlays, contacts, onClose, onSave }) {
 
         <div style={{ marginBottom: "1rem" }}>
           <label style={{ display: "block", marginBottom: "0.375rem", fontSize: "var(--font-size-sm)", fontWeight: 600 }}>Rating</label>
-          <div className="d-flex gap-1">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                type="button"
-                onClick={() => setRating(String(star))}
-                style={{ background: "none", border: "none", fontSize: "1.5rem", cursor: "pointer", color: star <= parseInt(rating) ? "#f5a623" : "#ccc" }}
-              >
-                {star <= parseInt(rating) ? "★" : "☆"}
-              </button>
-            ))}
-          </div>
+          <StarRating rating={rating} size="1.5rem" interactive onChange={(val) => setRating(String(val))} />
         </div>
 
         <Button variant="primary" className="w-100" onClick={handleSave} disabled={saving}>
@@ -371,8 +279,8 @@ function OverlayPanel({ entry, tag, overlays, contacts, onClose, onSave }) {
                   <div style={{ fontWeight: 600, fontSize: "var(--font-size-sm)", marginBottom: "0.25rem" }}>
                     {contact ? contact.displayName : "Someone"}
                     {overlay.rating && (
-                      <span style={{ marginLeft: "0.5rem", color: "#f5a623", fontWeight: 400 }}>
-                        {"★".repeat(parseInt(overlay.rating))}{"☆".repeat(5 - parseInt(overlay.rating))}
+                      <span style={{ marginLeft: "0.5rem" }}>
+                        <StarRating rating={overlay.rating} />
                       </span>
                     )}
                   </div>
@@ -395,10 +303,11 @@ function OverlayPanel({ entry, tag, overlays, contacts, onClose, onSave }) {
 
 function SharedFeed() {
   const { contacts, refreshNotifications } = useAppData();
+  const { incrementVersion } = useSocialData();
   const [allItems, setAllItems] = useState([]);
-  const [overlays, setOverlays] = useState([]);
+  const [myOverlays, setMyOverlays] = useState({});
   const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("pending");
   const [overlayTarget, setOverlayTarget] = useState(null);
   const [editTarget, setEditTarget] = useState(null);
 
@@ -420,12 +329,29 @@ function SharedFeed() {
           };
         })
       );
-      setAllItems(enriched.filter((e) => e.entry));
-      setOverlays([]);
+      const validItems = enriched.filter((e) => e.entry);
+      setAllItems(validItems);
+
+      const acceptedIds = validItems
+        .filter((c) => c.status === "accepted")
+        .map((c) => c.entry_id);
+      if (acceptedIds.length > 0) {
+        const { supabase: sb } = await import("../services/supabaseClient");
+        const { data: { session } } = await sb.auth.getSession();
+        const currentUserId = session?.user?.id;
+        const overlaysList = await overlayService.getOverlaysForEntries(acceptedIds);
+        const overlayMap = {};
+        (overlaysList || []).forEach((o) => {
+          if (o.user_id === currentUserId) overlayMap[o.entry_id] = o;
+        });
+        setMyOverlays(overlayMap);
+      } else {
+        setMyOverlays({});
+      }
     } catch (err) {
       console.error("[SharedFeed] load failed:", err);
       setAllItems([]);
-      setOverlays([]);
+      setMyOverlays({});
     }
     setLoading(false);
   }, []);
@@ -450,16 +376,16 @@ function SharedFeed() {
 
   const handleAccept = async (item) => {
     await collaboratorService.acceptCollaboration(item._collabId);
+    incrementVersion();
     await load();
     refreshNotifications();
-    window.dispatchEvent(new Event("data-changed"));
   };
 
   const handleDecline = async (item) => {
     await collaboratorService.declineCollaboration(item._collabId);
+    incrementVersion();
     await load();
     refreshNotifications();
-    window.dispatchEvent(new Event("data-changed"));
   };
 
   const handleViewOverlays = (entry, tag) => {
@@ -473,16 +399,21 @@ function SharedFeed() {
   const handleLeaveShare = async (entry) => {
     if (!window.confirm("This will remove this shared experience from your account. The owner will still have it. Continue?")) return;
     await collaboratorService.declineCollaboration(entry._collabId);
+    incrementVersion();
     await load();
     refreshNotifications();
-    window.dispatchEvent(new Event("data-changed"));
   };
 
   const handleSaveOverlay = async (overlayData) => {
-    await overlayService.saveOverlay(overlayData.entryId, overlayData);
-    await load();
-    setOverlayTarget(null);
-    window.dispatchEvent(new Event("data-changed"));
+    try {
+      await overlayService.saveOverlay(overlayData.entryId, overlayData);
+      incrementVersion();
+      await load();
+      setOverlayTarget(null);
+    } catch (err) {
+      console.error("[SharedFeed] overlay save failed:", err);
+      alert(`Failed to save overlay: ${err.message}`);
+    }
   };
 
   const pendingCount = allItems.filter((c) => c.status === "pending").length;
@@ -532,6 +463,7 @@ function SharedFeed() {
                 key={s}
                 type="button"
                 className={`btn btn-sm ${filterStatus === s ? "active" : ""}`}
+                data-status={s === "all" ? undefined : s}
                 onClick={() => setFilterStatus(s)}
                 style={{ textTransform: "capitalize" }}
               >
@@ -565,6 +497,8 @@ function SharedFeed() {
               onViewOverlays={handleViewOverlays}
               onEditShared={handleEditShared}
               onLeaveShare={handleLeaveShare}
+              existingOverlay={myOverlays[item.id] || null}
+              onOverlaySaved={() => { incrementVersion(); load(); }}
             />
           );
         })
@@ -574,7 +508,7 @@ function SharedFeed() {
         <OverlayPanel
           entry={overlayTarget.entry}
           tag={overlayTarget.tag}
-          overlays={overlays.filter((o) => o.entry_id === overlayTarget.entry.id)}
+          overlays={[]}
           contacts={contacts}
           onClose={() => setOverlayTarget(null)}
           onSave={handleSaveOverlay}
@@ -596,9 +530,9 @@ function SharedFeed() {
                 .from("items")
                 .update({ data: cleanData })
                 .eq("id", editTarget.id);
+              incrementVersion();
               await load();
               setEditTarget(null);
-              window.dispatchEvent(new Event("data-changed"));
             } catch (err) {
               console.error("[SharedFeed] edit save failed:", err);
             }
@@ -622,7 +556,7 @@ function SharedEditPanel({ entry, contacts, onClose, onSave }) {
   }, [entry.id]);
 
   const meta = categoryMeta[entry._category] || {};
-  const title = getEntryDisplayTitle(entry);
+  const title = getEntryTitle(entry._category, entry);
 
   const handleSave = async () => {
     setSaving(true);

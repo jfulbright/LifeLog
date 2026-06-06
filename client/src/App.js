@@ -10,6 +10,8 @@ import CellarList from "./features/cellar/components/CellarList";
 import KidsList from "./features/kids/components/KidsList";
 import MovieList from "./features/movies/components/MovieList";
 import MovieStatsPage from "./features/movies/components/MovieStatsPage";
+import EventStatsPage from "./features/events/components/EventStatsPage";
+import ActivityStatsPage from "./features/activities/components/ActivityStatsPage";
 import Dashboard from "./pages/Dashboard";
 import Timeline from "./pages/Timeline";
 import Snaps from "./pages/Snaps";
@@ -25,12 +27,13 @@ import ResetPassword from "./pages/ResetPassword";
 import SidebarNav from "./components/shared/SidebarNav";
 import MigrationBanner from "./components/auth/MigrationBanner";
 import { AppDataProvider, useAppData } from "./contexts/AppDataContext";
+import { SocialDataProvider } from "./contexts/SocialDataContext";
 import { useAuth } from "./contexts/AuthContext";
 import "App.css";
 
 function AppShell() {
   const [showMobileNav, setShowMobileNav] = useState(false);
-  const { counts, notifications } = useAppData();
+  const { counts, pendingCollaborations, pendingRecommendations } = useAppData();
   const { user, signOut } = useAuth();
 
   return (
@@ -41,7 +44,7 @@ function AppShell() {
           <span className="sidebar-brand-emoji">📸</span>
           <span className="sidebar-brand-name">LifeSnaps</span>
         </Link>
-        <SidebarNav counts={counts} notificationCount={notifications.length} user={user} onSignOut={signOut} />
+        <SidebarNav counts={counts} notificationCount={pendingCollaborations} recommendationCount={pendingRecommendations} user={user} onSignOut={signOut} />
       </aside>
 
       {/* Mobile navbar (below lg) */}
@@ -102,7 +105,7 @@ function AppShell() {
         <Offcanvas.Body style={{ padding: 0 }}>
           <SidebarNav
             counts={counts}
-            notificationCount={notifications.length}
+            notificationCount={pendingCollaborations} recommendationCount={pendingRecommendations}
             user={user}
             onSignOut={signOut}
             onItemClick={() => setShowMobileNav(false)}
@@ -123,7 +126,9 @@ function AppShell() {
             <Route path="/travel" element={<TravelList />} />
             <Route path="/travel/stats" element={<TravelStatsPage />} />
             <Route path="/activities" element={<ActivityList />} />
+            <Route path="/activities/stats" element={<ActivityStatsPage />} />
             <Route path="/events" element={<EventList />} />
+            <Route path="/events/stats" element={<EventStatsPage />} />
             <Route path="/cellar" element={<CellarList />} />
             <Route path="/kids" element={<KidsList />} />
             <Route path="/movies" element={<MovieList />} />
@@ -166,7 +171,9 @@ function App() {
 
   return (
     <AppDataProvider>
-      <AppShell />
+      <SocialDataProvider>
+        <AppShell />
+      </SocialDataProvider>
     </AppDataProvider>
   );
 }
