@@ -15,10 +15,11 @@ import {
   getStatusFilterOptions,
   filterByStatus,
   getStatusLabel,
+  getInitialSourceFilter,
 } from "../../../helpers/filterUtils";
 
 function CarList() {
-  const [sourceFilter, setSourceFilter] = React.useState("all");
+  const [sourceFilter, setSourceFilter] = React.useState(getInitialSourceFilter);
   const [carFilter, setCarFilter] = React.useState("all");
   const { profile } = useAppData();
   const {

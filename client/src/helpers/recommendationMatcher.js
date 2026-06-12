@@ -7,6 +7,14 @@ function normalize(str) {
   return (str || "").trim().toLowerCase();
 }
 
+// Both sides must be present AND equal. Prevents two missing values (e.g. an
+// undefined field on both the recommendation and the owned item) from collapsing
+// to "" === "" and producing a false match.
+function eqNonEmpty(a, b) {
+  const na = normalize(a);
+  return !!na && na === normalize(b);
+}
+
 export function findMatchingOwnedItem(recEntry, category, ownedItems) {
   if (!recEntry || !ownedItems?.length) return null;
 
@@ -15,28 +23,32 @@ export function findMatchingOwnedItem(recEntry, category, ownedItems) {
       if (recEntry.tmdbId) {
         return ownedItems.find((item) => item.tmdbId === recEntry.tmdbId) || null;
       }
-      return ownedItems.find((item) => normalize(item.title) === normalize(recEntry.title)) || null;
+      return ownedItems.find((item) => eqNonEmpty(item.title, recEntry.title)) || null;
 
     case "cellar":
+      // wineName is the stable identifier; whiskey/other subtypes use different
+      // name fields, so a missing wineName means "no confident match" → new entry.
       return ownedItems.find((item) =>
-        normalize(item.wineName) === normalize(recEntry.wineName) &&
-        normalize(item.winery) === normalize(recEntry.winery)
+        eqNonEmpty(item.wineName, recEntry.wineName) &&
+        eqNonEmpty(item.winery, recEntry.winery)
       ) || null;
 
     case "activities":
       return ownedItems.find((item) =>
         item.activityType === recEntry.activityType &&
-        normalize(item.title) === normalize(recEntry.title)
+        eqNonEmpty(item.title, recEntry.title)
       ) || null;
 
     case "events":
+      // Events carry `title` (+ `artist`/`eventType`), never `eventName`. Match on
+      // real fields: same artist + type, or same title. Both guarded non-empty.
       return ownedItems.find((item) =>
-        (normalize(item.artist) === normalize(recEntry.artist) && item.eventType === recEntry.eventType) ||
-        normalize(item.eventName) === normalize(recEntry.eventName)
+        (eqNonEmpty(item.artist, recEntry.artist) && item.eventType === recEntry.eventType) ||
+        eqNonEmpty(item.title, recEntry.title)
       ) || null;
 
     default:
-      return ownedItems.find((item) => normalize(item.title) === normalize(recEntry.title)) || null;
+      return ownedItems.find((item) => eqNonEmpty(item.title, recEntry.title)) || null;
   }
 }
 

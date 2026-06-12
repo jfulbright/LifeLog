@@ -52,7 +52,7 @@ const recommendationService = {
   /**
    * Get recommendations directed at the current user.
    */
-  async getMyRecommendations() {
+  async getMyRecommendations(statuses = ["active"]) {
     const userId = await getCurrentUserId();
 
     // Direct recommendations (to_user_id = me)
@@ -60,16 +60,16 @@ const recommendationService = {
       .from("recommendations")
       .select("*")
       .eq("to_user_id", userId)
-      .eq("status", "active")
+      .in("status", statuses)
       .order("created_at", { ascending: false });
 
     if (directErr) return [];
 
-    // Ring-based recommendations: find my ring level in each contact relationship
-    const { data: contactsWhoHaveMe } = await supabase
-      .from("contacts")
-      .select("owner_id, ring_level")
-      .eq("linked_user_id", userId);
+    // Ring-based recommendations: find my ring level in each contact relationship.
+    // Uses the get_my_ring_recommender_ids() SECURITY DEFINER function (migration 008)
+    // because contacts RLS only permits owner_id = auth.uid(), blocking a direct
+    // linked_user_id lookup for rows owned by other users.
+    const { data: contactsWhoHaveMe } = await supabase.rpc("get_my_ring_recommender_ids");
 
     let ringRecs = [];
     if (contactsWhoHaveMe?.length) {
@@ -77,9 +77,9 @@ const recommendationService = {
         const { data: recs } = await supabase
           .from("recommendations")
           .select("*")
-          .eq("from_user_id", contact.owner_id)
+          .eq("from_user_id", contact.recommender_id)
           .eq("to_ring_level", contact.ring_level)
-          .eq("status", "active")
+          .in("status", statuses)
           .is("to_user_id", null);
 
         if (recs) ringRecs = [...ringRecs, ...recs];

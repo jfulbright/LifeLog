@@ -15,12 +15,13 @@ import { useAppData } from "../../../contexts/AppDataContext";
 import {
   getStatusFilterOptions,
   filterByStatus,
+  getInitialSourceFilter,
 } from "../../../helpers/filterUtils";
 
 function ActivityList() {
   const location = useLocation();
   const [activityTypeFilter, setActivityTypeFilter] = React.useState("all");
-  const [sourceFilter, setSourceFilter] = React.useState("all");
+  const [sourceFilter, setSourceFilter] = React.useState(getInitialSourceFilter);
   const { profile } = useAppData();
 
   const {
@@ -32,7 +33,7 @@ function ActivityList() {
     showToast, setShowToast,
     handleSubmit, startEditing, deleteItem, closeForm, openForm,
     showSnapPrompt, snapPromptTitle, handleSnapSave, dismissSnapPrompt,
-    viewDetailItem, setViewDetailItem,
+    viewDetailItem, setViewDetailItem, saveDetailEdit,
   } = useCategory("activities", { schema: activitySchema });
 
   useEffect(() => {
@@ -190,6 +191,7 @@ function ActivityList() {
           schema={activitySchema}
           onClose={() => setViewDetailItem(null)}
           onSave={(updatedData) => {
+            saveDetailEdit(updatedData);
             setViewDetailItem(null);
           }}
           onDelete={(id) => {

@@ -14,6 +14,7 @@ import { useAppData } from "../../../contexts/AppDataContext";
 import {
   getStatusFilterOptions,
   filterByStatus,
+  getInitialSourceFilter,
 } from "../../../helpers/filterUtils";
 
 const WINE_TYPE_EMOJIS = {
@@ -35,7 +36,7 @@ const CELLAR_TABS = [
 function CellarList() {
   const [activeTab, setActiveTab] = useState("all");
   const [subFilter, setSubFilter] = useState("all");
-  const [sourceFilter, setSourceFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState(getInitialSourceFilter);
   const { profile } = useAppData();
 
   const {

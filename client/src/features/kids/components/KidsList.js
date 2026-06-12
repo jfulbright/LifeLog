@@ -14,6 +14,7 @@ import { useAppData } from "../../../contexts/AppDataContext";
 import {
   getStatusFilterOptions,
   filterByStatus,
+  getInitialSourceFilter,
 } from "../../../helpers/filterUtils";
 
 function getAgeAtDate(birthday, eventDate) {
@@ -168,7 +169,7 @@ function KidsList() {
   const { contacts, profile } = useAppData();
   const [milestoneTypeFilter, setMilestoneTypeFilter] = React.useState("all");
   const [childFilter, setChildFilter] = React.useState("all");
-  const [sourceFilter, setSourceFilter] = React.useState("all");
+  const [sourceFilter, setSourceFilter] = React.useState(getInitialSourceFilter);
   const [ratingFilter, setRatingFilter] = React.useState("all");
 
   const {

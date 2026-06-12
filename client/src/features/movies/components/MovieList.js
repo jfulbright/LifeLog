@@ -20,6 +20,7 @@ import {
   getStatusFilterOptions,
   filterByStatus,
   getStatusLabel,
+  getInitialSourceFilter,
 } from "../../../helpers/filterUtils";
 
 const GENRE_EMOJIS = {
@@ -66,7 +67,7 @@ function MovieList() {
   } = useCategory("movies", { normalize: (data) => ({ ...data, status: data.status || "watchlist", startDate: data.startDate || "" }), schema: movieSchema });
 
   const [movieFilter, setMovieFilter] = useState("all");
-  const [sourceFilter, setSourceFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState(getInitialSourceFilter);
   const { profile } = useAppData();
 
 

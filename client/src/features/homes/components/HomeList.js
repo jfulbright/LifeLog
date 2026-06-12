@@ -15,10 +15,11 @@ import {
   getStatusFilterOptions,
   filterByStatus,
   getStatusLabel,
+  getInitialSourceFilter,
 } from "../../../helpers/filterUtils";
 
 function HomeList() {
-  const [sourceFilter, setSourceFilter] = React.useState("all");
+  const [sourceFilter, setSourceFilter] = React.useState(getInitialSourceFilter);
   const [homeFilter, setHomeFilter] = React.useState("all");
   const { profile } = useAppData();
   const {

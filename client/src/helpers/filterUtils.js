@@ -20,3 +20,15 @@ export function filterByStatus(items, selectedStatus) {
 }
 
 export { getStatusLabel };
+
+/**
+ * Reads the desired source filter ("mine" | "shared" | "recommended") from the
+ * URL query string (?source=...) so deep links from the Shared Experiences and
+ * Recommendations pages land on the matching source tab. Defaults to "all".
+ * Used as the initial value for each category list's sourceFilter state.
+ */
+export function getInitialSourceFilter() {
+  if (typeof window === "undefined") return "all";
+  const source = new URLSearchParams(window.location.search).get("source");
+  return ["mine", "shared", "recommended"].includes(source) ? source : "all";
+}

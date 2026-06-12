@@ -27,3 +27,7 @@ yarn-error.log*
 
 # Server secrets — never commit real keys
 server/.env
+
+# Local Claude Code config and Supabase CLI cache
+/.claude/
+supabase/.temp/

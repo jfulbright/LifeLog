@@ -24,6 +24,7 @@ import {
   getStatusFilterOptions,
   filterByStatus,
   getStatusLabel,
+  getInitialSourceFilter,
 } from "../../../helpers/filterUtils";
 
 function migrateMemoryToSnapshot(item) {
@@ -465,7 +466,7 @@ function TravelList() {
   const [showNextSteps, setShowNextSteps] = useState(false);
   const [linkedActivities, setLinkedActivities] = useState([]);
   const [mapPeekTrip, setMapPeekTrip] = useState(null);
-  const [sourceFilter, setSourceFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState(getInitialSourceFilter);
   const lastSavedRef = useRef(null);
 
   const {

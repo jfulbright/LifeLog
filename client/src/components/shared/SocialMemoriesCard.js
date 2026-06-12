@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
-import overlayService from "../../services/overlayService";
 import {
-  normalizeSocialContributions,
+  enrichItemsWithSocialContent,
   hasContributionContent,
 } from "../../helpers/socialContent";
 import PhotoGrid from "./PhotoGrid";
@@ -68,9 +67,12 @@ function SocialMemoriesCard({ item, contacts, refreshKey, contributions: externa
       return;
     }
     let cancelled = false;
-    overlayService.getOverlaysForEntry(item.id).then((overlays) => {
+    // Use the full enrichment (resolves current user + collaborator profile names
+    // and avatars) so own overlays show as "You" with an avatar and other
+    // collaborators show their name — not a generic "A collaborator".
+    enrichItemsWithSocialContent([item], contacts).then(([enriched]) => {
       if (!cancelled) {
-        setContributions(normalizeSocialContributions(item, overlays, contacts));
+        setContributions(enriched?._socialContributions || item._socialContributions || []);
       }
     }).catch(() => {
       if (!cancelled) setContributions(item._socialContributions || []);

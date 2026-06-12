@@ -97,6 +97,15 @@ export async function enrichItemsWithSocialContent(items, contacts = []) {
 
   const overlays = await overlayService.getOverlaysForEntries(list.map((item) => item.id));
 
+  // Resolve the current user once so own overlays are detected as "You" even when
+  // the caller didn't stamp _currentUserId on the item (e.g. the Shared Experiences feed).
+  let sessionUserId = null;
+  try {
+    const { supabase } = await import("../services/supabaseClient");
+    const { data: { session } } = await supabase.auth.getSession();
+    sessionUserId = session?.user?.id || null;
+  } catch {}
+
   // Resolve unknown user profiles (overlay authors + item owners)
   const overlayUserIds = overlays
     .map((o) => o.user_id)
@@ -134,6 +143,7 @@ export async function enrichItemsWithSocialContent(items, contacts = []) {
     const ownerId = item._ownerId || item._sharedBy;
     const enrichedItem = {
       ...item,
+      _currentUserId: item._currentUserId || sessionUserId,
       _ownerAvatarUrl: item._ownerAvatarUrl || profileAvatars[ownerId] || null,
       _ownerName: item._ownerName || profileNames[ownerId] || null,
     };

@@ -17,6 +17,7 @@ import {
   getStatusFilterOptions,
   filterByStatus,
   getStatusLabel,
+  getInitialSourceFilter,
 } from "../../../helpers/filterUtils";
 
 const typeLabels = EVENT_TYPES.reduce((acc, t) => {
@@ -46,7 +47,7 @@ function normalizeEvent(data) {
 }
 
 function EventList() {
-  const [sourceFilter, setSourceFilter] = React.useState("all");
+  const [sourceFilter, setSourceFilter] = React.useState(getInitialSourceFilter);
   const [filterType, setFilterType] = useState("all");
   const { profile } = useAppData();
   const {

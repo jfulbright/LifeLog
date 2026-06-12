@@ -104,7 +104,7 @@ function SharedEntryCard({ entry, tag, contacts, onAccept, onDecline, onViewOver
         <div style={{ marginTop: "0.875rem", paddingTop: "0.75rem", borderTop: "1px solid var(--color-border)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
             <Link
-              to={`/${entry._category || "travel"}`}
+              to={`/${entry._category || "travel"}?source=shared`}
               style={{ fontSize: "var(--font-size-xs)", color: "var(--color-primary)", fontWeight: 600, textDecoration: "none" }}
             >
               View in {(entry._category || "category").charAt(0).toUpperCase() + (entry._category || "").slice(1)} &rarr;

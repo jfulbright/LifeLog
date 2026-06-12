@@ -294,6 +294,7 @@ export default function useCategory(category, { migrate, normalize, schema } = {
         ...rawData
       } = updatedItem;
       const data = normalize ? normalize(rawData) : rawData;
+      const { recommendedToRings, recommendedToContacts } = updatedItem;
 
       if (updatedItem._isShared) {
         const { snapshot1, snapshot2, snapshot3, photo1, photo2, photo3, rating, ...safeData } = data;
@@ -317,10 +318,41 @@ export default function useCategory(category, { migrate, normalize, schema } = {
           prev.map((item) => (item.id === id ? { ...data, id } : item))
         );
       }
+
+      // Create collaborator records for shared companions (Supabase)
+      if (shareWithCompanionIds?.length > 0) {
+        try {
+          const allContacts = await contactsService.getContacts();
+          const sharedContacts = allContacts.filter((c) =>
+            shareWithCompanionIds.includes(c.id)
+          );
+          if (sharedContacts.length > 0) {
+            await collaboratorService.shareEntryWithContacts(id, category, sharedContacts);
+          }
+        } catch (err) {
+          console.error("[useCategory] collaborator share failed:", err);
+        }
+      }
+
+      // Create recommendation records if user targeted rings or individuals
+      if (recommendedToRings?.length > 0 || recommendedToContacts?.length > 0) {
+        try {
+          const toUserIds = recommendedToContacts?.length
+            ? await contactsService.resolveContactUserIds(recommendedToContacts)
+            : [];
+          await recommendationService.createRecommendations(id, category, {
+            toUserIds,
+            toRingLevels: recommendedToRings || [],
+          });
+        } catch (err) {
+          console.error("[useCategory] recommendation create failed:", err);
+        }
+      }
+
       setShowToast(true);
       window.dispatchEvent(new Event("data-changed"));
     },
-    [normalize]
+    [normalize, category]
   );
 
   const closeForm = useCallback(() => {

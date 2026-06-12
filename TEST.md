@@ -1,5 +1,8 @@
 # TEST.md — LifeSnaps Social Integration Tests
 
+> For manual usability & cross-category consistency walkthroughs (the human-facing counterpart to
+> this automated suite), see [USER_STORIES.md](./USER_STORIES.md).
+
 ## Quick Start
 
 ```bash

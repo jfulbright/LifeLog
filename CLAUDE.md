@@ -10,7 +10,43 @@ React 19 + Express proxy + Supabase PostgreSQL. Deployed on Vercel.
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — system design, data model, services, patterns
 - [ROADMAP.md](./ROADMAP.md) — what's shipped, what's next, priorities
 - [SOCIAL.md](./SOCIAL.md) — social sharing behavior, rules, flows, MVP decisions
+- [USER_STORIES.md](./USER_STORIES.md) — manual usability/consistency walkthrough of the social model
 - [COMPONENTS.md](./COMPONENTS.md) — UI pattern library, schema conventions, deviation rules
+
+---
+
+## Commands
+
+```bash
+# No root package.json — run from subdirectories
+cd client && npm start        # React dev server → http://localhost:3000
+cd server && npm start        # Express proxy   → http://localhost:5050
+
+cd client && npm run build    # Production bundle (also used for compile check)
+cd client && npm test         # Jest tests (watch mode)
+```
+
+---
+
+## Environment
+
+**`client/.env.local`** (required):
+```
+REACT_APP_SUPABASE_URL=
+REACT_APP_SUPABASE_ANON_KEY=
+REACT_APP_SERVER_URL=http://localhost:5050
+REACT_APP_SITE_URL=http://localhost:3000
+REACT_APP_MAPBOX_TOKEN=          # city autocomplete
+REACT_APP_TMDB_ACCESS_TOKEN=     # movie search (Bearer)
+REACT_APP_TMDB_API_KEY=          # movie search (v3 fallback)
+```
+
+**`server/.env`** (required):
+```
+SETLISTFM_API_KEY=
+GOOGLE_CLOUD_VISION_API_KEY=     # wine label OCR
+CORS_ORIGIN=http://localhost:3000
+```
 
 ---
 
@@ -52,7 +88,7 @@ This project uses **React Bootstrap** (not Tailwind or shadcn). Follow the exist
 ## Key Patterns
 
 - **Schema-driven forms:** Add fields to `*Schema.js` → `ItemForm` renders automatically. Never write per-category form JSX.
-- **useCategory hook:** All CRUD, filtering, modals, and social sharing. Do not duplicate this logic in feature components.
+- **`hooks/useCategory.js`:** All CRUD, filtering, modals, and social sharing per category. Do not duplicate this logic in feature components.
 - **dataService.js:** All DB access goes through here. Never call Supabase directly from components.
 - **RLS handles authorization:** No app-level permission checks needed for data access.
 - **Photos:** Compress client-side → upload to Supabase Storage → public URL. Path: `{userId}/{itemId}/{filename}`.

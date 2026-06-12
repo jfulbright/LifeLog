@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Button, Badge } from "react-bootstrap";
+import { Link } from "react-router-dom";
 import StarRating from "../components/shared/StarRating";
 import recommendationService from "../services/recommendationService";
 import profileService from "../services/profileService";
@@ -8,10 +9,16 @@ import { getCategoryMeta } from "../helpers/categoryMeta";
 import statusLabels from "../helpers/statusLabels";
 import { findMatchingOwnedItem, mergeRecommender } from "../helpers/recommendationMatcher";
 
+// Recommendation rows use active/accepted/dismissed; the UI presents these with
+// the same Pending/Accepted/Declined vocabulary as the Shared Experiences feed.
+const STATUS_TABS = ["all", "pending", "accepted", "declined"];
+const TAB_TO_STATUS = { pending: "active", accepted: "accepted", declined: "dismissed" };
+
 function Recommendations() {
   const [enriched, setEnriched] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("pending");
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
   useEffect(() => {
     load();
@@ -19,7 +26,7 @@ function Recommendations() {
 
   async function load() {
     try {
-      const recs = await recommendationService.getMyRecommendations();
+      const recs = await recommendationService.getMyRecommendations(["active", "accepted", "dismissed"]);
 
       // Enrich with entry data and recommender profiles
       const enrichedData = await Promise.all(
@@ -43,24 +50,28 @@ function Recommendations() {
 
       const withEntries = enrichedData.filter((r) => r.entry);
 
-      // Dedup: auto-merge recommendations for items the user already owns
-      const categories = [...new Set(withEntries.map((r) => r.category))];
+      // Dedup auto-merge applies ONLY to pending (active) recs — accepted/dismissed
+      // rows are already resolved and must not be re-merged.
+      const activeRecs = withEntries.filter((r) => r.status === "active");
+      const resolvedRecs = withEntries.filter((r) => r.status !== "active");
+
+      const categories = [...new Set(activeRecs.map((r) => r.category))];
       const ownedByCategory = {};
       for (const cat of categories) {
         ownedByCategory[cat] = await dataService.getItems(cat);
       }
 
-      const genuinelyNew = [];
-      for (const rec of withEntries) {
+      const pendingNew = [];
+      for (const rec of activeRecs) {
         const match = findMatchingOwnedItem(rec.entry, rec.category, ownedByCategory[rec.category]);
         if (match) {
           autoMerge(rec, match);
         } else {
-          genuinelyNew.push(rec);
+          pendingNew.push(rec);
         }
       }
 
-      setEnriched(genuinelyNew);
+      setEnriched([...pendingNew, ...resolvedRecs]);
     } catch (err) {
       console.error("[Recommendations] load failed:", err);
     } finally {
@@ -115,26 +126,34 @@ function Recommendations() {
       await dataService.addItem(rec.category, newEntry);
       await recommendationService.acceptRecommendation(rec.id);
 
-      setEnriched((prev) => prev.filter((r) => r.id !== rec.id));
+      // Reflect the new status locally without dropping the row (it moves to the
+      // Accepted tab) so the filters stay consistent with Shared Experiences.
+      setEnriched((prev) => prev.map((r) => (r.id === rec.id ? { ...r, status: "accepted" } : r)));
       window.dispatchEvent(new Event("data-changed"));
     } catch (err) {
       console.error("[Recommendations] accept failed:", err);
     }
   }
 
-  async function handleDismiss(rec) {
+  async function handleDecline(rec) {
     try {
       await recommendationService.dismissRecommendation(rec.id);
-      setEnriched((prev) => prev.filter((r) => r.id !== rec.id));
+      setEnriched((prev) => prev.map((r) => (r.id === rec.id ? { ...r, status: "dismissed" } : r)));
     } catch (err) {
-      console.error("[Recommendations] dismiss failed:", err);
+      console.error("[Recommendations] decline failed:", err);
     }
   }
 
-  const categories = [...new Set(enriched.map((r) => r.category))];
-  const filtered = filter === "all"
+  const pendingCount = enriched.filter((r) => r.status === "active").length;
+
+  const statusFiltered = statusFilter === "all"
     ? enriched
-    : enriched.filter((r) => r.category === filter);
+    : enriched.filter((r) => r.status === TAB_TO_STATUS[statusFilter]);
+
+  const categories = [...new Set(enriched.map((r) => r.category))];
+  const filtered = categoryFilter === "all"
+    ? statusFiltered
+    : statusFiltered.filter((r) => r.category === categoryFilter);
 
   if (loading) {
     return (
@@ -148,14 +167,59 @@ function Recommendations() {
     <>
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h4 className="mb-0" style={{ fontWeight: 700 }}>Recommendations</h4>
-        {enriched.length > 0 && (
+        {pendingCount > 0 && (
           <Badge bg="warning" text="dark" pill>
-            {enriched.length} new
+            {pendingCount} pending
           </Badge>
         )}
       </div>
 
-      {enriched.length === 0 ? (
+      {/* Status filter — mirrors the Shared Experiences feed */}
+      <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+        <div>
+          <div style={{ fontSize: "var(--font-size-xs)", fontWeight: 700, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.25rem" }}>Status</div>
+          <div className="status-toggle">
+            {STATUS_TABS.map((s) => (
+              <button
+                key={s}
+                type="button"
+                className={`btn btn-sm ${statusFilter === s ? "active" : ""}`}
+                data-status={s === "all" ? undefined : s}
+                onClick={() => setStatusFilter(s)}
+                style={{ textTransform: "capitalize" }}
+              >
+                {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Category filter */}
+      {categories.length > 1 && (
+        <div className="d-flex gap-2 mb-3 flex-wrap">
+          <button
+            className={`btn btn-sm ${categoryFilter === "all" ? "btn-primary" : "btn-outline-secondary"}`}
+            onClick={() => setCategoryFilter("all")}
+          >
+            All
+          </button>
+          {categories.map((cat) => {
+            const meta = getCategoryMeta(cat);
+            return (
+              <button
+                key={cat}
+                className={`btn btn-sm ${categoryFilter === cat ? "btn-primary" : "btn-outline-secondary"}`}
+                onClick={() => setCategoryFilter(cat)}
+              >
+                {meta.icon} {cat.charAt(0).toUpperCase() + cat.slice(1)}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {filtered.length === 0 ? (
         <div className="empty-state">
           <div
             className="empty-state-icon"
@@ -163,49 +227,24 @@ function Recommendations() {
           >
             &#11088;
           </div>
-          <div className="empty-state-title">No recommendations yet</div>
+          <div className="empty-state-title">
+            {statusFilter === "pending" || statusFilter === "all" ? "No recommendations yet" : `Nothing ${statusFilter}`}
+          </div>
           <div className="empty-state-text">
             When friends recommend events, trips, wines, or movies, they'll appear here.
           </div>
         </div>
       ) : (
-        <>
-          {/* Category filter */}
-          {categories.length > 1 && (
-            <div className="d-flex gap-2 mb-3 flex-wrap">
-              <button
-                className={`btn btn-sm ${filter === "all" ? "btn-primary" : "btn-outline-secondary"}`}
-                onClick={() => setFilter("all")}
-              >
-                All
-              </button>
-              {categories.map((cat) => {
-                const meta = getCategoryMeta(cat);
-                return (
-                  <button
-                    key={cat}
-                    className={`btn btn-sm ${filter === cat ? "btn-primary" : "btn-outline-secondary"}`}
-                    onClick={() => setFilter(cat)}
-                  >
-                    {meta.icon} {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Recommendation cards */}
-          <div className="d-flex flex-column" style={{ gap: "0.75rem" }}>
-            {filtered.map((rec) => (
-              <RecommendationCard
-                key={rec.id}
-                rec={rec}
-                onAccept={(status) => handleAccept(rec, status)}
-                onDismiss={() => handleDismiss(rec)}
-              />
-            ))}
-          </div>
-        </>
+        <div className="d-flex flex-column" style={{ gap: "0.75rem" }}>
+          {filtered.map((rec) => (
+            <RecommendationCard
+              key={rec.id}
+              rec={rec}
+              onAccept={(status) => handleAccept(rec, status)}
+              onDecline={() => handleDecline(rec)}
+            />
+          ))}
+        </div>
       )}
     </>
   );
@@ -228,9 +267,24 @@ function getAcceptActions(category) {
   return actions;
 }
 
-function RecommendationCard({ rec, onAccept, onDismiss }) {
+function ResolvedBadge({ status }) {
+  const config = {
+    accepted: { label: "Accepted", bg: "var(--color-success)", color: "#fff" },
+    dismissed: { label: "Declined", bg: "var(--color-danger)", color: "#fff" },
+  };
+  const c = config[status];
+  if (!c) return null;
+  return (
+    <span style={{ fontSize: "0.65rem", fontWeight: 700, padding: "0.1rem 0.5rem", borderRadius: 8, background: c.bg, color: c.color }}>
+      {c.label}
+    </span>
+  );
+}
+
+function RecommendationCard({ rec, onAccept, onDecline }) {
   const meta = getCategoryMeta(rec.category);
   const entry = rec.entry;
+  const isPending = rec.status === "active";
 
   const title = meta.getPrimaryDisplay
     ? meta.getPrimaryDisplay(entry)
@@ -252,6 +306,7 @@ function RecommendationCard({ rec, onAccept, onDismiss }) {
         borderLeft: `4px solid ${meta.color || "var(--color-primary)"}`,
         borderRadius: "var(--radius-md, 8px)",
         padding: "1rem 1.25rem",
+        opacity: rec.status === "dismissed" ? 0.7 : 1,
       }}
     >
       {/* Recommender */}
@@ -291,6 +346,9 @@ function RecommendationCard({ rec, onAccept, onDismiss }) {
         )}
         <span style={{ fontWeight: 600 }}>{rec.recommenderName}</span>
         <span>recommends</span>
+        <span style={{ marginLeft: "auto" }}>
+          <ResolvedBadge status={rec.status} />
+        </span>
       </div>
 
       {/* Entry info */}
@@ -328,22 +386,31 @@ function RecommendationCard({ rec, onAccept, onDismiss }) {
         </div>
       )}
 
-      {/* Actions */}
-      <div className="d-flex gap-2 flex-wrap">
-        {actions.map((action, i) => (
-          <Button
-            key={action.status}
-            size="sm"
-            variant={i === 0 ? "primary" : "outline-primary"}
-            onClick={() => onAccept(action.status)}
-          >
-            {action.label}
+      {/* Actions — pending recs get accept/decline; resolved recs show a link to the category */}
+      {isPending ? (
+        <div className="d-flex gap-2 flex-wrap">
+          {actions.map((action, i) => (
+            <Button
+              key={action.status}
+              size="sm"
+              variant={i === 0 ? "primary" : "outline-primary"}
+              onClick={() => onAccept(action.status)}
+            >
+              {action.label}
+            </Button>
+          ))}
+          <Button size="sm" variant="outline-secondary" onClick={onDecline}>
+            Decline
           </Button>
-        ))}
-        <Button size="sm" variant="outline-secondary" onClick={onDismiss}>
-          Dismiss
-        </Button>
-      </div>
+        </div>
+      ) : rec.status === "accepted" ? (
+        <Link
+          to={`/${rec.category}?source=recommended`}
+          style={{ fontSize: "var(--font-size-sm)", color: "var(--color-primary)", fontWeight: 600, textDecoration: "none" }}
+        >
+          View in {rec.category.charAt(0).toUpperCase() + rec.category.slice(1)} &rarr;
+        </Link>
+      ) : null}
     </div>
   );
 }
