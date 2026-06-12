@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "../services/supabaseClient";
+import logo from "../assets/lifesnaps-logo.svg";
 
 function InviteWelcome() {
   const { token } = useParams();
@@ -77,7 +78,7 @@ function InviteWelcome() {
     <div style={{ textAlign: "center", padding: "4rem 2rem", maxWidth: 480, margin: "0 auto", fontFamily: "'DM Sans', sans-serif" }}>
       {/* Brand */}
       <div style={{ marginBottom: "2rem" }}>
-        <span style={{ fontSize: "2.5rem" }}>📸</span>
+        <img src={logo} alt="LifeSnaps" style={{ width: "2.5rem", height: "2.5rem", borderRadius: 8 }} />
         <div style={{ fontSize: "0.875rem", color: "#696969", marginTop: "0.25rem" }}>LifeSnaps</div>
       </div>
 

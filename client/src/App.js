@@ -29,6 +29,7 @@ import MigrationBanner from "./components/auth/MigrationBanner";
 import { AppDataProvider, useAppData } from "./contexts/AppDataContext";
 import { SocialDataProvider } from "./contexts/SocialDataContext";
 import { useAuth } from "./contexts/AuthContext";
+import logo from "./assets/lifesnaps-logo.svg";
 import "App.css";
 
 function AppShell() {
@@ -41,7 +42,7 @@ function AppShell() {
       {/* Desktop sidebar (lg+) */}
       <aside className="app-sidebar">
         <Link to="/" className="sidebar-brand">
-          <span className="sidebar-brand-emoji">📸</span>
+          <img src={logo} alt="" className="sidebar-brand-logo" />
           <span className="sidebar-brand-name">LifeSnaps</span>
         </Link>
         <SidebarNav counts={counts} notificationCount={pendingCollaborations} recommendationCount={pendingRecommendations} user={user} onSignOut={signOut} />
@@ -61,9 +62,10 @@ function AppShell() {
           <Navbar.Brand
             as={Link}
             to="/"
-            style={{ fontWeight: 700, color: "#fff", letterSpacing: "-0.5px" }}
+            style={{ fontWeight: 700, color: "#fff", letterSpacing: "-0.5px", display: "flex", alignItems: "center", gap: "0.5rem" }}
           >
-            📸 LifeSnaps
+            <img src={logo} alt="" style={{ width: "1.5rem", height: "1.5rem", borderRadius: "4px" }} />
+            LifeSnaps
           </Navbar.Brand>
           <button
             className="btn btn-link p-0"
@@ -97,9 +99,13 @@ function AppShell() {
               color: "#fff",
               fontFamily: "var(--font-display)",
               letterSpacing: "-0.5px",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
             }}
           >
-            📸 LifeSnaps
+            <img src={logo} alt="" style={{ width: "1.5rem", height: "1.5rem", borderRadius: "4px" }} />
+            LifeSnaps
           </Offcanvas.Title>
         </Offcanvas.Header>
         <Offcanvas.Body style={{ padding: 0 }}>

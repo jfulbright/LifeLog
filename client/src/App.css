@@ -437,9 +437,11 @@ a:hover {
   border-bottom: 1px solid var(--color-sidebar-border);
 }
 
-.sidebar-brand-emoji {
-  font-size: 1.25rem;
+.sidebar-brand-logo {
+  width: 1.5rem;
+  height: 1.5rem;
   flex-shrink: 0;
+  border-radius: 4px;
 }
 
 .sidebar-brand-name {

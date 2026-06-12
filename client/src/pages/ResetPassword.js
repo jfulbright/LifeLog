@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Alert } from "react-bootstrap";
 import { supabase } from "../services/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
+import logo from "../assets/lifesnaps-logo.svg";
 
 const inputStyle = {
   width: "100%",
@@ -67,22 +68,17 @@ export default function ResetPassword() {
       <div style={{ width: "100%", maxWidth: 400 }}>
         {/* Brand header */}
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-          <div
+          <img
+            src={logo}
+            alt="LifeSnaps"
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
               width: 64,
               height: 64,
               borderRadius: 16,
-              backgroundColor: "var(--color-primary, #4A154B)",
-              fontSize: "2rem",
               marginBottom: "1rem",
               boxShadow: "0 4px 16px rgba(74,21,75,0.3)",
             }}
-          >
-            📸
-          </div>
+          />
           <h1
             style={{
               fontFamily: "var(--font-display)",
