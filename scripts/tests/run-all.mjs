@@ -19,6 +19,7 @@ const TEST_FILES = [
   { name: "06-delete-and-leave", path: "./06-delete-and-leave.test.mjs" },
   { name: "07-isolation-security", path: "./07-isolation-security.test.mjs" },
   { name: "08-scale-performance", path: "./08-scale-performance.test.mjs" },
+  { name: "10-deferred-share", path: "./10-deferred-share.test.mjs" },
 ];
 
 async function runAll() {

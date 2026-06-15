@@ -166,19 +166,30 @@ export default function useCategory(category, { migrate, normalize, schema } = {
       setFormData({});
       setShowForm(false);
 
-      // Create collaborator records for shared companions (Supabase)
-      // Works for both linked and unlinked contacts (deferred sharing)
-      if (shareWithCompanionIds?.length > 0) {
+      // Reconcile collaborator shares (add + remove). Works for both linked and
+      // unlinked contacts (deferred sharing). Guarded on Array.isArray so a create
+      // or edit that never touched sharing is a no-op rather than wiping shares.
+      if (Array.isArray(shareWithCompanionIds)) {
         try {
-          const allContacts = await contactsService.getContacts();
-          const sharedContacts = allContacts.filter((c) =>
-            shareWithCompanionIds.includes(c.id)
-          );
-          if (sharedContacts.length > 0) {
-            await collaboratorService.shareEntryWithContacts(savedId, category, sharedContacts);
+          const existing = await collaboratorService.getCollaboratorsForOwnedEntry(savedId);
+          const existingContactIds = existing
+            .map((c) => c.collaborator_contact_id)
+            .filter(Boolean);
+          const toAdd = shareWithCompanionIds.filter((cid) => !existingContactIds.includes(cid));
+          const toRemove = existingContactIds.filter((cid) => !shareWithCompanionIds.includes(cid));
+
+          if (toAdd.length > 0) {
+            const allContacts = await contactsService.getContacts();
+            const addContacts = allContacts.filter((c) => toAdd.includes(c.id));
+            if (addContacts.length > 0) {
+              await collaboratorService.shareEntryWithContacts(savedId, category, addContacts);
+            }
+          }
+          if (toRemove.length > 0) {
+            await collaboratorService.unshareEntryWithContacts(savedId, toRemove);
           }
         } catch (err) {
-          console.error("[useCategory] collaborator share failed:", err);
+          console.error("[useCategory] collaborator reconcile failed:", err);
         }
       }
 
@@ -319,18 +330,31 @@ export default function useCategory(category, { migrate, normalize, schema } = {
         );
       }
 
-      // Create collaborator records for shared companions (Supabase)
-      if (shareWithCompanionIds?.length > 0) {
+      // Reconcile collaborator shares: add newly-toggled companions and remove
+      // the ones toggled off. Guarded on Array.isArray so an edit flow that never
+      // hydrated the field (undefined) is a no-op rather than silently wiping
+      // every existing share.
+      if (Array.isArray(shareWithCompanionIds)) {
         try {
-          const allContacts = await contactsService.getContacts();
-          const sharedContacts = allContacts.filter((c) =>
-            shareWithCompanionIds.includes(c.id)
-          );
-          if (sharedContacts.length > 0) {
-            await collaboratorService.shareEntryWithContacts(id, category, sharedContacts);
+          const existing = await collaboratorService.getCollaboratorsForOwnedEntry(id);
+          const existingContactIds = existing
+            .map((c) => c.collaborator_contact_id)
+            .filter(Boolean);
+          const toAdd = shareWithCompanionIds.filter((cid) => !existingContactIds.includes(cid));
+          const toRemove = existingContactIds.filter((cid) => !shareWithCompanionIds.includes(cid));
+
+          if (toAdd.length > 0) {
+            const allContacts = await contactsService.getContacts();
+            const addContacts = allContacts.filter((c) => toAdd.includes(c.id));
+            if (addContacts.length > 0) {
+              await collaboratorService.shareEntryWithContacts(id, category, addContacts);
+            }
+          }
+          if (toRemove.length > 0) {
+            await collaboratorService.unshareEntryWithContacts(id, toRemove);
           }
         } catch (err) {
-          console.error("[useCategory] collaborator share failed:", err);
+          console.error("[useCategory] collaborator reconcile failed:", err);
         }
       }
 

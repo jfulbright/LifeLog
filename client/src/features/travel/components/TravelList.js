@@ -478,7 +478,7 @@ function TravelList() {
     showToast, setShowToast,
     handleSubmit, startEditing, deleteItem, batchPatch, closeForm, openForm,
     showSnapPrompt, snapPromptTitle, handleSnapSave, dismissSnapPrompt,
-    viewDetailItem, setViewDetailItem,
+    viewDetailItem, setViewDetailItem, saveDetailEdit,
   } = useCategory("travel", { migrate: migrateMemoryToSnapshot, schema: travelSchema });
 
   // Load activities once to show back-references in trip cards
@@ -958,7 +958,7 @@ function TravelList() {
           schema={travelSchema}
           onClose={() => setViewDetailItem(null)}
           onSave={(updatedData) => {
-            handleSubmit({ preventDefault: () => {} });
+            saveDetailEdit(updatedData);
             setViewDetailItem(null);
           }}
           onDelete={(id) => {

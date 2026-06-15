@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Modal } from "react-bootstrap";
-import { getCategoryMeta } from "../../helpers/categoryMeta";
+import { getCategoryMeta, getEntryTitle } from "../../helpers/categoryMeta";
 import { useAppData } from "../../contexts/AppDataContext";
+import collaboratorService from "../../services/collaboratorService";
 import ItemForm from "./ItemForm";
 import EntryHeader from "./EntryHeader";
 import EntryView from "./EntryView";
@@ -11,6 +12,36 @@ function EntryDetailPanel({ item, category, schema, onClose, onSave, onDelete, r
   const [mode, setMode] = useState("view");
   const [formData, setFormData] = useState({ ...item });
   const { contacts } = useAppData();
+
+  // Hydrate the share toggle from the collaborators table when editing an owned
+  // entry, mirroring useCategory.startEditing. Without this the detail-panel edit
+  // form always rendered the "Share & Collaborate" toggle as off, even for
+  // companions who are live collaborators (and on save would have wiped the share).
+  useEffect(() => {
+    if (!item?.id || item._isShared) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const collabs = await collaboratorService.getCollaboratorsForOwnedEntry(item.id);
+        const shared = collabs.filter((c) => c.collaborator_contact_id);
+        if (cancelled || shared.length === 0) return;
+        const sharedContactIds = shared.map((c) => c.collaborator_contact_id);
+        const collaboratorStatuses = Object.fromEntries(
+          shared.map((c) => [c.collaborator_contact_id, c.status])
+        );
+        setFormData((prev) => ({
+          ...prev,
+          shareWithCompanionIds: sharedContactIds,
+          _collaboratorStatuses: collaboratorStatuses,
+        }));
+      } catch {
+        /* visibility still resolves at read time; toggle hydration is best-effort */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [item?.id, item?._isShared]);
 
   if (!item) return null;
 
@@ -40,7 +71,13 @@ function EntryDetailPanel({ item, category, schema, onClose, onSave, onDelete, r
 
   return (
     <Modal show={true} onHide={onClose} centered size="xl" dialogClassName="entry-detail-modal">
-      <Modal.Body style={{ maxHeight: "85vh", overflowY: "auto", padding: "1.25rem" }}>
+      <Modal.Header closeButton>
+        <Modal.Title style={{ fontSize: "1.05rem", fontWeight: 700 }}>
+          <span aria-hidden="true" style={{ marginRight: "0.5rem" }}>{meta.icon}</span>
+          {mode === "edit" ? `Edit ${getEntryTitle(category, item)}` : getEntryTitle(category, item)}
+        </Modal.Title>
+      </Modal.Header>
+      <Modal.Body style={{ padding: "1.25rem" }}>
         {mode === "view" ? (
           <>
             <EntryHeader

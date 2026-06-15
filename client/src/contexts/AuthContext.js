@@ -1,7 +1,16 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "../services/supabaseClient";
+import collaboratorService from "../services/collaboratorService";
 
 const AuthContext = createContext(null);
+
+// Self-heal deferred shares for the signed-in user: links their contacts and
+// back-fills collaborator rows created before they had an account. Fire-and-
+// forget — visibility also resolves at read time, so a failure here is not fatal.
+function resolveDeferredShares(session) {
+  if (!session?.user) return;
+  collaboratorService.resolveMyCollaborations().catch(() => {});
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -13,6 +22,7 @@ export function AuthProvider({ children }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
+      resolveDeferredShares(session);
     });
 
     // Keep in sync with Supabase auth state changes (sign-in, sign-out, token refresh)
@@ -22,6 +32,9 @@ export function AuthProvider({ children }) {
       setUser(session?.user ?? null);
       if (event === "PASSWORD_RECOVERY") {
         setIsRecovering(true);
+      }
+      if (event === "SIGNED_IN") {
+        resolveDeferredShares(session);
       }
     });
 
