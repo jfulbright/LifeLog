@@ -62,19 +62,58 @@ const collaboratorService = {
   },
 
   /**
+   * Remove sharing for specific contacts on an owned entry (un-share).
+   * Deletes the collaborator rows by entry + contact id. Owner-only (RLS:
+   * "Entry owners can manage collaborators").
+   */
+  async unshareEntryWithContacts(entryId, contactIds) {
+    if (!contactIds?.length) return;
+    const { error } = await supabase
+      .from("collaborators")
+      .delete()
+      .eq("entry_id", entryId)
+      .in("collaborator_contact_id", contactIds);
+
+    if (error) throw error;
+  },
+
+  /**
+   * Resolve deferred shares for the current user: links their contacts and
+   * back-fills collaborator rows that were created (with a null user id) before
+   * they had an account. Self-healing fast-path; safe to call on every login.
+   * Visibility does not depend on this — read-time RLS resolves by email too —
+   * but calling it keeps the data consistent and snappy.
+   */
+  async resolveMyCollaborations() {
+    const { error } = await supabase.rpc("resolve_my_collaborations");
+    if (error) {
+      console.error("[collaboratorService] resolveMyCollaborations failed:", error);
+    }
+  },
+
+  /**
    * Get all collaboration requests directed at the current user.
+   * Uses get_my_collaborations() so deferred invites (collaborator_user_id still
+   * null, resolved by email) show up in the inbox even before the backfill runs.
    */
   async getIncomingCollaborations() {
     const userId = await getCurrentUserId();
 
-    const { data, error } = await supabase
+    const { data: mine, error } = await supabase.rpc("get_my_collaborations");
+    if (error) throw error;
+
+    const ids = (mine || [])
+      .filter((m) => m.owner_id !== userId)
+      .map((m) => m.collaborator_id);
+    if (ids.length === 0) return [];
+
+    const { data, error: rowsErr } = await supabase
       .from("collaborators")
       .select("*")
-      .eq("collaborator_user_id", userId)
-      .neq("owner_id", userId)
+      .in("id", ids)
       .order("invited_at", { ascending: false });
 
-    if (error) throw error;
+    if (rowsErr) throw rowsErr;
     return data || [];
   },
 
@@ -84,15 +123,12 @@ const collaboratorService = {
   async getPendingCount() {
     const userId = await getCurrentUserId();
 
-    const { count, error } = await supabase
-      .from("collaborators")
-      .select("id", { count: "exact", head: true })
-      .eq("collaborator_user_id", userId)
-      .neq("owner_id", userId)
-      .eq("status", "pending");
-
+    const { data: mine, error } = await supabase.rpc("get_my_collaborations");
     if (error) return 0;
-    return count || 0;
+
+    return (mine || []).filter(
+      (m) => m.owner_id !== userId && m.status === "pending"
+    ).length;
   },
 
   /**
@@ -189,17 +225,15 @@ const collaboratorService = {
 
   /**
    * Get all entries shared with the current user (accepted).
+   * Resolves via get_my_collaborations() so email-linked (deferred) shares are
+   * included even if collaborator_user_id was never back-filled.
    */
   async getSharedEntries() {
-    const userId = await getCurrentUserId();
+    const { data: mine, error } = await supabase.rpc("get_my_collaborations");
+    if (error) return [];
 
-    const { data: collabs, error } = await supabase
-      .from("collaborators")
-      .select("entry_id, entry_category, owner_id, status, invited_at")
-      .eq("collaborator_user_id", userId)
-      .eq("status", "accepted");
-
-    if (error || !collabs?.length) return [];
+    const collabs = (mine || []).filter((c) => c.status === "accepted");
+    if (!collabs.length) return [];
 
     // Fetch the actual entries
     const entryIds = collabs.map((c) => c.entry_id);

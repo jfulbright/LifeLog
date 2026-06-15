@@ -64,7 +64,7 @@ function AppShell() {
             to="/"
             style={{ fontWeight: 700, color: "#fff", letterSpacing: "-0.5px", display: "flex", alignItems: "center", gap: "0.5rem" }}
           >
-            <img src={logo} alt="" style={{ width: "1.5rem", height: "1.5rem", borderRadius: "4px" }} />
+            <img src={logo} alt="" style={{ width: "3rem", height: "3rem", borderRadius: "8px" }} />
             LifeSnaps
           </Navbar.Brand>
           <button
@@ -104,7 +104,7 @@ function AppShell() {
               gap: "0.5rem",
             }}
           >
-            <img src={logo} alt="" style={{ width: "1.5rem", height: "1.5rem", borderRadius: "4px" }} />
+            <img src={logo} alt="" style={{ width: "3rem", height: "3rem", borderRadius: "8px" }} />
             LifeSnaps
           </Offcanvas.Title>
         </Offcanvas.Header>

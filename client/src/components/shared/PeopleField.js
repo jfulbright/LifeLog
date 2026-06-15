@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { useAppData } from "../../contexts/AppDataContext";
 import { RING_META, RING_LEVELS } from "../../helpers/ringMeta";
 import Avatar from "./Avatar";
@@ -74,6 +74,7 @@ function PeopleField({ mode, formData, setFormData, placeholder }) {
   const { contacts } = useAppData();
   const [query, setQuery] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [dropUp, setDropUp] = useState(false);
   const inputRef = useRef(null);
   const containerRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -90,17 +91,19 @@ function PeopleField({ mode, formData, setFormData, placeholder }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    if (dropdownOpen && containerRef.current) {
-      setTimeout(() => {
-        const wrapperRect = containerRef.current.getBoundingClientRect();
-        const dropdownBottom = wrapperRect.bottom + 4 + 320;
-        const overflow = dropdownBottom - window.innerHeight;
-        if (overflow > 0) {
-          window.scrollBy({ top: overflow + 20, behavior: "smooth" });
-        }
-      }, 50);
-    }
+  // Flip the dropdown to open upward when it would otherwise overflow past
+  // the bottom of its scroll container (e.g. cover the form's submit button
+  // inside a modal or offcanvas panel).
+  useLayoutEffect(() => {
+    if (!dropdownOpen || !containerRef.current) return;
+    const wrapperRect = containerRef.current.getBoundingClientRect();
+    const scrollParent = containerRef.current.closest(".modal-body, .offcanvas-body");
+    const boundsTop = scrollParent ? scrollParent.getBoundingClientRect().top : 0;
+    const boundsBottom = scrollParent ? scrollParent.getBoundingClientRect().bottom : window.innerHeight;
+    const dropdownHeight = dropdownRef.current?.offsetHeight || 320;
+    const spaceBelow = boundsBottom - wrapperRect.bottom;
+    const spaceAbove = wrapperRect.top - boundsTop;
+    setDropUp(spaceBelow < dropdownHeight && spaceAbove > spaceBelow);
   }, [dropdownOpen]);
 
   const selectedContactIds = getSelectedContactIds();
@@ -412,7 +415,10 @@ function PeopleField({ mode, formData, setFormData, placeholder }) {
       </div>
 
       {showDropdown && (
-        <div ref={dropdownRef} className="contact-picker-dropdown people-field-dropdown">
+        <div
+          ref={dropdownRef}
+          className={`contact-picker-dropdown people-field-dropdown${dropUp ? " contact-picker-dropdown--up" : ""}`}
+        >
           {showRings && (
             <div className="people-field-section">
               <div className="people-field-section-header">Select by Ring</div>
