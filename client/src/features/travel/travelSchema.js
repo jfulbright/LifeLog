@@ -1,6 +1,6 @@
 import { baseSchema } from "../../helpers/common.schema";
 import { getStatusField } from "../../helpers/statusLabels";
-import { getReflectionFields, getCompanionsField } from "../../helpers/reflection.schema";
+import { getReflectionFields, getCompanionsField, getVisibilityDefaults } from "../../helpers/reflection.schema";
 import { getLocationFields } from "../../helpers/location.schema";
 
 const travelFields = [
@@ -88,6 +88,7 @@ const travelFields = [
 
   // ── Social (Companions + Visibility + Recommend) ───────────────────────────
   getCompanionsField("visited"),
+  ...getVisibilityDefaults(),
   {
     name: "visibilityControl",
     label: "🔒 Who can see this",

@@ -266,7 +266,16 @@ export default function useCategory(category, { migrate, normalize, schema } = {
             const collaboratorStatuses = Object.fromEntries(
               shared.map((c) => [c.collaborator_contact_id, c.status])
             );
-            setFormData((prev) => ({ ...prev, shareWithCompanionIds: sharedContactIds, _collaboratorStatuses: collaboratorStatuses }));
+            setFormData((prev) => ({
+              ...prev,
+              shareWithCompanionIds: sharedContactIds,
+              // collaborate ⟹ visible: existing collaborators must show under
+              // "Who can see this" even on legacy entries saved before this field.
+              visibilityContacts: Array.from(
+                new Set([...(prev.visibilityContacts || []), ...sharedContactIds])
+              ),
+              _collaboratorStatuses: collaboratorStatuses,
+            }));
           }
         } catch {}
       }

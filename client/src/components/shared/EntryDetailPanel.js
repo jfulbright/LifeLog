@@ -32,6 +32,11 @@ function EntryDetailPanel({ item, category, schema, onClose, onSave, onDelete, r
         setFormData((prev) => ({
           ...prev,
           shareWithCompanionIds: sharedContactIds,
+          // collaborate ⟹ visible: surface existing collaborators under
+          // "Who can see this" even on entries saved before that field existed.
+          visibilityContacts: Array.from(
+            new Set([...(prev.visibilityContacts || []), ...sharedContactIds])
+          ),
           _collaboratorStatuses: collaboratorStatuses,
         }));
       } catch {

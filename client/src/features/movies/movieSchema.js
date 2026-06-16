@@ -1,6 +1,6 @@
 import { baseSchema } from "../../helpers/common.schema";
 import { getStatusField } from "../../helpers/statusLabels";
-import { getReflectionFields, getCompanionsField } from "../../helpers/reflection.schema";
+import { getReflectionFields, getCompanionsField, getVisibilityDefaults } from "../../helpers/reflection.schema";
 
 const movieSchema = [
   getStatusField("movies"),
@@ -81,13 +81,7 @@ const movieSchema = [
 
   // Social (Companions + Visibility + Recommend)
   getCompanionsField("watched"),
-  {
-    name: "visibilityRings",
-    type: "hidden",
-    defaultValue: [1, 2, 3, 4],
-    section: "Hidden",
-    order: 64,
-  },
+  ...getVisibilityDefaults(),
   {
     name: "visibilityControl",
     label: "🔒 Who can see this",
