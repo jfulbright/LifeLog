@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { isMineOnly, isSharedSource } from "../../../helpers/operator";
 import { Button } from "react-bootstrap";
 import CellarForm from "./CellarForm";
 import ItemCardList from "../../../components/shared/ItemCardList";
@@ -113,8 +114,8 @@ function CellarList() {
 
   const filteredItems = useMemo(() => {
     let items = statusFiltered;
-    if (sourceFilter === "mine") items = items.filter((i) => !i._isShared);
-    else if (sourceFilter === "shared") items = items.filter((i) => i._isShared);
+    if (sourceFilter === "mine") items = items.filter(isMineOnly);
+    else if (sourceFilter === "shared") items = items.filter(isSharedSource);
     else if (sourceFilter === "recommended") items = items.filter((i) => i._isRecommended);
 
     if (activeTab === "wine") items = items.filter((i) => (i.subType || "wine") === "wine");
@@ -184,7 +185,7 @@ function CellarList() {
         sourceFilter={sourceFilter}
         onSourceChange={setSourceFilter}
         avatarUrl={profile?.avatar_url}
-        sharedCount={cellarItems.filter((i) => i._isShared).length}
+        sharedCount={cellarItems.filter(isSharedSource).length}
         recommendedCount={cellarItems.filter((i) => i._isRecommended).length}
       />
 

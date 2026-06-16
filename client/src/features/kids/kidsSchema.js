@@ -1,4 +1,4 @@
-import { getStatusValues } from "../../helpers/statusLabels";
+import { getStatusField } from "../../helpers/statusLabels";
 import { getReflectionFields, getCompanionsField } from "../../helpers/reflection.schema";
 import { baseSchema } from "../../helpers/common.schema";
 
@@ -13,15 +13,7 @@ export const KIDS_EVENT_TYPES = [
 ];
 
 const kidsSchema = [
-  {
-    name: "status",
-    label: "Status",
-    type: "select",
-    options: getStatusValues("kids"),
-    required: true,
-    section: "Main",
-    order: 0,
-  },
+  getStatusField("kids"),
   {
     name: "milestoneType",
     label: "Milestone Type",

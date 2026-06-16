@@ -61,3 +61,32 @@ export const getStatusLabel = (category, status) => {
   if (status === "all") return "All";
   return statusLabels[category]?.[status] || status;
 };
+
+/**
+ * Helper: Returns the full value→label map for a category
+ * (e.g. { done: "Accomplished", wishlist: "Wishlist" }).
+ * This is the same map StatusBadge, StatusToggle, and the source filters use,
+ * so wiring it into a form's <select> guarantees the dropdown labels match
+ * everywhere else.
+ */
+export const getStatusOptionLabels = (category) => {
+  return { ...(statusLabels[category] || {}) };
+};
+
+/**
+ * Helper: Schema factory for the standard "Status" select field.
+ * Pulls both the option values and their display labels from this single
+ * source of truth so the dropdown can never drift from the badges/filters.
+ * Pass `overrides` to tweak per-schema details (section, order, etc.).
+ */
+export const getStatusField = (category, overrides = {}) => ({
+  name: "status",
+  label: "Status",
+  type: "select",
+  options: getStatusValues(category),
+  optionLabels: getStatusOptionLabels(category),
+  required: true,
+  section: "Main",
+  order: 0,
+  ...overrides,
+});

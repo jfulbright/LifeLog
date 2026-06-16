@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Form } from "react-bootstrap";
 import dataService from "../../services/dataService";
 import { codeToFlag, getCountryName } from "../../data/countries";
+import TripLink from "./TripLink";
 
 /**
  * LinkedTripPicker — "Part of a Trip?" toggle + searchable trip selector.
@@ -61,9 +62,11 @@ function LinkedTripPicker({
   if (readOnly) {
     if (!linkedTripTitle) return null;
     return (
-      <span style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)" }}>
-        ✈️ {linkedTripTitle}
-      </span>
+      <TripLink
+        tripId={linkedTripId}
+        title={linkedTripTitle}
+        style={{ fontSize: "var(--font-size-sm)" }}
+      />
     );
   }
 

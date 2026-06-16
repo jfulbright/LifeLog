@@ -361,12 +361,33 @@ const dataService = {
   /**
    * Get items for a category merged with accepted shared entries from collaborators.
    * Shared entries get _isShared=true and _sharedBy set to the owner's user ID.
+   *
+   * Own items that the user has shared with at least one collaborator (any status,
+   * including pending invites) get _hasOutgoingShares=true so the source filter can
+   * surface them under "Shared" rather than "Mine". _isShared is intentionally left
+   * untouched on own items — it gates the save effect in useCategory.
    */
   async getItemsWithShared(category) {
-    const ownItems = await dataService.getItems(category);
+    let ownItems = await dataService.getItems(category);
 
     try {
       const userId = await getCurrentUserId();
+
+      // Outgoing shares: entries this user owns and has shared with anyone.
+      const { data: outgoing } = await supabase
+        .from("collaborators")
+        .select("entry_id")
+        .eq("owner_id", userId)
+        .eq("entry_category", category);
+
+      if (outgoing?.length) {
+        const sharedEntryIds = new Set(outgoing.map((c) => c.entry_id));
+        ownItems = ownItems.map((item) =>
+          sharedEntryIds.has(item.id) ? { ...item, _hasOutgoingShares: true } : item
+        );
+      }
+
+      // Incoming shares: accepted entries owned by someone else.
       const { data: collabs } = await supabase
         .from("collaborators")
         .select("entry_id, owner_id")

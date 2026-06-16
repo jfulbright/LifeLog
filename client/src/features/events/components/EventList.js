@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { isMineOnly, isSharedSource } from "../../../helpers/operator";
 import { Button } from "react-bootstrap";
 import eventSchema, { EVENT_TYPES } from "../eventSchema";
 import EventForm from "./EventForm";
@@ -97,9 +98,9 @@ function EventList() {
   const eventStatuses = getStatusFilterOptions("events");
   const statusFiltered = filterByStatus(events, filterStatus);
   const sourceFiltered = sourceFilter === "mine"
-    ? statusFiltered.filter((i) => !i._isShared)
+    ? statusFiltered.filter(isMineOnly)
     : sourceFilter === "shared"
-    ? statusFiltered.filter((i) => i._isShared)
+    ? statusFiltered.filter(isSharedSource)
     : sourceFilter === "recommended"
     ? statusFiltered.filter((i) => i._isRecommended)
     : statusFiltered;
@@ -120,7 +121,7 @@ function EventList() {
     return sourceFiltered.filter((i) => i.eventType === filterType);
   }, [sourceFiltered, filterType]);
 
-  const sharedCount = events.filter((i) => i._isShared).length;
+  const sharedCount = events.filter(isSharedSource).length;
   const recommendedCount = events.filter((i) => i._isRecommended).length;
   const sectionTitle = `Events - ${getStatusLabel("events", filterStatus)}`;
 

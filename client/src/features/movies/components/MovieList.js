@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { isMineOnly, isSharedSource } from "../../../helpers/operator";
 import { Button, Spinner } from "react-bootstrap";
 import movieSchema from "../movieSchema";
 import MovieForm from "./MovieForm";
@@ -213,9 +214,9 @@ function MovieList() {
 
   const statusFiltered = filterByStatus(movies, filterStatus);
   const sourceFiltered = sourceFilter === "mine"
-    ? statusFiltered.filter((i) => !i._isShared)
+    ? statusFiltered.filter(isMineOnly)
     : sourceFilter === "shared"
-    ? statusFiltered.filter((i) => i._isShared)
+    ? statusFiltered.filter(isSharedSource)
     : sourceFilter === "recommended"
     ? statusFiltered.filter((i) => i._isRecommended)
     : statusFiltered;
@@ -276,7 +277,7 @@ function MovieList() {
         sourceFilter={sourceFilter}
         onSourceChange={setSourceFilter}
         avatarUrl={profile?.avatar_url}
-        sharedCount={movies.filter((i) => i._isShared).length}
+        sharedCount={movies.filter(isSharedSource).length}
         recommendedCount={movies.filter((i) => i._isRecommended).length}
       />
 

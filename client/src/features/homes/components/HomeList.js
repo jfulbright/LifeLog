@@ -1,4 +1,5 @@
 import React from "react";
+import { isMineOnly, isSharedSource } from "../../../helpers/operator";
 import { Button } from "react-bootstrap";
 import HomeForm from "../../../features/homes/components/HomeForm";
 import ItemCardList from "../../../components/shared/ItemCardList";
@@ -37,9 +38,9 @@ function HomeList() {
   const homeStatuses = getStatusFilterOptions("homes");
   const statusFiltered = filterByStatus(homes, filterStatus);
   const sourceFiltered = sourceFilter === "mine"
-    ? statusFiltered.filter((i) => !i._isShared)
+    ? statusFiltered.filter(isMineOnly)
     : sourceFilter === "shared"
-    ? statusFiltered.filter((i) => i._isShared)
+    ? statusFiltered.filter(isSharedSource)
     : sourceFilter === "recommended"
     ? statusFiltered.filter((i) => i._isRecommended)
     : statusFiltered;
@@ -60,7 +61,7 @@ function HomeList() {
     return sourceFiltered;
   }, [sourceFiltered, homeFilter]);
 
-  const sharedCount = homes.filter((i) => i._isShared).length;
+  const sharedCount = homes.filter(isSharedSource).length;
   const recommendedCount = homes.filter((i) => i._isRecommended).length;
   const sectionTitle = `Homes - ${getStatusLabel("homes", filterStatus)}`;
 
@@ -135,7 +136,7 @@ function HomeList() {
       <SaveToast
         show={showToast}
         onClose={() => setShowToast(false)}
-        message="Home saved \u2705"
+        message={"Home saved \u2705"}
       />
 
       <SnapCaptureModal

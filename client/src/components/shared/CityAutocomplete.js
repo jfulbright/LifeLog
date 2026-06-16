@@ -11,13 +11,16 @@ const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
  *   { city, state, country, lat, lng }
  * where country is the ISO 2-letter code.
  */
-function CityAutocomplete({ value, onChange, onLocationSelect, id, placeholder = "e.g. Tokyo", disabled, countryCode }) {
+function CityAutocomplete({ value, onChange, onLocationSelect, id, placeholder = "e.g. Tokyo", disabled, countryCode, autoGeocode = false, hasCoords = false }) {
   const [query, setQuery] = useState(value || "");
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const debounceRef = useRef(null);
   const wrapperRef = useRef(null);
+  // Tracks the query we've already resolved to coordinates so a blur after an
+  // explicit pick (or a previous blur-geocode) doesn't fire a duplicate lookup.
+  const lastResolvedQuery = useRef(null);
 
   // Sync external value changes (e.g. when editing an existing item)
   useEffect(() => {
@@ -72,6 +75,7 @@ function CityAutocomplete({ value, onChange, onLocationSelect, id, placeholder =
     setQuery(cityName);
     setSuggestions([]);
     setShowDropdown(false);
+    lastResolvedQuery.current = cityName.trim().toLowerCase();
 
     onChange({ target: { name: "city", value: cityName } });
 
@@ -93,6 +97,27 @@ function CityAutocomplete({ value, onChange, onLocationSelect, id, placeholder =
         lat: lat ? String(lat) : "",
         lng: lng ? String(lng) : "",
       });
+    }
+  };
+
+  // When a location form needs map coordinates but the user typed a city
+  // without picking a suggestion, resolve the best match on blur so the entry
+  // still gets lat/lng (and therefore a map pin). No-op once coords exist.
+  const handleBlur = async () => {
+    if (!autoGeocode || hasCoords || !MAPBOX_TOKEN) return;
+    const q = query.trim();
+    if (q.length < 2) return;
+    if (lastResolvedQuery.current === q.toLowerCase()) return;
+    try {
+      const countryParam = countryCode ? `&country=${countryCode.toLowerCase()}` : "";
+      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?types=place&limit=1${countryParam}&access_token=${MAPBOX_TOKEN}`;
+      const res = await fetch(url);
+      if (!res.ok) return;
+      const data = await res.json();
+      const best = (data.features || [])[0];
+      if (best) handleSelect(best);
+    } catch {
+      // silently ignore geocoding errors
     }
   };
 
@@ -118,6 +143,7 @@ function CityAutocomplete({ value, onChange, onLocationSelect, id, placeholder =
         value={query}
         onChange={handleInputChange}
         onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
+        onBlur={handleBlur}
         placeholder={placeholder}
         disabled={disabled}
         autoComplete="off"

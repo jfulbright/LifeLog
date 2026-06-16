@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { isMineOnly, isSharedSource } from "../../../helpers/operator";
 import { Button } from "react-bootstrap";
 import KidsForm from "./KidsForm";
 import ItemCardList from "../../../components/shared/ItemCardList";
@@ -188,9 +189,9 @@ function KidsList() {
   const statusFiltered = filterByStatus(milestones, filterStatus);
 
   const sourceFiltered = sourceFilter === "mine"
-    ? statusFiltered.filter((i) => !i._isShared)
+    ? statusFiltered.filter(isMineOnly)
     : sourceFilter === "shared"
-    ? statusFiltered.filter((i) => i._isShared)
+    ? statusFiltered.filter(isSharedSource)
     : sourceFilter === "recommended"
     ? statusFiltered.filter((i) => i._isRecommended)
     : statusFiltered;
@@ -213,7 +214,7 @@ function KidsList() {
     return items;
   }, [sourceFiltered, milestoneTypeFilter, childFilter, ratingFilter]);
 
-  const sharedCount = milestones.filter((i) => i._isShared).length;
+  const sharedCount = milestones.filter(isSharedSource).length;
   const recommendedCount = milestones.filter((i) => i._isRecommended).length;
 
   const groupedByYear = useMemo(() => {

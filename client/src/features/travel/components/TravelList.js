@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Button, Modal, Form } from "react-bootstrap";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import TravelForm from "../../../features/travel/components/TravelForm";
 import ItemCardList from "../../../components/shared/ItemCardList";
 import FormPanel from "../../../components/shared/FormPanel";
@@ -19,7 +19,7 @@ import { useAppData } from "../../../contexts/AppDataContext";
 import { codeToFlag, getCountryName } from "../../../data/countries";
 import dataService from "../../../services/dataService";
 import { computeTravelStats } from "../../../services/travelStats";
-import { getTripPhotos } from "../../../helpers/operator";
+import { getTripPhotos, getItemPhotos, isMineOnly, isSharedSource } from "../../../helpers/operator";
 import {
   getStatusFilterOptions,
   filterByStatus,
@@ -272,6 +272,7 @@ function LinkedActivityRow({ activity }) {
 
 
   const snapshots = [activity.snapshot1, activity.snapshot2, activity.snapshot3].filter(Boolean);
+  const photos = getItemPhotos(activity);
 
   return (
     <div style={{ borderBottom: "1px solid var(--color-border)", paddingBottom: "0.35rem", marginBottom: "0.35rem" }}>
@@ -335,6 +336,11 @@ function LinkedActivityRow({ activity }) {
               ✨ "{snap}"
             </div>
           ))}
+          {photos.length > 0 && (
+            <div style={{ marginTop: "0.3rem", marginBottom: "0.35rem" }}>
+              <PhotoGrid photos={photos} height={80} />
+            </div>
+          )}
           {activity.notes && (
             <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)", marginBottom: "0.2rem" }}>
               {activity.notes}
@@ -455,6 +461,7 @@ const VIEW_TABS = [
 
 function TravelList() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { profile } = useAppData();
   const [activeView, setActiveView] = useState("list");
   const [selectedCountry, setSelectedCountry] = useState(null);
@@ -486,16 +493,30 @@ function TravelList() {
     dataService.getItems("activities").then(setLinkedActivities);
   }, []);
 
+  // Deep link: /travel?view=<tripId> opens that trip's detail (e.g. when an
+  // activity links back to its trip). Handled once the trips have loaded.
+  const viewParamHandled = useRef(false);
+  useEffect(() => {
+    if (loading || viewParamHandled.current) return;
+    const viewId = searchParams.get("view");
+    if (viewId) {
+      const trip = travels.find((t) => t.id === viewId);
+      if (trip) setViewDetailItem(trip);
+      viewParamHandled.current = true;
+      setSearchParams({}, { replace: true });
+    }
+  }, [loading, travels, searchParams, setSearchParams, setViewDetailItem]);
+
   const travelStatuses = getStatusFilterOptions("travel");
   const statusFiltered = filterByStatus(travels, filterStatus);
   const filteredTravels = sourceFilter === "mine"
-    ? statusFiltered.filter((i) => !i._isShared)
+    ? statusFiltered.filter(isMineOnly)
     : sourceFilter === "shared"
-    ? statusFiltered.filter((i) => i._isShared)
+    ? statusFiltered.filter(isSharedSource)
     : sourceFilter === "recommended"
     ? statusFiltered.filter((i) => i._isRecommended)
     : statusFiltered;
-  const sharedCount = travels.filter((i) => i._isShared).length;
+  const sharedCount = travels.filter(isSharedSource).length;
   const recommendedCount = travels.filter((i) => i._isRecommended).length;
   const sectionTitle = `Travel - ${getStatusLabel("travel", filterStatus)}`;
 

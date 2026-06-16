@@ -1,5 +1,5 @@
 import { baseSchema } from "../../helpers/common.schema";
-import { getStatusValues } from "../../helpers/statusLabels";
+import { getStatusField } from "../../helpers/statusLabels";
 import { getReflectionFields, getCompanionsField } from "../../helpers/reflection.schema";
 import { getLocationFields } from "../../helpers/location.schema";
 
@@ -32,15 +32,7 @@ export const ACTIVITY_TYPE_OPTIONS = Object.entries(ACTIVITY_TYPES).flatMap(
 );
 
 const activityFields = [
-  {
-    name: "status",
-    label: "Status",
-    type: "select",
-    options: getStatusValues("activities"),
-    required: true,
-    section: "Main",
-    order: 0,
-  },
+  getStatusField("activities"),
   {
     name: "activityType",
     label: "Activity",

@@ -8,6 +8,8 @@ export function getLocationFields({ section = "Where", startOrder = 25 } = {}) {
       type: "city-autocomplete",
       optional: true,
       placeholder: "e.g. Austin",
+      // Resolve coordinates on blur so a typed city still drops a map pin.
+      autoGeocode: true,
       section,
       order: startOrder,
     },
