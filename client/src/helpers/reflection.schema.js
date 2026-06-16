@@ -59,6 +59,35 @@ export function getReflectionFields(experiencedStatus) {
 }
 
 /**
+ * Hidden state behind the "Who can see this" (visible-to) control.
+ *
+ * `visibilityRings` defaults to all four rings ("Everyone") so a new entry is
+ * shared with the user's whole network unless they narrow it. `visibilityContacts`
+ * holds individuals added directly (e.g. auto-added when collaborating) so they
+ * can be removed independently of any ring.
+ *
+ * Spread into a schema alongside its `visible-to` field.
+ */
+export function getVisibilityDefaults() {
+  return [
+    {
+      name: "visibilityRings",
+      type: "hidden",
+      defaultValue: [1, 2, 3, 4],
+      section: "Hidden",
+      order: 64,
+    },
+    {
+      name: "visibilityContacts",
+      type: "hidden",
+      defaultValue: [],
+      section: "Hidden",
+      order: 64,
+    },
+  ];
+}
+
+/**
  * Companions field for the Social section. Separated from getReflectionFields
  * so it can be grouped with visibility and recommendation controls.
  */

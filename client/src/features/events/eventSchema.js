@@ -1,6 +1,6 @@
 import { baseSchema } from "../../helpers/common.schema";
 import { getStatusField } from "../../helpers/statusLabels";
-import { getReflectionFields, getCompanionsField } from "../../helpers/reflection.schema";
+import { getReflectionFields, getCompanionsField, getVisibilityDefaults } from "../../helpers/reflection.schema";
 import { getLocationFields } from "../../helpers/location.schema";
 
 export const EVENT_TYPES = [
@@ -292,6 +292,7 @@ const eventSchema = [
 
   // ── Social (Companions + Visibility + Recommend) ──────────────────────────
   getCompanionsField("attended"),
+  ...getVisibilityDefaults(),
   {
     name: "visibilityControl",
     label: "🔒 Who can see this",

@@ -1,6 +1,12 @@
 import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { useAppData } from "../../contexts/AppDataContext";
 import { RING_META, RING_LEVELS } from "../../helpers/ringMeta";
+import {
+  addVisibilityContact,
+  removeVisibilityContact,
+  toggleEveryone,
+  isEveryone,
+} from "../../helpers/visibilitySharing";
 import Avatar from "./Avatar";
 
 
@@ -132,6 +138,9 @@ function PeopleField({ mode, formData, setFormData, placeholder }) {
     if (mode === "recommend") {
       return formData.recommendedToContacts || [];
     }
+    if (mode === "visibility") {
+      return formData.visibilityContacts || [];
+    }
     return [];
   }
 
@@ -187,6 +196,8 @@ function PeopleField({ mode, formData, setFormData, placeholder }) {
           recommendedToContacts: [...current, contact.id],
         }));
       }
+    } else if (mode === "visibility") {
+      setFormData((prev) => addVisibilityContact(prev, contact.id));
     }
     setQuery("");
     inputRef.current?.focus();
@@ -208,6 +219,8 @@ function PeopleField({ mode, formData, setFormData, placeholder }) {
           (id) => id !== contactId
         ),
       }));
+    } else if (mode === "visibility") {
+      setFormData((prev) => removeVisibilityContact(prev, contactId));
     }
   }
 
@@ -319,8 +332,11 @@ function PeopleField({ mode, formData, setFormData, placeholder }) {
         }));
       }
     } else if (mode === "visibility") {
+      const visContacts = formData.visibilityContacts || [];
       const rings = formData.visibilityRings || [];
-      if (rings.length > 0) {
+      if (visContacts.length > 0) {
+        setFormData((prev) => removeVisibilityContact(prev, visContacts[visContacts.length - 1]));
+      } else if (rings.length > 0) {
         setFormData((prev) => ({
           ...prev,
           visibilityRings: rings.slice(0, -1),
@@ -382,6 +398,16 @@ function PeopleField({ mode, formData, setFormData, placeholder }) {
           <RingChip key={`ring-${level}`} level={level} onRemove={() => removeRing(level)} />
         );
       });
+      (formData.visibilityContacts || []).forEach((contactId) => {
+        const contact = contacts.find((c) => c.id === contactId);
+        chips.push(
+          <ContactChip
+            key={`contact-${contactId}`}
+            contact={contact}
+            onRemove={() => removeContact(contactId)}
+          />
+        );
+      });
     }
 
     return chips;
@@ -389,7 +415,9 @@ function PeopleField({ mode, formData, setFormData, placeholder }) {
 
   const chips = renderChips();
   const showRings = true;
-  const showContacts = mode === "companions" || mode === "recommend";
+  const showContacts = mode === "companions" || mode === "recommend" || mode === "visibility";
+  const showEveryone = mode === "visibility";
+  const everyoneActive = isEveryone(formData.visibilityRings);
 
   return (
     <div ref={containerRef} className="contact-picker-wrapper">
@@ -423,6 +451,24 @@ function PeopleField({ mode, formData, setFormData, placeholder }) {
             <div className="people-field-section">
               <div className="people-field-section-header">Select by Ring</div>
               <div className="people-field-rings">
+                {showEveryone && (
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setFormData((prev) => toggleEveryone(prev));
+                    }}
+                    aria-pressed={everyoneActive}
+                    className="people-field-ring-btn"
+                    style={{
+                      background: everyoneActive ? "var(--color-primary)" : "var(--color-surface)",
+                      color: everyoneActive ? "#fff" : "var(--color-text-secondary)",
+                      borderColor: everyoneActive ? "var(--color-primary)" : "var(--color-border)",
+                    }}
+                  >
+                    🌐 Everyone
+                  </button>
+                )}
                 {RING_LEVELS.map((level) => {
                   const meta = RING_META[level];
                   const active = selectedRings.includes(level);

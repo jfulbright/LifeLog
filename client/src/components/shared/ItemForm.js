@@ -10,6 +10,7 @@ import CountryDropdown from "./CountryDropdown";
 import CityAutocomplete from "./CityAutocomplete";
 import PeopleField from "./PeopleField";
 import ShareWithCompanionsToggle from "./ShareWithCompanionsToggle";
+import { applyCollaborateChange } from "../../helpers/visibilitySharing";
 import LinkedTripPicker from "./LinkedTripPicker";
 import PhotoUploadField from "./PhotoUploadField";
 import { getCountryContinent } from "../../data/countries";
@@ -759,10 +760,7 @@ function ItemForm({
                         value={formData.shareWithCompanionIds || []}
                         statuses={formData._collaboratorStatuses}
                         onChange={(ids) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            shareWithCompanionIds: ids,
-                          }))
+                          setFormData((prev) => applyCollaborateChange(prev, ids))
                         }
                       />
                     </Col>
