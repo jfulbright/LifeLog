@@ -1,18 +1,10 @@
 import { baseSchema } from "../../helpers/common.schema";
-import { getStatusValues } from "../../helpers/statusLabels";
+import { getStatusField } from "../../helpers/statusLabels";
 import { getReflectionFields, getCompanionsField } from "../../helpers/reflection.schema";
 import { getLocationFields } from "../../helpers/location.schema";
 
 const travelFields = [
-  {
-    name: "status",
-    label: "Status",
-    type: "select",
-    options: getStatusValues("travel"),
-    required: true,
-    section: "Main",
-    order: 0,
-  },
+  getStatusField("travel"),
   {
     name: "title",
     label: "Trip Name",

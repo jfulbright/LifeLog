@@ -1,17 +1,9 @@
 import { baseSchema } from "../../helpers/common.schema";
-import { getStatusValues } from "../../helpers/statusLabels";
+import { getStatusField } from "../../helpers/statusLabels";
 import { getReflectionFields } from "../../helpers/reflection.schema";
 
 const carSchema = [
-  {
-    name: "status",
-    label: "Status",
-    type: "select",
-    options: getStatusValues("cars"),
-    required: true,
-    section: "Main",
-    order: 0,
-  },
+  getStatusField("cars"),
 
   {
     name: "vin",

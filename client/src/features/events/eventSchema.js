@@ -1,5 +1,5 @@
 import { baseSchema } from "../../helpers/common.schema";
-import { getStatusValues } from "../../helpers/statusLabels";
+import { getStatusField } from "../../helpers/statusLabels";
 import { getReflectionFields, getCompanionsField } from "../../helpers/reflection.schema";
 import { getLocationFields } from "../../helpers/location.schema";
 
@@ -13,15 +13,7 @@ export const EVENT_TYPES = [
 ];
 
 const eventSchema = [
-  {
-    name: "status",
-    label: "Status",
-    type: "select",
-    options: getStatusValues("events"),
-    required: true,
-    section: "Main",
-    order: 0,
-  },
+  getStatusField("events"),
   {
     name: "eventType",
     label: "Event Type",

@@ -1,17 +1,9 @@
 import { baseSchema } from "../../helpers/common.schema";
-import { getStatusValues } from "../../helpers/statusLabels";
+import { getStatusField } from "../../helpers/statusLabels";
 import { getReflectionFields, getCompanionsField } from "../../helpers/reflection.schema";
 
 const movieSchema = [
-  {
-    name: "status",
-    label: "Status",
-    type: "select",
-    options: getStatusValues("movies"),
-    required: true,
-    section: "Main",
-    order: 0,
-  },
+  getStatusField("movies"),
   {
     name: "title",
     label: "Title",

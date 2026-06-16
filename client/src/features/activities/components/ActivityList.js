@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { isMineOnly, isSharedSource } from "../../../helpers/operator";
 import { Button } from "react-bootstrap";
 import { useLocation } from "react-router-dom";
 import ActivityForm from "./ActivityForm";
@@ -7,6 +8,7 @@ import FormPanel from "../../../components/shared/FormPanel";
 import SaveToast from "../../../components/shared/SaveToast";
 import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
 import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
+import TripLink from "../../../components/shared/TripLink";
 import CategoryListHeader from "../../../components/shared/CategoryListHeader";
 import { RATING_GROUP } from "../../../components/shared/GroupedDropdownFilter";
 import activitySchema, { ACTIVITY_TYPES } from "../activitySchema";
@@ -46,9 +48,9 @@ function ActivityList() {
   const activityStatuses = getStatusFilterOptions("activities");
   const statusFiltered = filterByStatus(activities, filterStatus);
   const sourceFiltered = sourceFilter === "mine"
-    ? statusFiltered.filter((i) => !i._isShared)
+    ? statusFiltered.filter(isMineOnly)
     : sourceFilter === "shared"
-    ? statusFiltered.filter((i) => i._isShared)
+    ? statusFiltered.filter(isSharedSource)
     : sourceFilter === "recommended"
     ? statusFiltered.filter((i) => i._isRecommended)
     : statusFiltered;
@@ -67,7 +69,7 @@ function ActivityList() {
     }
     return sourceFiltered.filter((i) => i.activityType === activityTypeFilter);
   }, [sourceFiltered, activityTypeFilter]);
-  const sharedCount = activities.filter((i) => i._isShared).length;
+  const sharedCount = activities.filter(isSharedSource).length;
   const recommendedCount = activities.filter((i) => i._isRecommended).length;
 
   const done = activities.filter((i) => i.status === "done");
@@ -144,15 +146,8 @@ function ActivityList() {
         onViewDetail={setViewDetailItem}
         renderCompactExtra={(item) =>
           item.linkedTripTitle ? (
-            <div style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.25rem",
-              marginTop: "0.2rem",
-              fontSize: "var(--font-size-xs)",
-              color: "var(--color-text-tertiary)",
-            }}>
-              {"\u2708\uFE0F"} {item.linkedTripTitle}
+            <div style={{ marginTop: "0.2rem" }}>
+              <TripLink tripId={item.linkedTripId} title={item.linkedTripTitle} />
             </div>
           ) : null
         }
@@ -174,7 +169,7 @@ function ActivityList() {
       <SaveToast
         show={showToast}
         onClose={() => setShowToast(false)}
-        message="Activity logged \u2705"
+        message={"Activity logged \u2705"}
       />
 
       <SnapCaptureModal

@@ -530,6 +530,8 @@ function ItemForm({
             id={fieldId}
             value={value}
             countryCode={formData.country || ""}
+            autoGeocode={field.autoGeocode}
+            hasCoords={!!(formData.lat && formData.lng)}
             onChange={(e) => handleInputChange(e, setFormData)}
             onLocationSelect={(location) => {
               setFormData((prev) => {

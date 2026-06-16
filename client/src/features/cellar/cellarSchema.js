@@ -1,5 +1,5 @@
 import { baseSchema } from "../../helpers/common.schema";
-import { getStatusValues } from "../../helpers/statusLabels";
+import { getStatusField } from "../../helpers/statusLabels";
 import { getReflectionFields, getCompanionsField } from "../../helpers/reflection.schema";
 
 export const WINE_TYPES = ["Red", "White", "Rosé", "Sparkling", "Dessert", "Fortified", "Orange"];
@@ -29,16 +29,7 @@ const cellarSchema = [
   },
 
   // ── Main ────────────────────────────────────────────────────────────────────
-  {
-    name: "status",
-    label: "Status",
-    type: "select",
-    options: getStatusValues("cellar"),
-    optionLabels: { tried: "Enjoyed", cellar: "In Cellar", wishlist: "Wishlist" },
-    required: true,
-    section: "Main",
-    order: 0,
-  },
+  getStatusField("cellar"),
 
   // ── Wine-specific fields ───────────────────────────────────────────────────
   {

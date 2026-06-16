@@ -1,18 +1,10 @@
 import { baseSchema } from "../../helpers/common.schema";
 import { locationSchema } from "../../helpers/location.schema";
-import { getStatusValues } from "../../helpers/statusLabels";
+import { getStatusField } from "../../helpers/statusLabels";
 import { getReflectionFields } from "../../helpers/reflection.schema";
 
 const homeSchema = [
-  {
-    name: "status",
-    label: "Status",
-    type: "select",
-    options: getStatusValues("homes"),
-    required: true,
-    section: "Main",
-    order: 0,
-  },
+  getStatusField("homes"),
 
   {
     name: "type",

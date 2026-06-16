@@ -87,6 +87,17 @@ export const getItemPhotos = (item) =>
   [item.photo1, item.photo2, item.photo3].filter(Boolean);
 
 /**
+ * Source-filter classification used by every category's "All | Mine | Shared"
+ * pills. An item belongs to "Shared" if it was either received from someone else
+ * (_isShared) or the owner has shared it outward with a collaborator, pending or
+ * accepted (_hasOutgoingShares). "Mine" is the complement: owned and unshared.
+ */
+export const isSharedSource = (item) =>
+  !!(item._isShared || item._hasOutgoingShares);
+
+export const isMineOnly = (item) => !isSharedSource(item);
+
+/**
  * Returns the owner's photos and each companion's overlay photos separately.
  * @param {object} item - The entry item
  * @param {object[]} overlays - personalOverlay records for this entry

@@ -4,7 +4,7 @@ const SOURCE_OPTIONS = [
   { id: "all", label: "All", emoji: null },
   { id: "mine", label: "Mine", emoji: null },
   { id: "shared", label: "Shared", emoji: "\u{1F91D}" },
-  { id: "recommended", label: "Rec'd", emoji: "⭐" },
+  { id: "recommended", label: "Recommended", emoji: "⭐" },
 ];
 
 function SourceFilterPills({ value, onChange, avatarUrl, sharedCount, recommendedCount }) {

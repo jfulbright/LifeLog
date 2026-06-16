@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Button } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { isFieldVisible } from "../../helpers/operator";
+import { getAllSocialPhotos } from "../../helpers/socialContent";
 import { RING_META } from "../../helpers/ringMeta";
 import { renderFieldValue } from "../../helpers/renderFieldValue";
 import collaboratorService from "../../services/collaboratorService";
@@ -54,6 +55,17 @@ function EntryView({
   });
 
   const photos = [item.photo1, item.photo2, item.photo3].filter(Boolean);
+
+  // Full carousel set: owner photos + each collaborator's photos with attribution.
+  // Falls back to own photos when no social data is loaded yet.
+  const socialPhotos = getAllSocialPhotos(item);
+  const lightboxPhotos = socialPhotos.length > 0
+    ? socialPhotos.map(({ contribution, url }) => ({
+        url,
+        label: contribution.displayName,
+        avatarUrl: contribution.avatarUrl,
+      }))
+    : photos.map((url) => ({ url }));
   const companions = item.companions;
   const hasCompanions = Array.isArray(companions) && companions.length > 0;
   const hasCollaborators = collaborators.length > 0;
@@ -98,7 +110,7 @@ function EntryView({
       {/* ─── Photos ─── */}
       {photos.length > 0 && (
         <div style={{ marginBottom: "1.25rem" }}>
-          <PhotoGrid photos={photos} height={200} />
+          <PhotoGrid photos={photos} lightboxPhotos={lightboxPhotos} height={200} />
         </div>
       )}
 

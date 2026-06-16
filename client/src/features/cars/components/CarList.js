@@ -1,4 +1,5 @@
 import React from "react";
+import { isMineOnly, isSharedSource } from "../../../helpers/operator";
 import { Button } from "react-bootstrap";
 import CarForm from "../../../features/cars/components/CarForm";
 import ItemCardList from "../../../components/shared/ItemCardList";
@@ -37,9 +38,9 @@ function CarList() {
   const carStatuses = getStatusFilterOptions("cars");
   const statusFiltered = filterByStatus(cars, filterStatus);
   const sourceFiltered = sourceFilter === "mine"
-    ? statusFiltered.filter((i) => !i._isShared)
+    ? statusFiltered.filter(isMineOnly)
     : sourceFilter === "shared"
-    ? statusFiltered.filter((i) => i._isShared)
+    ? statusFiltered.filter(isSharedSource)
     : sourceFilter === "recommended"
     ? statusFiltered.filter((i) => i._isRecommended)
     : statusFiltered;
@@ -60,7 +61,7 @@ function CarList() {
     return sourceFiltered;
   }, [sourceFiltered, carFilter]);
 
-  const sharedCount = cars.filter((i) => i._isShared).length;
+  const sharedCount = cars.filter(isSharedSource).length;
   const recommendedCount = cars.filter((i) => i._isRecommended).length;
   const sectionTitle = `Cars - ${getStatusLabel("cars", filterStatus)}`;
 
@@ -135,7 +136,7 @@ function CarList() {
       <SaveToast
         show={showToast}
         onClose={() => setShowToast(false)}
-        message="Car saved \u2705"
+        message={"Car saved \u2705"}
       />
 
       <SnapCaptureModal
