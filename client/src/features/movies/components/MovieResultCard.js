@@ -1,13 +1,18 @@
 import React, { useState } from "react";
 import { Button } from "react-bootstrap";
 import { RING_META } from "../../../helpers/ringMeta";
+import SocialMemoriesCard from "../../../components/shared/SocialMemoriesCard";
+import StarRating from "../../../components/shared/StarRating";
 
 /**
  * Unified result card used across all search/discovery modes.
  * Displays movie info + optional social badge + action buttons.
  */
-function MovieResultCard({ movie, socialBadge, socialBadges, onSelect, onClick, actions, existingStatus }) {
+function MovieResultCard({ movie, socialBadge, socialBadges, socialContributions, ratings, myRating, onSelect, onClick, actions, existingStatus }) {
   const [posterFailed, setPosterFailed] = useState(false);
+  const hasSocial = Array.isArray(socialContributions) && socialContributions.length > 0;
+  const hasRatings = ratings && (ratings.imdbRating != null || ratings.rtRating != null);
+  const hasMyRating = parseInt(myRating, 10) > 0;
 
   return (
     <div className="search-result-card">
@@ -51,6 +56,26 @@ function MovieResultCard({ movie, socialBadge, socialBadges, onSelect, onClick, 
                 }}
               >
                 {movie.genre}
+              </div>
+            )}
+            {hasMyRating && (
+              <div style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", marginTop: "0.25rem", fontSize: "var(--font-size-xs)", fontWeight: 600, color: "var(--color-text-secondary)" }}>
+                <span>Your rating</span>
+                <StarRating rating={myRating} />
+              </div>
+            )}
+            {hasRatings && (
+              <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginTop: "0.25rem", fontSize: "var(--font-size-xs)", fontWeight: 600 }}>
+                {ratings.imdbRating != null && (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
+                    <span style={{ color: "#f5c518" }}>★</span> IMDb {ratings.imdbRating}
+                  </span>
+                )}
+                {ratings.rtRating != null && (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
+                    🍅 {ratings.rtRating}%
+                  </span>
+                )}
               </div>
             )}
             {movie.overview && (
@@ -104,6 +129,14 @@ function MovieResultCard({ movie, socialBadge, socialBadges, onSelect, onClick, 
           )}
         </div>
       </div>
+      {hasSocial && (
+        <SocialMemoriesCard
+          item={movie}
+          contributions={socialContributions}
+          title="From My Circle"
+          subtitle={`${socialContributions.length} ${socialContributions.length === 1 ? "person" : "people"} rated this`}
+        />
+      )}
     </div>
   );
 }

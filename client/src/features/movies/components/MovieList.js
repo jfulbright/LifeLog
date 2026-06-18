@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback, useEffect, useRef } from "react"
 import { Button, Spinner } from "react-bootstrap";
 import movieSchema from "../movieSchema";
 import MovieForm from "./MovieForm";
-import MovieDetailExtras from "./MovieDetailExtras";
+import MovieDetailView from "./MovieDetailView";
 import MovieSocialFeed from "./MovieSocialFeed";
 import MovieResultCard from "./MovieResultCard";
 import ItemCardList from "../../../components/shared/ItemCardList";
@@ -11,12 +11,12 @@ import SaveToast from "../../../components/shared/SaveToast";
 import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
 import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
 import CategoryListHeader from "../../../components/shared/CategoryListHeader";
-import { RATING_GROUP } from "../../../components/shared/GroupedDropdownFilter";
 import SocialMemoriesCard from "../../../components/shared/SocialMemoriesCard";
 import useCategory from "../../../hooks/useCategory";
 import useListFilters from "../../../hooks/useListFilters";
 import { useAppData } from "../../../contexts/AppDataContext";
-import { searchMovies } from "../api/movieApi";
+import { searchMovies, getExternalIds } from "../api/movieApi";
+import { getOmdbRatings } from "../api/omdbApi";
 import {
   getStatusFilterOptions,
   filterByStatus,
@@ -27,8 +27,8 @@ const GENRE_EMOJIS = {
   Action: "\u{1F3AC}", Comedy: "\u{1F602}", Drama: "\u{1F3AD}", Horror: "\u{1F631}",
   "Science Fiction": "\u{1F52E}", "Sci-Fi": "\u{1F52E}", Romance: "\u{1F495}",
   Documentary: "\u{1F4D6}", Thriller: "\u{1F52A}", Animation: "\u{1F9F8}",
-  Fantasy: "\u{1F409}", Adventure: "\u{1F5FA}\uFE0F", Crime: "\u{1F50D}", Family: "\u{1F468}\u200D\u{1F469}\u200D\u{1F467}",
-  Mystery: "\u{1F50E}", War: "\u2694\uFE0F", Music: "\u{1F3B5}", Western: "\u{1F920}",
+  Fantasy: "\u{1F409}", Adventure: "\u{1F5FA}️", Crime: "\u{1F50D}", Family: "\u{1F468}‍\u{1F469}‍\u{1F467}",
+  Mystery: "\u{1F50E}", War: "⚔️", Music: "\u{1F3B5}", Western: "\u{1F920}",
 };
 
 const DECADE_ORDER = ["2020s", "2010s", "2000s", "90s", "80s", "Classic"];
@@ -53,6 +53,50 @@ function matchesRating(rating, filter) {
   return true;
 }
 
+const TODAY = () => new Date().toISOString().slice(0, 10);
+
+// Concurrency limit for the background OMDB rating backfill.
+const RATING_BACKFILL_CONCURRENCY = 4;
+
+// Fetch IMDb/RT ratings for a list of tmdbIds with a small concurrency limit.
+// `attempted` is a Set used to avoid re-fetching the same id. Failures are
+// swallowed (the movie is simply absent from the result map / rating filters).
+async function fetchOmdbBatch(tmdbIds, attempted) {
+  const fetched = {};
+  for (let i = 0; i < tmdbIds.length; i += RATING_BACKFILL_CONCURRENCY) {
+    const batch = tmdbIds.slice(i, i + RATING_BACKFILL_CONCURRENCY);
+    await Promise.all(batch.map(async (tid) => {
+      attempted.add(tid);
+      try {
+        const ext = await getExternalIds(tid);
+        if (!ext?.imdbId) return;
+        const omdb = await getOmdbRatings(ext.imdbId);
+        if (!omdb) return;
+        const imdbRating = omdb.imdbRating ? parseFloat(omdb.imdbRating) : null;
+        const rtRating = omdb.rottenTomatoes ? parseInt(omdb.rottenTomatoes, 10) : null;
+        if (imdbRating != null || rtRating != null) fetched[tid] = { imdbRating, rtRating };
+      } catch { /* leave uncached */ }
+    }));
+  }
+  return fetched;
+}
+
+// Build a normalized social contribution from a friend's shared movie entry.
+function contributionFromShared(m) {
+  return {
+    userId: m._sharedByUserId,
+    displayName: m._sharedByName || "Someone",
+    isOwner: false,
+    isMine: false,
+    rating: parseInt(m.rating || m._socialRating, 10) || null,
+    snaps: [m.snapshot1, m.snapshot2, m.snapshot3].filter(Boolean),
+    photos: [m.photo1, m.photo2, m.photo3].filter(Boolean),
+    whyNotes: "",
+    avatarUrl: m._recommenderAvatar || null,
+    ringLevel: m._sharedByRing,
+  };
+}
+
 function MovieList() {
   const {
     items: movies,
@@ -61,7 +105,7 @@ function MovieList() {
     showForm, editIndex,
     filterStatus, setFilterStatus,
     showToast, setShowToast,
-    handleSubmit, startEditing, deleteItem, closeForm, openForm, saveDetailEdit,
+    handleSubmit, startEditing, deleteItem, closeForm, openForm, saveDetailEdit, applyPatchMap,
     showSnapPrompt, snapPromptTitle, handleSnapSave, dismissSnapPrompt,
     viewDetailItem, setViewDetailItem,
   } = useCategory("movies", { normalize: (data) => ({ ...data, status: data.status || "watchlist", startDate: data.startDate || "" }), schema: movieSchema });
@@ -70,12 +114,18 @@ function MovieList() {
   const lf = useListFilters(movies, { dateField: "startDate" });
   const { profile } = useAppData();
 
-
   // Inline TMDB search state
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchActive, setSearchActive] = useState(false);
+
+  // IMDb / RT ratings cache (tmdbId -> { imdbRating, rtRating }) for filtering.
+  const [ratingsByTmdbId, setRatingsByTmdbId] = useState({});
+  const attemptedRatingsRef = useRef(new Set());
+
+  // Carousel drill-down preview stack (TMDB movies not in the library yet).
+  const [previewStack, setPreviewStack] = useState([]);
 
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) return;
@@ -100,17 +150,22 @@ function MovieList() {
 
   // Quick-add: save directly without opening FormPanel
   const pendingQuickAdd = useRef(false);
+  // After a "watched" quick-add, open the new entry's detail so the user can
+  // rate it. Holds the tmdbId (or title) of the entry to open once it lands.
+  const openDetailAfterAddRef = useRef(null);
 
   const handleQuickAdd = useCallback((movie, status) => {
     const { _socialSource, _sharedByName, _sharedByRing, _sharedByContactId, _sharedByUserId,
       _socialRating, _recId, _recommendedBy, _recommenderAvatar, _recommenderRing,
-      _recommendedAt, _consensusCount, _tasteScore, _suggestedGenre, ...clean } = movie;
+      _recommendedAt, _consensusCount, _tasteScore, _suggestedGenre, _isPreview,
+      _socialContributions, _isShared, ...clean } = movie;
     const data = {
       ...clean,
       status: status || "watchlist",
-      startDate: status === "watched" ? new Date().toISOString().slice(0, 10) : "",
+      startDate: status === "watched" ? TODAY() : "",
       visibilityRings: [1, 2, 3, 4],
     };
+    if (status === "watched") openDetailAfterAddRef.current = movie.tmdbId || movie.title;
     pendingQuickAdd.current = true;
     setFormData(data);
   }, [setFormData]);
@@ -122,6 +177,20 @@ function MovieList() {
     }
   }, [formData, handleSubmit]);
 
+  // Once a "watched" quick-add has landed in the list, open its detail screen
+  // so the user can add a rating. (Watchlist adds keep the existing flow.)
+  useEffect(() => {
+    const key = openDetailAfterAddRef.current;
+    if (!key) return;
+    const found = movies.find((m) =>
+      !m._isShared && m.status === "watched" && (m.tmdbId === key || (!m.tmdbId && m.title === key))
+    );
+    if (found) {
+      openDetailAfterAddRef.current = null;
+      setViewDetailItem(found);
+    }
+  }, [movies, setViewDetailItem]);
+
   // Build a lookup of user's movies by tmdbId for status badges on search results
   const moviesByTmdbId = useMemo(() => {
     const map = {};
@@ -131,31 +200,148 @@ function MovieList() {
     return map;
   }, [movies]);
 
-  // Social enrichment lookup for search results — all friends' entries per tmdbId
+  // Social enrichment lookup — all friends' contributions (rating + snaps) per tmdbId.
   const socialByTmdbId = useMemo(() => {
-    const shared = movies.filter((m) => m._isShared && m.tmdbId);
     const map = {};
-    shared.forEach((m) => {
+    movies.filter((m) => m._isShared && m.tmdbId).forEach((m) => {
       if (!map[m.tmdbId]) map[m.tmdbId] = [];
-      map[m.tmdbId].push(m);
+      map[m.tmdbId].push(contributionFromShared(m));
     });
     return map;
   }, [movies]);
 
-  // Apply genre/decade filters to search results (rating/ring don't apply to TMDB data)
+  // Average of friends' ratings per tmdbId (for the "My People Rating" filter).
+  const peopleRatingByTmdbId = useMemo(() => {
+    const map = {};
+    Object.entries(socialByTmdbId).forEach(([tmdbId, contribs]) => {
+      const rated = contribs.map((c) => c.rating).filter((r) => r > 0);
+      if (rated.length > 0) map[tmdbId] = rated.reduce((a, b) => a + b, 0) / rated.length;
+    });
+    return map;
+  }, [socialByTmdbId]);
+
+  // Cached IMDb/RT readers: prefer persisted item value, fall back to session cache.
+  const getImdb = useCallback((m) => {
+    const v = m.imdbRating != null ? m.imdbRating : ratingsByTmdbId[m.tmdbId]?.imdbRating;
+    return v != null ? v : null;
+  }, [ratingsByTmdbId]);
+  const getRt = useCallback((m) => {
+    const v = m.rtRating != null ? m.rtRating : ratingsByTmdbId[m.tmdbId]?.rtRating;
+    return v != null ? v : null;
+  }, [ratingsByTmdbId]);
+
+  // Record OMDB ratings fetched by an open detail modal (in-memory + persist to own entry).
+  const handleRatingsLoaded = useCallback((tmdbId, vals) => {
+    if (!tmdbId || (vals.imdbRating == null && vals.rtRating == null)) return;
+    attemptedRatingsRef.current.add(tmdbId);
+    setRatingsByTmdbId((prev) => (prev[tmdbId] ? prev : { ...prev, [tmdbId]: vals }));
+    const own = movies.find((m) => m.tmdbId === tmdbId && !m._isShared && m.id);
+    if (own && own.imdbRating == null && own.rtRating == null) {
+      applyPatchMap({ [own.id]: vals });
+    }
+  }, [movies, applyPatchMap]);
+
+  // Throttled background backfill of IMDb/RT for library movies missing ratings,
+  // so the IMDb / Rotten Tomatoes filters work without opening each movie.
+  useEffect(() => {
+    const seen = new Set();
+    const need = [];
+    movies.forEach((m) => {
+      if (!m.tmdbId) return;
+      if (m.imdbRating != null || m.rtRating != null) return;
+      if (ratingsByTmdbId[m.tmdbId] !== undefined) return;
+      if (attemptedRatingsRef.current.has(m.tmdbId)) return;
+      if (seen.has(m.tmdbId)) return;
+      seen.add(m.tmdbId);
+      need.push(m.tmdbId);
+    });
+    if (need.length === 0) return;
+
+    let cancelled = false;
+    (async () => {
+      const fetched = await fetchOmdbBatch(need, attemptedRatingsRef.current);
+      if (cancelled || Object.keys(fetched).length === 0) return;
+      setRatingsByTmdbId((prev) => ({ ...prev, ...fetched }));
+      const patchMap = {};
+      movies.forEach((m) => {
+        if (!m._isShared && m.id && fetched[m.tmdbId]) patchMap[m.id] = fetched[m.tmdbId];
+      });
+      applyPatchMap(patchMap);
+    })();
+    return () => { cancelled = true; };
+  }, [movies, ratingsByTmdbId, applyPatchMap]);
+
+  // Backfill IMDb/RT for the current TMDB search results too, so SERP cards can
+  // show ratings and the IMDb / Rotten Tomatoes filters apply to search hits.
+  useEffect(() => {
+    if (!searchActive || searchResults.length === 0) return;
+    const need = searchResults
+      .map((r) => r.tmdbId)
+      .filter((tid) => tid && ratingsByTmdbId[tid] === undefined && !attemptedRatingsRef.current.has(tid));
+    if (need.length === 0) return;
+
+    let cancelled = false;
+    (async () => {
+      const fetched = await fetchOmdbBatch(need, attemptedRatingsRef.current);
+      if (cancelled || Object.keys(fetched).length === 0) return;
+      setRatingsByTmdbId((prev) => ({ ...prev, ...fetched }));
+    })();
+    return () => { cancelled = true; };
+  }, [searchActive, searchResults, ratingsByTmdbId]);
+
+  // The same header filter pills apply to TMDB search results, interpreted
+  // against each result's library / social state so the displayed SERP list
+  // stays consistent with the rest of the filter bar.
   const filteredSearchResults = useMemo(() => {
-    if (movieFilter === "all") return searchResults;
-    const [type, val] = movieFilter.split(":");
-    if (type === "genre") {
-      return searchResults.filter((m) =>
-        (m.genre || "").split(",").map((g) => g.trim()).includes(val)
-      );
-    }
-    if (type === "decade") {
-      return searchResults.filter((m) => getDecade(m.year) === val);
-    }
-    return searchResults;
-  }, [searchResults, movieFilter]);
+    return searchResults.filter((r) => {
+      const lib = moviesByTmdbId[r.tmdbId];
+      const contribs = socialByTmdbId[r.tmdbId];
+
+      // Status: narrow to results whose library entry matches the chosen status.
+      if (filterStatus !== "all" && lib?.status !== filterStatus) return false;
+
+      // Source: mine / shared / recommended, against library + social state.
+      if (lf.sourceFilter === "mine" && !(lib && !lib._isShared)) return false;
+      if (lf.sourceFilter === "shared" && !((lib && lib._isShared) || (contribs && contribs.length > 0))) return false;
+      if (lf.sourceFilter === "recommended" && !(lib && lib._isRecommended)) return false;
+
+      // Year: watch-year of the library entry (results not in library drop out).
+      if (lf.activeYear && lf.activeYear !== "all") {
+        const sd = lib?.startDate;
+        const y = sd ? new Date(sd + "T00:00:00").getFullYear() : null;
+        if (String(y) !== String(lf.activeYear)) return false;
+      }
+
+      // Category dropdown (genre / decade / rating / imdb / rt / ring).
+      if (movieFilter !== "all") {
+        const [type, val] = movieFilter.split(":");
+        if (type === "genre") {
+          if (!(r.genre || "").split(",").map((g) => g.trim()).includes(val)) return false;
+        } else if (type === "decade") {
+          if (getDecade(r.year) !== val) return false;
+        } else if (type === "myrating") {
+          if (!matchesRating(lib?.rating, val)) return false;
+        } else if (type === "peoplerating") {
+          const pr = peopleRatingByTmdbId[r.tmdbId];
+          if (!(pr != null && pr >= parseFloat(val))) return false;
+        } else if (type === "imdb") {
+          const v = getImdb({ tmdbId: r.tmdbId, imdbRating: lib?.imdbRating });
+          if (!(v != null && v >= parseFloat(val))) return false;
+        } else if (type === "rt") {
+          const v = getRt({ tmdbId: r.tmdbId, rtRating: lib?.rtRating });
+          if (!(v != null && v >= parseFloat(val))) return false;
+        } else if (type === "ring") {
+          if (!lib || !lib._isShared) return false;
+          const rr = parseInt(lib.rating, 10);
+          if (val === "partner" && !(lib._sharedByRing === 1 && rr >= 4)) return false;
+          if (val === "family" && !((lib._sharedByRing === 2 || lib._sharedByRing === 3) && rr >= 4)) return false;
+          if (val === "friends" && !(lib._sharedByRing === 4 && rr >= 4)) return false;
+          if (val === "unwatched" && !(lib._isRecommended && lib.status !== "watched")) return false;
+        }
+      }
+      return true;
+    });
+  }, [searchResults, filterStatus, lf.sourceFilter, lf.activeYear, movieFilter, moviesByTmdbId, socialByTmdbId, peopleRatingByTmdbId, getImdb, getRt]);
 
   const movieStatuses = getStatusFilterOptions("movies");
 
@@ -187,7 +373,7 @@ function MovieList() {
       groups.push({
         key: "genre",
         label: "\u{1F3AC} Genre",
-        options: availableGenres.map((g) => ({ value: `genre:${g}`, label: `${GENRE_EMOJIS[g] || "\u{1F3DE}\uFE0F"} ${g}` })),
+        options: availableGenres.map((g) => ({ value: `genre:${g}`, label: `${GENRE_EMOJIS[g] || "\u{1F3DE}️"} ${g}` })),
       });
     }
     if (availableDecades.length > 0) {
@@ -197,7 +383,43 @@ function MovieList() {
         options: availableDecades.map((d) => ({ value: `decade:${d}`, label: d })),
       });
     }
-    groups.push(RATING_GROUP);
+    groups.push({
+      key: "myrating",
+      label: "★ My Rating",
+      options: [
+        { value: "myrating:5", label: "★★★★★" },
+        { value: "myrating:4+", label: "★★★★☆+" },
+        { value: "myrating:3+", label: "★★★☆☆+" },
+        { value: "myrating:unrated", label: "No rating" },
+      ],
+    });
+    groups.push({
+      key: "peoplerating",
+      label: "\u{1F465} My People Rating",
+      options: [
+        { value: "peoplerating:4.5+", label: "★★★★★ Loved" },
+        { value: "peoplerating:4+", label: "★★★★☆+" },
+        { value: "peoplerating:3+", label: "★★★☆☆+" },
+      ],
+    });
+    groups.push({
+      key: "imdb",
+      label: "★ IMDb Rating",
+      options: [
+        { value: "imdb:8+", label: "8+ Exceptional" },
+        { value: "imdb:7+", label: "7+ Great" },
+        { value: "imdb:6+", label: "6+ Good" },
+      ],
+    });
+    groups.push({
+      key: "rt",
+      label: "\u{1F345} Rotten Tomatoes",
+      options: [
+        { value: "rt:90+", label: "90%+ Certified" },
+        { value: "rt:75+", label: "75%+ Fresh" },
+        { value: "rt:60+", label: "60%+" },
+      ],
+    });
     groups.push({
       key: "ring",
       label: "\u{1F48E} From Rings",
@@ -225,8 +447,23 @@ function MovieList() {
     if (type === "decade") {
       return commonFiltered.filter((m) => getDecade(m.year) === val);
     }
-    if (type === "rating") {
+    if (type === "myrating") {
       return commonFiltered.filter((m) => matchesRating(m.rating, val));
+    }
+    if (type === "peoplerating") {
+      const min = parseFloat(val);
+      return commonFiltered.filter((m) => {
+        const pr = peopleRatingByTmdbId[m.tmdbId];
+        return pr != null && pr >= min;
+      });
+    }
+    if (type === "imdb") {
+      const min = parseFloat(val);
+      return commonFiltered.filter((m) => { const v = getImdb(m); return v != null && v >= min; });
+    }
+    if (type === "rt") {
+      const min = parseFloat(val);
+      return commonFiltered.filter((m) => { const v = getRt(m); return v != null && v >= min; });
     }
     if (type === "ring") {
       if (val === "partner") {
@@ -243,11 +480,59 @@ function MovieList() {
       }
     }
     return commonFiltered;
-  }, [commonFiltered, movieFilter]);
+  }, [commonFiltered, movieFilter, peopleRatingByTmdbId, getImdb, getRt]);
 
   const sectionTitle = `Movies - ${getStatusLabel("movies", filterStatus)}`;
   const watchedCount = movies.filter((m) => m.status === "watched").length;
   const watchlistCount = movies.filter((m) => m.status === "watchlist").length;
+
+  // ── Detail / preview modal wiring ──────────────────────────────────────────
+
+  // Build an enriched, read-only preview item for a TMDB movie not in the library.
+  const buildPreviewItem = useCallback((m) => {
+    const preview = { ...m, _isPreview: true };
+    const contribs = socialByTmdbId[m.tmdbId];
+    if (contribs?.length > 0) {
+      preview._isShared = true;
+      preview._sharedByName = contribs[0].displayName;
+      preview._sharedByRing = contribs[0].ringLevel;
+      preview._socialContributions = contribs;
+    }
+    return preview;
+  }, [socialByTmdbId]);
+
+  // The currently displayed detail item: top of the carousel preview stack,
+  // otherwise the base entry opened from the list/search.
+  const activeDetail = previewStack.length > 0 ? previewStack[previewStack.length - 1] : viewDetailItem;
+
+  const openMoviePreview = useCallback((m) => {
+    setPreviewStack((stack) => [...stack, buildPreviewItem(m)]);
+  }, [buildPreviewItem]);
+
+  const closeDetail = useCallback(() => {
+    setPreviewStack([]);
+    setViewDetailItem(null);
+  }, [setViewDetailItem]);
+
+  const popPreview = useCallback(() => {
+    setPreviewStack((stack) => stack.slice(0, -1));
+  }, []);
+
+  const handleStatusChange = useCallback((mv, status) => {
+    const updated = {
+      ...mv,
+      status,
+      startDate: status === "watched" ? (mv.startDate || TODAY()) : (mv.startDate || ""),
+    };
+    saveDetailEdit(updated);
+    setViewDetailItem((prev) => (prev && prev.id === mv.id ? updated : prev));
+  }, [saveDetailEdit, setViewDetailItem]);
+
+  const handleRate = useCallback((mv, rating) => {
+    const updated = { ...mv, rating: String(rating) };
+    saveDetailEdit(updated);
+    setViewDetailItem((prev) => (prev && prev.id === mv.id ? updated : prev));
+  }, [saveDetailEdit, setViewDetailItem]);
 
   return (
     <>
@@ -327,37 +612,34 @@ function MovieList() {
               letterSpacing: "0.05em",
               margin: 0,
             }}>
-              {searchLoading ? "Searching..." : `${filteredSearchResults.length} results`}
+              {searchLoading
+                ? "Searching..."
+                : filteredSearchResults.length === searchResults.length
+                  ? `${searchResults.length} results`
+                  : `${filteredSearchResults.length} of ${searchResults.length} results`}
             </h6>
           </div>
           {filteredSearchResults.map((movie) => {
             const existing = moviesByTmdbId[movie.tmdbId];
-            const socialEntries = socialByTmdbId[movie.tmdbId];
-            const badges = socialEntries
-              ? socialEntries.map((m) => ({
-                  text: `${m._sharedByName || "Someone"} ${"★".repeat(parseInt(m.rating || m._socialRating, 10) || 0)}`,
-                  ringLevel: m._sharedByRing,
-                }))
-              : null;
+            const contributions = socialByTmdbId[movie.tmdbId];
+            const cardRatings = (existing && (existing.imdbRating != null || existing.rtRating != null))
+              ? { imdbRating: existing.imdbRating, rtRating: existing.rtRating }
+              : ratingsByTmdbId[movie.tmdbId];
 
             return (
               <MovieResultCard
                 key={movie.tmdbId}
                 movie={movie}
-                socialBadges={badges}
+                socialContributions={contributions}
+                ratings={cardRatings}
+                myRating={existing && !existing._isShared ? existing.rating : null}
                 existingStatus={existing?.status}
                 onSelect={handleQuickAdd}
                 onClick={(m) => {
                   if (existing) {
                     setViewDetailItem(existing);
                   } else {
-                    const previewItem = { ...m };
-                    if (socialEntries?.length > 0) {
-                      previewItem._isShared = true;
-                      previewItem._sharedByName = socialEntries[0]._sharedByName;
-                      previewItem._sharedByRing = socialEntries[0]._sharedByRing;
-                    }
-                    setViewDetailItem(previewItem);
+                    setViewDetailItem(buildPreviewItem(m));
                   }
                 }}
               />
@@ -407,7 +689,7 @@ function MovieList() {
             onViewDetail={setViewDetailItem}
             renderCompactExtra={(item) => {
               const contributions = [];
-              // Add recommender contributions
+              // Recommender contributions
               const recs = Array.isArray(item.recommendedBy) ? item.recommendedBy : (item.recommendedBy ? [item.recommendedBy] : []);
               recs.forEach((r) => {
                 if (r.rating || r.snaps?.length > 0) {
@@ -424,21 +706,11 @@ function MovieList() {
                   });
                 }
               });
-              // Add social circle contributions
+              // Social circle contributions (other people who logged the same movie)
               const entries = item.tmdbId && socialByTmdbId[item.tmdbId];
               if (entries) {
-                entries.filter((m) => m.id !== item.id).forEach((m) => {
-                  contributions.push({
-                    userId: m._sharedByUserId,
-                    displayName: m._sharedByName || "Someone",
-                    isOwner: false,
-                    isMine: false,
-                    rating: parseInt(m.rating || m._socialRating, 10) || null,
-                    snaps: [],
-                    photos: [],
-                    whyNotes: "",
-                    avatarUrl: null,
-                  });
+                entries.filter((c) => c.userId !== item._sharedByUserId || !item._isShared).forEach((c) => {
+                  if (!contributions.find((x) => x.userId === c.userId)) contributions.push(c);
                 });
               }
               if (contributions.length === 0) return null;
@@ -482,15 +754,27 @@ function MovieList() {
         itemTitle={snapPromptTitle}
       />
 
-      {viewDetailItem && (
+      {activeDetail && (
         <EntryDetailPanel
-          item={viewDetailItem}
+          item={activeDetail}
           category="movies"
           schema={movieSchema}
-          onClose={() => setViewDetailItem(null)}
-          onSave={(data) => { saveDetailEdit(data); setViewDetailItem(null); }}
-          onDelete={(id) => { deleteItem(id); setViewDetailItem(null); }}
-          renderItemExtras={(item) => <MovieDetailExtras item={item} />}
+          onClose={closeDetail}
+          onSave={(data) => { saveDetailEdit(data); closeDetail(); }}
+          onDelete={(id) => { deleteItem(id); closeDetail(); }}
+          renderCustomView={({ item, onEdit, onDelete }) => (
+            <MovieDetailView
+              item={item}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onStatusChange={handleStatusChange}
+              onQuickAdd={(m, s) => { handleQuickAdd(m, s); closeDetail(); }}
+              onOpenMovie={openMoviePreview}
+              onBack={previewStack.length > 0 ? popPreview : undefined}
+              onRatingsLoaded={handleRatingsLoaded}
+              onRate={handleRate}
+            />
+          )}
         />
       )}
     </>
