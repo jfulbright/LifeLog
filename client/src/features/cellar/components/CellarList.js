@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from "react";
-import { isMineOnly, isSharedSource } from "../../../helpers/operator";
 import { Button } from "react-bootstrap";
 import CellarForm from "./CellarForm";
 import ItemCardList from "../../../components/shared/ItemCardList";
@@ -11,11 +10,11 @@ import CategoryListHeader from "../../../components/shared/CategoryListHeader";
 import { RATING_GROUP } from "../../../components/shared/GroupedDropdownFilter";
 import cellarSchema, { WINE_TYPES, WHISKEY_TYPES } from "../cellarSchema";
 import useCategory from "../../../hooks/useCategory";
+import useListFilters from "../../../hooks/useListFilters";
 import { useAppData } from "../../../contexts/AppDataContext";
 import {
   getStatusFilterOptions,
   filterByStatus,
-  getInitialSourceFilter,
 } from "../../../helpers/filterUtils";
 
 const WINE_TYPE_EMOJIS = {
@@ -28,16 +27,8 @@ const WHISKEY_TYPE_EMOJIS = {
   Japanese: "\u{1F1EF}\u{1F1F5}", Canadian: "\u{1F1E8}\u{1F1E6}", Other: "\u{1F4CC}",
 };
 
-const CELLAR_TABS = [
-  { id: "all", label: "All" },
-  { id: "wine", label: "\u{1F377} Wine" },
-  { id: "whiskey", label: "\u{1F943} Whiskey" },
-];
-
 function CellarList() {
-  const [activeTab, setActiveTab] = useState("all");
   const [subFilter, setSubFilter] = useState("all");
-  const [sourceFilter, setSourceFilter] = useState(getInitialSourceFilter);
   const { profile } = useAppData();
 
   const {
@@ -67,6 +58,8 @@ function CellarList() {
 
   const cellarStatuses = getStatusFilterOptions("cellar");
   const statusFiltered = filterByStatus(cellarItems, filterStatus);
+  const lf = useListFilters(cellarItems, { dateField: "startDate" });
+  const commonFiltered = lf.applyCommonFilters(statusFiltered);
 
   const availableVarietals = useMemo(() => {
     const wineItems = cellarItems.filter((i) => (i.subType || "wine") === "wine" && i.varietal);
@@ -74,74 +67,65 @@ function CellarList() {
     return [...varietalSet].sort();
   }, [cellarItems]);
 
-  const subFilterGroups = useMemo(() => {
-    if (activeTab === "wine") {
-      const groups = [
-        {
-          key: "type",
-          label: "\u{1F377} Type",
-          options: WINE_TYPES.map((t) => ({
-            value: `wine:${t}`,
-            label: `${WINE_TYPE_EMOJIS[t] || "\u{1F377}"} ${t}`,
-          })),
-        },
-      ];
-      if (availableVarietals.length > 0) {
-        groups.push({
-          key: "varietal",
-          label: "\u{1F347} Varietal",
-          options: availableVarietals.map((v) => ({ value: `varietal:${v}`, label: v })),
-        });
-      }
-      groups.push(RATING_GROUP);
-      return groups;
+  // Single-select pill model (Movie-style): one "Type" pill for Wine/Whiskey,
+  // plus dependent sub-type / varietal / rating pills, all sharing one value.
+  const cellarFilterGroups = useMemo(() => {
+    const groups = [
+      {
+        key: "subtype",
+        label: "\u{1F37E} Type",
+        options: [
+          { value: "subtype:wine", label: "\u{1F377} Wine" },
+          { value: "subtype:whiskey", label: "\u{1F943} Whiskey" },
+        ],
+      },
+      {
+        key: "wineType",
+        label: "\u{1F347} Wine Type",
+        options: WINE_TYPES.map((t) => ({
+          value: `wine:${t}`,
+          label: `${WINE_TYPE_EMOJIS[t] || "\u{1F377}"} ${t}`,
+        })),
+      },
+    ];
+    if (availableVarietals.length > 0) {
+      groups.push({
+        key: "varietal",
+        label: "\u{1F377} Varietal",
+        options: availableVarietals.map((v) => ({ value: `varietal:${v}`, label: v })),
+      });
     }
-    if (activeTab === "whiskey") {
-      return [
-        {
-          key: "type",
-          label: "\u{1F943} Type",
-          options: WHISKEY_TYPES.map((t) => ({
-            value: `whiskey:${t}`,
-            label: `${WHISKEY_TYPE_EMOJIS[t] || "\u{1F943}"} ${t}`,
-          })),
-        },
-        RATING_GROUP,
-      ];
-    }
-    return [RATING_GROUP];
-  }, [activeTab, availableVarietals]);
+    groups.push({
+      key: "whiskeyType",
+      label: "\u{1F943} Whiskey Type",
+      options: WHISKEY_TYPES.map((t) => ({
+        value: `whiskey:${t}`,
+        label: `${WHISKEY_TYPE_EMOJIS[t] || "\u{1F943}"} ${t}`,
+      })),
+    });
+    groups.push(RATING_GROUP);
+    return groups;
+  }, [availableVarietals]);
 
   const filteredItems = useMemo(() => {
-    let items = statusFiltered;
-    if (sourceFilter === "mine") items = items.filter(isMineOnly);
-    else if (sourceFilter === "shared") items = items.filter(isSharedSource);
-    else if (sourceFilter === "recommended") items = items.filter((i) => i._isRecommended);
-
-    if (activeTab === "wine") items = items.filter((i) => (i.subType || "wine") === "wine");
-    else if (activeTab === "whiskey") items = items.filter((i) => i.subType === "whiskey");
-
-    if (subFilter !== "all") {
-      const [type, val] = subFilter.split(":");
-      if (type === "wine") {
-        items = items.filter((i) => i.wineType === val);
-      } else if (type === "whiskey") {
-        items = items.filter((i) => i.whiskyType === val);
-      } else if (type === "varietal") {
-        items = items.filter((i) => i.varietal === val);
-      } else if (type === "rating") {
-        items = items.filter((i) => {
-          const r = parseInt(i.rating, 10);
-          if (val === "unrated") return !r;
-          if (val === "5") return r === 5;
-          if (val === "4+") return r >= 4;
-          if (val === "3+") return r >= 3;
-          return true;
-        });
-      }
+    if (subFilter === "all") return commonFiltered;
+    const [type, val] = subFilter.split(":");
+    if (type === "subtype") return commonFiltered.filter((i) => (i.subType || "wine") === val);
+    if (type === "wine") return commonFiltered.filter((i) => i.wineType === val);
+    if (type === "whiskey") return commonFiltered.filter((i) => i.whiskyType === val);
+    if (type === "varietal") return commonFiltered.filter((i) => i.varietal === val);
+    if (type === "rating") {
+      return commonFiltered.filter((i) => {
+        const r = parseInt(i.rating, 10);
+        if (val === "unrated") return !r;
+        if (val === "5") return r === 5;
+        if (val === "4+") return r >= 4;
+        if (val === "3+") return r >= 3;
+        return true;
+      });
     }
-    return items;
-  }, [statusFiltered, sourceFilter, activeTab, subFilter]);
+    return commonFiltered;
+  }, [commonFiltered, subFilter]);
 
   const getItemIcon = (item) => {
     return (item.subType || "wine") === "whiskey" ? "\u{1F943}" : "\u{1F377}";
@@ -151,11 +135,6 @@ function CellarList() {
   const totalBottles = cellarItems
     .filter((i) => i.status === "cellar")
     .reduce((sum, i) => sum + (Number(i.bottleCount) || 1), 0);
-
-  const handleTabChange = (tabId) => {
-    setActiveTab(tabId);
-    setSubFilter("all");
-  };
 
   return (
     <>
@@ -174,19 +153,18 @@ function CellarList() {
         statusOptions={cellarStatuses}
         filterStatus={filterStatus}
         onStatusChange={setFilterStatus}
-        tabs={CELLAR_TABS}
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        tabColor="var(--color-cellar, #8B3A8F)"
-        filterGroups={subFilterGroups}
+        yearOptions={lf.yearOptions}
+        activeYear={lf.activeYear}
+        onYearChange={lf.setActiveYear}
+        filterGroups={cellarFilterGroups}
         filterValue={subFilter}
         onFilterChange={setSubFilter}
         filterColor="var(--color-cellar, #8B3A8F)"
-        sourceFilter={sourceFilter}
-        onSourceChange={setSourceFilter}
+        sourceFilter={lf.sourceFilter}
+        onSourceChange={lf.setSourceFilter}
         avatarUrl={profile?.avatar_url}
-        sharedCount={cellarItems.filter(isSharedSource).length}
-        recommendedCount={cellarItems.filter((i) => i._isRecommended).length}
+        sharedCount={lf.sharedCount}
+        recommendedCount={lf.recommendedCount}
       />
 
       {filteredItems.length === 0 && !loading && (

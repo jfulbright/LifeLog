@@ -8,6 +8,13 @@ import dataService from "../services/dataService";
 import { getCategoryMeta } from "../helpers/categoryMeta";
 import statusLabels from "../helpers/statusLabels";
 import { findMatchingOwnedItem, mergeRecommender } from "../helpers/recommendationMatcher";
+import YearFilter from "../components/shared/YearFilter";
+import GroupedDropdownFilter from "../components/shared/GroupedDropdownFilter";
+import { getYearOptions, filterByYear } from "../helpers/filterUtils";
+
+// Year/category derive from the recommended entry's date (falling back to when
+// the recommendation arrived) so the filters read like the My Memories page.
+const recDate = (r) => r.entry?.startDate || r.created_at || "";
 
 // Recommendation rows use active/accepted/dismissed; the UI presents these with
 // the same Pending/Accepted/Declined vocabulary as the Shared Experiences feed.
@@ -19,6 +26,7 @@ function Recommendations() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("pending");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [activeYear, setActiveYear] = useState("all");
 
   useEffect(() => {
     load();
@@ -152,9 +160,20 @@ function Recommendations() {
     : enriched.filter((r) => r.status === TAB_TO_STATUS[statusFilter]);
 
   const categories = [...new Set(enriched.map((r) => r.category))];
-  const filtered = categoryFilter === "all"
+  const categoryFilterGroups = [{
+    key: "category",
+    label: "\u{1F4C2} Category",
+    options: categories.map((cat) => ({
+      value: cat,
+      label: `${getCategoryMeta(cat).icon} ${cat.charAt(0).toUpperCase() + cat.slice(1)}`,
+    })),
+  }];
+  const yearOptions = getYearOptions(enriched, recDate);
+
+  const categoryFiltered = categoryFilter === "all"
     ? statusFiltered
     : statusFiltered.filter((r) => r.category === categoryFilter);
+  const filtered = filterByYear(categoryFiltered, activeYear, recDate);
 
   if (loading) {
     return (
@@ -196,28 +215,17 @@ function Recommendations() {
         </div>
       </div>
 
-      {/* Category filter */}
+      {/* Year filter (renders only when 2+ years exist) */}
+      <YearFilter years={yearOptions} value={activeYear} onChange={setActiveYear} />
+
+      {/* Category filter — single pill, matching the category pages */}
       {categories.length > 1 && (
-        <div className="d-flex gap-2 mb-3 flex-wrap">
-          <button
-            className={`btn btn-sm ${categoryFilter === "all" ? "btn-primary" : "btn-outline-secondary"}`}
-            onClick={() => setCategoryFilter("all")}
-          >
-            All
-          </button>
-          {categories.map((cat) => {
-            const meta = getCategoryMeta(cat);
-            return (
-              <button
-                key={cat}
-                className={`btn btn-sm ${categoryFilter === cat ? "btn-primary" : "btn-outline-secondary"}`}
-                onClick={() => setCategoryFilter(cat)}
-              >
-                {meta.icon} {cat.charAt(0).toUpperCase() + cat.slice(1)}
-              </button>
-            );
-          })}
-        </div>
+        <GroupedDropdownFilter
+          groups={categoryFilterGroups}
+          value={categoryFilter}
+          onChange={setCategoryFilter}
+          color="var(--color-primary)"
+        />
       )}
 
       {filtered.length === 0 ? (

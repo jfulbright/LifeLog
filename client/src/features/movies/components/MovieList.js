@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { isMineOnly, isSharedSource } from "../../../helpers/operator";
 import { Button, Spinner } from "react-bootstrap";
 import movieSchema from "../movieSchema";
 import MovieForm from "./MovieForm";
@@ -15,13 +14,13 @@ import CategoryListHeader from "../../../components/shared/CategoryListHeader";
 import { RATING_GROUP } from "../../../components/shared/GroupedDropdownFilter";
 import SocialMemoriesCard from "../../../components/shared/SocialMemoriesCard";
 import useCategory from "../../../hooks/useCategory";
+import useListFilters from "../../../hooks/useListFilters";
 import { useAppData } from "../../../contexts/AppDataContext";
 import { searchMovies } from "../api/movieApi";
 import {
   getStatusFilterOptions,
   filterByStatus,
   getStatusLabel,
-  getInitialSourceFilter,
 } from "../../../helpers/filterUtils";
 
 const GENRE_EMOJIS = {
@@ -68,7 +67,7 @@ function MovieList() {
   } = useCategory("movies", { normalize: (data) => ({ ...data, status: data.status || "watchlist", startDate: data.startDate || "" }), schema: movieSchema });
 
   const [movieFilter, setMovieFilter] = useState("all");
-  const [sourceFilter, setSourceFilter] = useState(getInitialSourceFilter);
+  const lf = useListFilters(movies, { dateField: "startDate" });
   const { profile } = useAppData();
 
 
@@ -213,44 +212,38 @@ function MovieList() {
   }, [availableGenres, availableDecades]);
 
   const statusFiltered = filterByStatus(movies, filterStatus);
-  const sourceFiltered = sourceFilter === "mine"
-    ? statusFiltered.filter(isMineOnly)
-    : sourceFilter === "shared"
-    ? statusFiltered.filter(isSharedSource)
-    : sourceFilter === "recommended"
-    ? statusFiltered.filter((i) => i._isRecommended)
-    : statusFiltered;
+  const commonFiltered = lf.applyCommonFilters(statusFiltered);
 
   const filteredMovies = useMemo(() => {
-    if (movieFilter === "all") return sourceFiltered;
+    if (movieFilter === "all") return commonFiltered;
     const [type, val] = movieFilter.split(":");
     if (type === "genre") {
-      return sourceFiltered.filter((m) =>
+      return commonFiltered.filter((m) =>
         (m.genre || "").split(",").map((g) => g.trim()).includes(val)
       );
     }
     if (type === "decade") {
-      return sourceFiltered.filter((m) => getDecade(m.year) === val);
+      return commonFiltered.filter((m) => getDecade(m.year) === val);
     }
     if (type === "rating") {
-      return sourceFiltered.filter((m) => matchesRating(m.rating, val));
+      return commonFiltered.filter((m) => matchesRating(m.rating, val));
     }
     if (type === "ring") {
       if (val === "partner") {
-        return sourceFiltered.filter((m) => m._isShared && m._sharedByRing === 1 && parseInt(m.rating, 10) >= 4);
+        return commonFiltered.filter((m) => m._isShared && m._sharedByRing === 1 && parseInt(m.rating, 10) >= 4);
       }
       if (val === "family") {
-        return sourceFiltered.filter((m) => m._isShared && (m._sharedByRing === 2 || m._sharedByRing === 3) && parseInt(m.rating, 10) >= 4);
+        return commonFiltered.filter((m) => m._isShared && (m._sharedByRing === 2 || m._sharedByRing === 3) && parseInt(m.rating, 10) >= 4);
       }
       if (val === "friends") {
-        return sourceFiltered.filter((m) => m._isShared && m._sharedByRing === 4 && parseInt(m.rating, 10) >= 4);
+        return commonFiltered.filter((m) => m._isShared && m._sharedByRing === 4 && parseInt(m.rating, 10) >= 4);
       }
       if (val === "unwatched") {
-        return sourceFiltered.filter((m) => m._isRecommended && m.status !== "watched");
+        return commonFiltered.filter((m) => m._isRecommended && m.status !== "watched");
       }
     }
-    return sourceFiltered;
-  }, [sourceFiltered, movieFilter]);
+    return commonFiltered;
+  }, [commonFiltered, movieFilter]);
 
   const sectionTitle = `Movies - ${getStatusLabel("movies", filterStatus)}`;
   const watchedCount = movies.filter((m) => m.status === "watched").length;
@@ -269,16 +262,19 @@ function MovieList() {
         statusOptions={movieStatuses}
         filterStatus={filterStatus}
         onStatusChange={setFilterStatus}
+        yearOptions={lf.yearOptions}
+        activeYear={lf.activeYear}
+        onYearChange={lf.setActiveYear}
         renderExtraFilters={() => <MovieSocialFeed movies={movies} />}
         filterGroups={movieFilterGroups}
         filterValue={movieFilter}
         onFilterChange={setMovieFilter}
         filterColor="var(--color-movies, #E91E63)"
-        sourceFilter={sourceFilter}
-        onSourceChange={setSourceFilter}
+        sourceFilter={lf.sourceFilter}
+        onSourceChange={lf.setSourceFilter}
         avatarUrl={profile?.avatar_url}
-        sharedCount={movies.filter(isSharedSource).length}
-        recommendedCount={movies.filter((i) => i._isRecommended).length}
+        sharedCount={lf.sharedCount}
+        recommendedCount={lf.recommendedCount}
       />
 
       {/* Inline TMDB Search Bar */}

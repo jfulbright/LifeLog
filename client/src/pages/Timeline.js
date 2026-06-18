@@ -3,12 +3,13 @@ import { Link } from "react-router-dom";
 import categoryMeta from "../helpers/categoryMeta";
 import { formatDisplayDate } from "../helpers/dateUtils";
 import StatusBadge from "../components/shared/StatusBadge";
-import { getSnapshotTeaser } from "../helpers/operator";
+import { getSnapshotTeaser, isSharedSource } from "../helpers/operator";
 import dataService from "../services/dataService";
-import PrivacyIndicator, { isEntryShared } from "../components/shared/PrivacyIndicator";
+import PrivacyIndicator from "../components/shared/PrivacyIndicator";
 import SourceFilterPills from "../components/shared/SourceFilterPills";
 import EntryDetailPanel from "../components/shared/EntryDetailPanel";
 import StatsStrip from "../components/shared/StatsStrip";
+import YearFilter from "../components/shared/YearFilter";
 import { useAppData } from "../contexts/AppDataContext";
 import { SCHEMA_MAP, CATEGORY_KEYS } from "../helpers/schemaRegistry";
 import { enrichItemsWithSocialContent, getSocialPreview } from "../helpers/socialContent";
@@ -69,7 +70,7 @@ function Timeline() {
               country: item.country,
               date,
               isWishlist: item.status === "wishlist",
-              isShared: isEntryShared(item),
+              isShared: isSharedSource(item),
               rawItem: item,
               snapshot: getSnapshotTeaser(item),
               socialPreview: getSocialPreview(item),
@@ -166,32 +167,12 @@ function Timeline() {
         return <StatsStrip stats={stats} />;
       })()}
 
-      {/* Year pills */}
-      {years.length > 0 && (
-        <div className="status-toggle mb-2">
-          <button
-            className={`btn ${activeYear === "all" ? "active" : ""}`}
-            onClick={() => { setActiveYear("all"); setActiveMonth("all"); }}
-          >
-            All
-          </button>
-          {years.map((year) => {
-            const count = allEntries.filter(
-              (e) => String(new Date(e.date + "T00:00:00").getFullYear()) === String(year)
-            ).length;
-            return (
-              <button
-                key={year}
-                className={`btn ${activeYear === String(year) ? "active" : ""}`}
-                onClick={() => { setActiveYear(String(year)); setActiveMonth("all"); }}
-              >
-                {year}
-                <span className="ms-1 opacity-75">({count})</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {/* Year filter (shared component; renders only when 2+ years exist) */}
+      <YearFilter
+        years={years}
+        value={activeYear}
+        onChange={(y) => { setActiveYear(y); setActiveMonth("all"); }}
+      />
 
       {/* Month sub-pills (only when a year is selected) */}
       {activeYear !== "all" && monthsWithData.length > 0 && (

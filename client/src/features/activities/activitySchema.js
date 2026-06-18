@@ -1,6 +1,6 @@
 import { baseSchema } from "../../helpers/common.schema";
 import { getStatusField } from "../../helpers/statusLabels";
-import { getReflectionFields, getCompanionsField } from "../../helpers/reflection.schema";
+import { getReflectionFields, getCompanionsField, getVisibilityDefaults } from "../../helpers/reflection.schema";
 import { getLocationFields } from "../../helpers/location.schema";
 
 export const ACTIVITY_TYPES = {
@@ -129,6 +129,7 @@ const activityFields = [
 
   // Social (Companions + Visibility + Recommend)
   getCompanionsField("done"),
+  ...getVisibilityDefaults(),
   {
     name: "visibilityControl",
     label: "🔒 Who can see this",

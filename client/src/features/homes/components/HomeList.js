@@ -1,5 +1,4 @@
 import React from "react";
-import { isMineOnly, isSharedSource } from "../../../helpers/operator";
 import { Button } from "react-bootstrap";
 import HomeForm from "../../../features/homes/components/HomeForm";
 import ItemCardList from "../../../components/shared/ItemCardList";
@@ -11,16 +10,15 @@ import CategoryListHeader from "../../../components/shared/CategoryListHeader";
 import { RATING_GROUP } from "../../../components/shared/GroupedDropdownFilter";
 import homeSchema from "../../../features/homes/homeSchema";
 import useCategory from "../../../hooks/useCategory";
+import useListFilters from "../../../hooks/useListFilters";
 import { useAppData } from "../../../contexts/AppDataContext";
 import {
   getStatusFilterOptions,
   filterByStatus,
   getStatusLabel,
-  getInitialSourceFilter,
 } from "../../../helpers/filterUtils";
 
 function HomeList() {
-  const [sourceFilter, setSourceFilter] = React.useState(getInitialSourceFilter);
   const [homeFilter, setHomeFilter] = React.useState("all");
   const { profile } = useAppData();
   const {
@@ -37,19 +35,14 @@ function HomeList() {
 
   const homeStatuses = getStatusFilterOptions("homes");
   const statusFiltered = filterByStatus(homes, filterStatus);
-  const sourceFiltered = sourceFilter === "mine"
-    ? statusFiltered.filter(isMineOnly)
-    : sourceFilter === "shared"
-    ? statusFiltered.filter(isSharedSource)
-    : sourceFilter === "recommended"
-    ? statusFiltered.filter((i) => i._isRecommended)
-    : statusFiltered;
+  const lf = useListFilters(homes, { dateField: "startDate" });
+  const commonFiltered = lf.applyCommonFilters(statusFiltered);
 
   const filteredHomes = React.useMemo(() => {
-    if (homeFilter === "all") return sourceFiltered;
+    if (homeFilter === "all") return commonFiltered;
     if (homeFilter.startsWith("rating:")) {
       const rVal = homeFilter.split(":")[1];
-      return sourceFiltered.filter((i) => {
+      return commonFiltered.filter((i) => {
         const r = parseInt(i.rating, 10);
         if (rVal === "unrated") return !r;
         if (rVal === "5") return r === 5;
@@ -58,11 +51,9 @@ function HomeList() {
         return true;
       });
     }
-    return sourceFiltered;
-  }, [sourceFiltered, homeFilter]);
+    return commonFiltered;
+  }, [commonFiltered, homeFilter]);
 
-  const sharedCount = homes.filter(isSharedSource).length;
-  const recommendedCount = homes.filter((i) => i._isRecommended).length;
   const sectionTitle = `Homes - ${getStatusLabel("homes", filterStatus)}`;
 
   return (
@@ -78,15 +69,18 @@ function HomeList() {
         statusOptions={homeStatuses}
         filterStatus={filterStatus}
         onStatusChange={setFilterStatus}
+        yearOptions={lf.yearOptions}
+        activeYear={lf.activeYear}
+        onYearChange={lf.setActiveYear}
         filterGroups={[RATING_GROUP]}
         filterValue={homeFilter}
         onFilterChange={setHomeFilter}
         filterColor="var(--color-homes, #2EB67D)"
-        sourceFilter={sourceFilter}
-        onSourceChange={setSourceFilter}
+        sourceFilter={lf.sourceFilter}
+        onSourceChange={lf.setSourceFilter}
         avatarUrl={profile?.avatar_url}
-        sharedCount={sharedCount}
-        recommendedCount={recommendedCount}
+        sharedCount={lf.sharedCount}
+        recommendedCount={lf.recommendedCount}
       />
 
       {filteredHomes.length === 0 && !loading && (

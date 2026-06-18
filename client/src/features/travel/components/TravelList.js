@@ -14,17 +14,17 @@ import StarRating from "../../../components/shared/StarRating";
 import StatusBadge from "../../../components/shared/StatusBadge";
 import travelSchema from "../../../features/travel/travelSchema";
 import useCategory from "../../../hooks/useCategory";
+import useListFilters from "../../../hooks/useListFilters";
 import { formatDisplayDate, formatDateRange } from "../../../helpers/dateUtils";
 import { useAppData } from "../../../contexts/AppDataContext";
 import { codeToFlag, getCountryName } from "../../../data/countries";
 import dataService from "../../../services/dataService";
 import { computeTravelStats } from "../../../services/travelStats";
-import { getTripPhotos, getItemPhotos, isMineOnly, isSharedSource } from "../../../helpers/operator";
+import { getTripPhotos, getItemPhotos } from "../../../helpers/operator";
 import {
   getStatusFilterOptions,
   filterByStatus,
   getStatusLabel,
-  getInitialSourceFilter,
 } from "../../../helpers/filterUtils";
 
 function migrateMemoryToSnapshot(item) {
@@ -473,7 +473,6 @@ function TravelList() {
   const [showNextSteps, setShowNextSteps] = useState(false);
   const [linkedActivities, setLinkedActivities] = useState([]);
   const [mapPeekTrip, setMapPeekTrip] = useState(null);
-  const [sourceFilter, setSourceFilter] = useState(getInitialSourceFilter);
   const lastSavedRef = useRef(null);
 
   const {
@@ -507,17 +506,10 @@ function TravelList() {
     }
   }, [loading, travels, searchParams, setSearchParams, setViewDetailItem]);
 
+  const lf = useListFilters(travels, { dateField: "startDate" });
   const travelStatuses = getStatusFilterOptions("travel");
   const statusFiltered = filterByStatus(travels, filterStatus);
-  const filteredTravels = sourceFilter === "mine"
-    ? statusFiltered.filter(isMineOnly)
-    : sourceFilter === "shared"
-    ? statusFiltered.filter(isSharedSource)
-    : sourceFilter === "recommended"
-    ? statusFiltered.filter((i) => i._isRecommended)
-    : statusFiltered;
-  const sharedCount = travels.filter(isSharedSource).length;
-  const recommendedCount = travels.filter((i) => i._isRecommended).length;
+  const filteredTravels = lf.applyCommonFilters(statusFiltered);
   const sectionTitle = `Travel - ${getStatusLabel("travel", filterStatus)}`;
 
   const { groups, ungrouped } = groupByItinerary(filteredTravels);
@@ -640,15 +632,18 @@ function TravelList() {
         statusOptions={travelStatuses}
         filterStatus={filterStatus}
         onStatusChange={setFilterStatus}
+        yearOptions={lf.yearOptions}
+        activeYear={lf.activeYear}
+        onYearChange={lf.setActiveYear}
         tabs={VIEW_TABS}
         activeTab={activeView}
         onTabChange={setActiveView}
         tabColor="var(--color-travel)"
-        sourceFilter={sourceFilter}
-        onSourceChange={setSourceFilter}
+        sourceFilter={lf.sourceFilter}
+        onSourceChange={lf.setSourceFilter}
         avatarUrl={profile?.avatar_url}
-        sharedCount={sharedCount}
-        recommendedCount={recommendedCount}
+        sharedCount={lf.sharedCount}
+        recommendedCount={lf.recommendedCount}
       />
 
       {/* Map View */}

@@ -2,6 +2,7 @@ import React from "react";
 import { Button } from "react-bootstrap";
 import StatsStrip from "./StatsStrip";
 import StatusToggle from "./StatusToggle";
+import YearFilter from "./YearFilter";
 import GroupedDropdownFilter from "./GroupedDropdownFilter";
 import SourceFilterPills from "./SourceFilterPills";
 
@@ -25,7 +26,12 @@ export default function CategoryListHeader({
   filterStatus,
   onStatusChange,
 
-  // Tabs (optional)
+  // YearFilter (optional — renders only when 2+ years exist)
+  yearOptions,
+  activeYear,
+  onYearChange,
+
+  // Tabs (optional view toggle, e.g. List/Map, Snaps/Photos)
   tabs,
   activeTab,
   onTabChange,
@@ -82,7 +88,29 @@ export default function CategoryListHeader({
         />
       )}
 
-      {/* Tabs (pill-style) */}
+      {/* YearFilter (renders null unless 2+ years available) */}
+      {yearOptions && onYearChange && (
+        <YearFilter
+          years={yearOptions}
+          value={activeYear}
+          onChange={onYearChange}
+        />
+      )}
+
+      {/* Custom extra filters (e.g. Kids ChildFilter, MilestoneTypeFilter) */}
+      {renderExtraFilters && renderExtraFilters()}
+
+      {/* GroupedDropdownFilter (category-specific pills) */}
+      {filterGroups && filterGroups.length > 0 && (
+        <GroupedDropdownFilter
+          groups={filterGroups}
+          value={filterValue}
+          onChange={onFilterChange}
+          color={filterColor || "var(--color-primary)"}
+        />
+      )}
+
+      {/* Tabs (pill-style view toggle, e.g. List/Map, Snaps/Photos) */}
       {tabs && tabs.length > 0 && (
         <div className="d-flex gap-2 mb-3">
           {tabs.map((tab) => (
@@ -106,19 +134,6 @@ export default function CategoryListHeader({
             </button>
           ))}
         </div>
-      )}
-
-      {/* Custom extra filters (e.g. Kids ChildFilter, MilestoneTypeFilter) */}
-      {renderExtraFilters && renderExtraFilters()}
-
-      {/* GroupedDropdownFilter */}
-      {filterGroups && filterGroups.length > 0 && (
-        <GroupedDropdownFilter
-          groups={filterGroups}
-          value={filterValue}
-          onChange={onFilterChange}
-          color={filterColor || "var(--color-primary)"}
-        />
       )}
 
       {/* SourceFilterPills */}

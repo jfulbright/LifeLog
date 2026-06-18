@@ -1,6 +1,6 @@
 import { baseSchema } from "../../helpers/common.schema";
 import { getStatusField } from "../../helpers/statusLabels";
-import { getReflectionFields, getCompanionsField } from "../../helpers/reflection.schema";
+import { getReflectionFields, getCompanionsField, getVisibilityDefaults } from "../../helpers/reflection.schema";
 
 export const WINE_TYPES = ["Red", "White", "Rosé", "Sparkling", "Dessert", "Fortified", "Orange"];
 
@@ -410,6 +410,7 @@ const cellarSchema = [
 
   // ── Social (Companions + Visibility + Recommend) ─────────────────────────
   getCompanionsField("tried"),
+  ...getVisibilityDefaults(),
   {
     name: "visibilityControl",
     label: "🔒 Who can see this",

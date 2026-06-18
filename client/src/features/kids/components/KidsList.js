@@ -1,5 +1,4 @@
 import React, { useMemo } from "react";
-import { isMineOnly, isSharedSource } from "../../../helpers/operator";
 import { Button } from "react-bootstrap";
 import KidsForm from "./KidsForm";
 import ItemCardList from "../../../components/shared/ItemCardList";
@@ -11,11 +10,11 @@ import CategoryListHeader from "../../../components/shared/CategoryListHeader";
 import { RATING_GROUP } from "../../../components/shared/GroupedDropdownFilter";
 import kidsSchema, { KIDS_EVENT_TYPES } from "../kidsSchema";
 import useCategory from "../../../hooks/useCategory";
+import useListFilters from "../../../hooks/useListFilters";
 import { useAppData } from "../../../contexts/AppDataContext";
 import {
   getStatusFilterOptions,
   filterByStatus,
-  getInitialSourceFilter,
 } from "../../../helpers/filterUtils";
 
 function getAgeAtDate(birthday, eventDate) {
@@ -170,7 +169,6 @@ function KidsList() {
   const { contacts, profile } = useAppData();
   const [milestoneTypeFilter, setMilestoneTypeFilter] = React.useState("all");
   const [childFilter, setChildFilter] = React.useState("all");
-  const [sourceFilter, setSourceFilter] = React.useState(getInitialSourceFilter);
   const [ratingFilter, setRatingFilter] = React.useState("all");
 
   const {
@@ -185,19 +183,13 @@ function KidsList() {
     viewDetailItem, setViewDetailItem,
   } = useCategory("kids", { schema: kidsSchema });
 
+  const lf = useListFilters(milestones, { dateField: ["startDate", "createdAt"] });
   const kidsStatuses = getStatusFilterOptions("kids");
   const statusFiltered = filterByStatus(milestones, filterStatus);
-
-  const sourceFiltered = sourceFilter === "mine"
-    ? statusFiltered.filter(isMineOnly)
-    : sourceFilter === "shared"
-    ? statusFiltered.filter(isSharedSource)
-    : sourceFilter === "recommended"
-    ? statusFiltered.filter((i) => i._isRecommended)
-    : statusFiltered;
+  const commonFiltered = lf.applyCommonFilters(statusFiltered);
 
   const filtered = useMemo(() => {
-    let items = sourceFiltered
+    let items = commonFiltered
       .filter((i) => milestoneTypeFilter === "all" || i.milestoneType === milestoneTypeFilter)
       .filter((i) => childFilter === "all" || i.childContactId === childFilter);
     if (ratingFilter !== "all" && ratingFilter.startsWith("rating:")) {
@@ -212,10 +204,7 @@ function KidsList() {
       });
     }
     return items;
-  }, [sourceFiltered, milestoneTypeFilter, childFilter, ratingFilter]);
-
-  const sharedCount = milestones.filter(isSharedSource).length;
-  const recommendedCount = milestones.filter((i) => i._isRecommended).length;
+  }, [commonFiltered, milestoneTypeFilter, childFilter, ratingFilter]);
 
   const groupedByYear = useMemo(() => {
     const groups = {};
@@ -263,6 +252,9 @@ function KidsList() {
         statusOptions={kidsStatuses}
         filterStatus={filterStatus}
         onStatusChange={setFilterStatus}
+        yearOptions={lf.yearOptions}
+        activeYear={lf.activeYear}
+        onYearChange={lf.setActiveYear}
         renderExtraFilters={() => (
           <>
             <KidsStats items={milestones} contacts={contacts} />
@@ -274,11 +266,11 @@ function KidsList() {
         filterValue={ratingFilter}
         onFilterChange={setRatingFilter}
         filterColor="var(--color-kids, #FF6B35)"
-        sourceFilter={sourceFilter}
-        onSourceChange={setSourceFilter}
+        sourceFilter={lf.sourceFilter}
+        onSourceChange={lf.setSourceFilter}
         avatarUrl={profile?.avatar_url}
-        sharedCount={sharedCount}
-        recommendedCount={recommendedCount}
+        sharedCount={lf.sharedCount}
+        recommendedCount={lf.recommendedCount}
       />
 
       {filtered.length === 0 && !loading && (

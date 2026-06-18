@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import categoryMeta from "../helpers/categoryMeta";
 import { formatDisplayDate } from "../helpers/dateUtils";
-import { getAllSnapshots, getItemPhotos } from "../helpers/operator";
+import { getAllSnapshots, getItemPhotos, isSharedSource } from "../helpers/operator";
 import {
   enrichItemsWithSocialContent,
   getAllSocialSnaps,
@@ -11,7 +11,8 @@ import {
 import dataService from "../services/dataService";
 import SourceFilterPills from "../components/shared/SourceFilterPills";
 import StatsStrip from "../components/shared/StatsStrip";
-import { isEntryShared } from "../components/shared/PrivacyIndicator";
+import YearFilter from "../components/shared/YearFilter";
+import { getYearOptions, filterByYear } from "../helpers/filterUtils";
 import EntryDetailPanel from "../components/shared/EntryDetailPanel";
 import { useAppData } from "../contexts/AppDataContext";
 import { SCHEMA_MAP, CATEGORY_KEYS } from "../helpers/schemaRegistry";
@@ -30,6 +31,7 @@ const VIEW_TABS = [
 function Snaps() {
   const [activeView, setActiveView] = useState("all");
   const [activeCategory, setActiveCategory] = useState("all");
+  const [activeYear, setActiveYear] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [allSnaps, setAllSnaps] = useState([]);
   const [allPhotos, setAllPhotos] = useState([]);
@@ -72,7 +74,7 @@ function Snaps() {
                 icon: meta.icon,
                 color: meta.color,
                 date,
-                isShared: isEntryShared(item),
+                isShared: isSharedSource(item),
                 rawItem: item,
                 key: `${cat.key}-snap-${item.id || title}-${i}`,
               });
@@ -109,7 +111,7 @@ function Snaps() {
                 icon: meta.icon,
                 color: meta.color,
                 date,
-                isShared: isEntryShared(item),
+                isShared: isSharedSource(item),
                 rawItem: item,
                 key: `${cat.key}-photo-${item.id || title}-${i}`,
               });
@@ -159,12 +161,18 @@ function Snaps() {
     return items;
   };
 
+  const filterByYearLocal = (items) => filterByYear(items, activeYear, "date");
+
   const sortByDate = (items) =>
     [...items].sort((a, b) => b.date.localeCompare(a.date));
 
-  const filteredSnaps = sortByDate(filterBySource(filterByCategory(allSnaps)));
-  const filteredPhotos = sortByDate(filterBySource(filterByCategory(allPhotos)));
-  const filteredAll = sortByDate(filterBySource(filterByCategory([...allSnaps, ...allPhotos])));
+  const applyFilters = (items) =>
+    sortByDate(filterBySource(filterByYearLocal(filterByCategory(items))));
+
+  const yearOptions = getYearOptions([...allSnaps, ...allPhotos], "date");
+  const filteredSnaps = applyFilters(allSnaps);
+  const filteredPhotos = applyFilters(allPhotos);
+  const filteredAll = applyFilters([...allSnaps, ...allPhotos]);
 
   const visibleItems =
     activeView === "snaps" ? filteredSnaps :
@@ -196,29 +204,8 @@ function Snaps() {
         ]} />
       )}
 
-      {/* View tabs: All / Snaps / Photos */}
-      <div className="d-flex gap-2 mb-3">
-        {VIEW_TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveView(tab.id)}
-            style={{
-              padding: "0.3rem 0.9rem",
-              borderRadius: "20px",
-              border: "2px solid var(--color-primary)",
-              background: activeView === tab.id ? "var(--color-primary)" : "transparent",
-              color: activeView === tab.id ? "#fff" : "var(--color-primary)",
-              fontWeight: 600,
-              fontSize: "var(--font-size-sm)",
-              cursor: "pointer",
-              transition: "all 0.15s",
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {/* Year filter (renders only when 2+ years exist) */}
+      <YearFilter years={yearOptions} value={activeYear} onChange={setActiveYear} />
 
       {/* Category filter pills */}
       {categoriesWithContent.length > 1 && (
@@ -243,6 +230,30 @@ function Snaps() {
           })}
         </div>
       )}
+
+      {/* View tabs: All / Snaps / Photos */}
+      <div className="d-flex gap-2 mb-3">
+        {VIEW_TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveView(tab.id)}
+            style={{
+              padding: "0.3rem 0.9rem",
+              borderRadius: "20px",
+              border: "2px solid var(--color-primary)",
+              background: activeView === tab.id ? "var(--color-primary)" : "transparent",
+              color: activeView === tab.id ? "#fff" : "var(--color-primary)",
+              fontWeight: 600,
+              fontSize: "var(--font-size-sm)",
+              cursor: "pointer",
+              transition: "all 0.15s",
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
       <SourceFilterPills
         value={sourceFilter}

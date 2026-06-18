@@ -6,9 +6,12 @@ import overlayService from "../services/overlayService";
 import SharedMemoriesSection from "../components/shared/SharedMemoriesSection";
 import { useAppData } from "../contexts/AppDataContext";
 import { useSocialData } from "../contexts/SocialDataContext";
-import categoryMeta, { getEntryTitle, getEntrySubtitle } from "../helpers/categoryMeta";
+import categoryMeta, { getEntryTitle, getEntrySubtitle, getCategoryMeta } from "../helpers/categoryMeta";
 import { formatDateRange } from "../helpers/dateUtils";
 import StarRating from "../components/shared/StarRating";
+import YearFilter from "../components/shared/YearFilter";
+import GroupedDropdownFilter from "../components/shared/GroupedDropdownFilter";
+import { getYearOptions, filterByYear } from "../helpers/filterUtils";
 
 // ── Shared Entry Card ─────────────────────────────────────────────────────────
 
@@ -308,6 +311,8 @@ function SharedFeed() {
   const [myOverlays, setMyOverlays] = useState({});
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("pending");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [activeYear, setActiveYear] = useState("all");
   const [overlayTarget, setOverlayTarget] = useState(null);
   const [editTarget, setEditTarget] = useState(null);
 
@@ -369,10 +374,26 @@ function SharedFeed() {
         id: collab.entry_id,
       }));
 
-  const filteredEntries = sharedEntries.filter((item) => {
-    if (filterStatus !== "all" && item._collabStatus !== filterStatus) return false;
-    return true;
-  });
+  const categories = [...new Set(sharedEntries.map((e) => e._category).filter(Boolean))];
+  const categoryFilterGroups = [{
+    key: "category",
+    label: "\u{1F4C2} Category",
+    options: categories.map((cat) => ({
+      value: cat,
+      label: `${getCategoryMeta(cat).icon} ${cat.charAt(0).toUpperCase() + cat.slice(1)}`,
+    })),
+  }];
+  const yearOptions = getYearOptions(sharedEntries, ["startDate", "createdAt"]);
+
+  const filteredEntries = filterByYear(
+    sharedEntries.filter((item) => {
+      if (filterStatus !== "all" && item._collabStatus !== filterStatus) return false;
+      if (categoryFilter !== "all" && item._category !== categoryFilter) return false;
+      return true;
+    }),
+    activeYear,
+    ["startDate", "createdAt"]
+  );
 
   const handleAccept = async (item) => {
     await collaboratorService.acceptCollaboration(item._collabId);
@@ -473,6 +494,19 @@ function SharedFeed() {
           </div>
         </div>
       </div>
+
+      {/* Year filter (renders only when 2+ years exist) */}
+      <YearFilter years={yearOptions} value={activeYear} onChange={setActiveYear} />
+
+      {/* Category filter — single pill, matching the category pages */}
+      {categories.length > 1 && (
+        <GroupedDropdownFilter
+          groups={categoryFilterGroups}
+          value={categoryFilter}
+          onChange={setCategoryFilter}
+          color="var(--color-primary)"
+        />
+      )}
 
       {loading ? (
         <div style={{ textAlign: "center", padding: "3rem", color: "var(--color-text-tertiary)" }}>Loading…</div>

@@ -1,5 +1,4 @@
 import React from "react";
-import { isMineOnly, isSharedSource } from "../../../helpers/operator";
 import { Button } from "react-bootstrap";
 import CarForm from "../../../features/cars/components/CarForm";
 import ItemCardList from "../../../components/shared/ItemCardList";
@@ -11,16 +10,15 @@ import CategoryListHeader from "../../../components/shared/CategoryListHeader";
 import { RATING_GROUP } from "../../../components/shared/GroupedDropdownFilter";
 import carSchema from "../../../features/cars/carSchema";
 import useCategory from "../../../hooks/useCategory";
+import useListFilters from "../../../hooks/useListFilters";
 import { useAppData } from "../../../contexts/AppDataContext";
 import {
   getStatusFilterOptions,
   filterByStatus,
   getStatusLabel,
-  getInitialSourceFilter,
 } from "../../../helpers/filterUtils";
 
 function CarList() {
-  const [sourceFilter, setSourceFilter] = React.useState(getInitialSourceFilter);
   const [carFilter, setCarFilter] = React.useState("all");
   const { profile } = useAppData();
   const {
@@ -37,19 +35,14 @@ function CarList() {
 
   const carStatuses = getStatusFilterOptions("cars");
   const statusFiltered = filterByStatus(cars, filterStatus);
-  const sourceFiltered = sourceFilter === "mine"
-    ? statusFiltered.filter(isMineOnly)
-    : sourceFilter === "shared"
-    ? statusFiltered.filter(isSharedSource)
-    : sourceFilter === "recommended"
-    ? statusFiltered.filter((i) => i._isRecommended)
-    : statusFiltered;
+  const lf = useListFilters(cars, { dateField: "startDate" });
+  const commonFiltered = lf.applyCommonFilters(statusFiltered);
 
   const filteredCars = React.useMemo(() => {
-    if (carFilter === "all") return sourceFiltered;
+    if (carFilter === "all") return commonFiltered;
     if (carFilter.startsWith("rating:")) {
       const rVal = carFilter.split(":")[1];
-      return sourceFiltered.filter((i) => {
+      return commonFiltered.filter((i) => {
         const r = parseInt(i.rating, 10);
         if (rVal === "unrated") return !r;
         if (rVal === "5") return r === 5;
@@ -58,11 +51,9 @@ function CarList() {
         return true;
       });
     }
-    return sourceFiltered;
-  }, [sourceFiltered, carFilter]);
+    return commonFiltered;
+  }, [commonFiltered, carFilter]);
 
-  const sharedCount = cars.filter(isSharedSource).length;
-  const recommendedCount = cars.filter((i) => i._isRecommended).length;
   const sectionTitle = `Cars - ${getStatusLabel("cars", filterStatus)}`;
 
   return (
@@ -78,15 +69,18 @@ function CarList() {
         statusOptions={carStatuses}
         filterStatus={filterStatus}
         onStatusChange={setFilterStatus}
+        yearOptions={lf.yearOptions}
+        activeYear={lf.activeYear}
+        onYearChange={lf.setActiveYear}
         filterGroups={[RATING_GROUP]}
         filterValue={carFilter}
         onFilterChange={setCarFilter}
         filterColor="var(--color-cars, #36C5F0)"
-        sourceFilter={sourceFilter}
-        onSourceChange={setSourceFilter}
+        sourceFilter={lf.sourceFilter}
+        onSourceChange={lf.setSourceFilter}
         avatarUrl={profile?.avatar_url}
-        sharedCount={sharedCount}
-        recommendedCount={recommendedCount}
+        sharedCount={lf.sharedCount}
+        recommendedCount={lf.recommendedCount}
       />
 
       {filteredCars.length === 0 && !loading && (

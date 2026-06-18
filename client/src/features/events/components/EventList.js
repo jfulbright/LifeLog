@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { isMineOnly, isSharedSource } from "../../../helpers/operator";
 import { Button } from "react-bootstrap";
 import eventSchema, { EVENT_TYPES } from "../eventSchema";
 import EventForm from "./EventForm";
@@ -11,6 +10,7 @@ import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
 import CategoryListHeader from "../../../components/shared/CategoryListHeader";
 import { RATING_GROUP } from "../../../components/shared/GroupedDropdownFilter";
 import useCategory from "../../../hooks/useCategory";
+import useListFilters from "../../../hooks/useListFilters";
 import { useAppData } from "../../../contexts/AppDataContext";
 import dataService from "../../../services/dataService";
 
@@ -18,7 +18,6 @@ import {
   getStatusFilterOptions,
   filterByStatus,
   getStatusLabel,
-  getInitialSourceFilter,
 } from "../../../helpers/filterUtils";
 
 const typeLabels = EVENT_TYPES.reduce((acc, t) => {
@@ -48,7 +47,6 @@ function normalizeEvent(data) {
 }
 
 function EventList() {
-  const [sourceFilter, setSourceFilter] = React.useState(getInitialSourceFilter);
   const [filterType, setFilterType] = useState("all");
   const { profile } = useAppData();
   const {
@@ -97,19 +95,14 @@ function EventList() {
 
   const eventStatuses = getStatusFilterOptions("events");
   const statusFiltered = filterByStatus(events, filterStatus);
-  const sourceFiltered = sourceFilter === "mine"
-    ? statusFiltered.filter(isMineOnly)
-    : sourceFilter === "shared"
-    ? statusFiltered.filter(isSharedSource)
-    : sourceFilter === "recommended"
-    ? statusFiltered.filter((i) => i._isRecommended)
-    : statusFiltered;
+  const lf = useListFilters(events, { dateField: "startDate" });
+  const commonFiltered = lf.applyCommonFilters(statusFiltered);
 
   const filteredEvents = useMemo(() => {
-    if (filterType === "all") return sourceFiltered;
+    if (filterType === "all") return commonFiltered;
     if (filterType.startsWith("rating:")) {
       const rVal = filterType.split(":")[1];
-      return sourceFiltered.filter((i) => {
+      return commonFiltered.filter((i) => {
         const r = parseInt(i.rating, 10);
         if (rVal === "unrated") return !r;
         if (rVal === "5") return r === 5;
@@ -118,11 +111,9 @@ function EventList() {
         return true;
       });
     }
-    return sourceFiltered.filter((i) => i.eventType === filterType);
-  }, [sourceFiltered, filterType]);
+    return commonFiltered.filter((i) => i.eventType === filterType);
+  }, [commonFiltered, filterType]);
 
-  const sharedCount = events.filter(isSharedSource).length;
-  const recommendedCount = events.filter((i) => i._isRecommended).length;
   const sectionTitle = `Events - ${getStatusLabel("events", filterStatus)}`;
 
   const eventFilterGroups = useMemo(() => [
@@ -166,15 +157,18 @@ function EventList() {
         statusOptions={eventStatuses}
         filterStatus={filterStatus}
         onStatusChange={setFilterStatus}
+        yearOptions={lf.yearOptions}
+        activeYear={lf.activeYear}
+        onYearChange={lf.setActiveYear}
         filterGroups={eventFilterGroups}
         filterValue={filterType}
         onFilterChange={setFilterType}
         filterColor="var(--color-events)"
-        sourceFilter={sourceFilter}
-        onSourceChange={setSourceFilter}
+        sourceFilter={lf.sourceFilter}
+        onSourceChange={lf.setSourceFilter}
         avatarUrl={profile?.avatar_url}
-        sharedCount={sharedCount}
-        recommendedCount={recommendedCount}
+        sharedCount={lf.sharedCount}
+        recommendedCount={lf.recommendedCount}
       />
 
       {filteredEvents.length === 0 && !showForm && !loading && (
