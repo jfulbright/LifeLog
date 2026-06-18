@@ -8,7 +8,7 @@ import EntryHeader from "./EntryHeader";
 import EntryView from "./EntryView";
 import ReadOnlySocialSection from "./ReadOnlySocialSection";
 
-function EntryDetailPanel({ item, category, schema, onClose, onSave, onDelete, renderItemExtras }) {
+function EntryDetailPanel({ item, category, schema, onClose, onSave, onDelete, renderItemExtras, renderCustomView }) {
   const [mode, setMode] = useState("view");
   const [formData, setFormData] = useState({ ...item });
   const { contacts } = useAppData();
@@ -84,27 +84,31 @@ function EntryDetailPanel({ item, category, schema, onClose, onSave, onDelete, r
       </Modal.Header>
       <Modal.Body style={{ padding: "1.25rem" }}>
         {mode === "view" ? (
-          <>
-            <EntryHeader
-              item={item}
-              category={category}
-              schema={schema}
-              contacts={contacts}
-            />
-            <div style={{ marginTop: "1rem" }}>
-              <EntryView
+          renderCustomView ? (
+            renderCustomView({ item, onEdit: () => setMode("edit"), onDelete: !item._isShared ? handleDelete : undefined, onClose })
+          ) : (
+            <>
+              <EntryHeader
                 item={item}
                 category={category}
                 schema={schema}
                 contacts={contacts}
-                headerFieldNames={headerFieldNames}
-                onEdit={() => setMode("edit")}
-                onDelete={!item._isShared ? handleDelete : undefined}
-                renderItemExtras={renderItemExtras}
-                expanded
               />
-            </div>
-          </>
+              <div style={{ marginTop: "1rem" }}>
+                <EntryView
+                  item={item}
+                  category={category}
+                  schema={schema}
+                  contacts={contacts}
+                  headerFieldNames={headerFieldNames}
+                  onEdit={() => setMode("edit")}
+                  onDelete={!item._isShared ? handleDelete : undefined}
+                  renderItemExtras={renderItemExtras}
+                  expanded
+                />
+              </div>
+            </>
+          )
         ) : (
           <>
             {item._isShared && (
