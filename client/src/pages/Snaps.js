@@ -12,6 +12,7 @@ import dataService from "../services/dataService";
 import SourceFilterPills from "../components/shared/SourceFilterPills";
 import StatsStrip from "../components/shared/StatsStrip";
 import YearFilter from "../components/shared/YearFilter";
+import DoneWishlistFilter, { matchesDoneWishlist } from "../components/shared/DoneWishlistFilter";
 import { getYearOptions, filterByYear } from "../helpers/filterUtils";
 import EntryDetailPanel from "../components/shared/EntryDetailPanel";
 import { useAppData } from "../contexts/AppDataContext";
@@ -32,6 +33,7 @@ function Snaps() {
   const [activeView, setActiveView] = useState("all");
   const [activeCategory, setActiveCategory] = useState("all");
   const [activeYear, setActiveYear] = useState("all");
+  const [activeStatus, setActiveStatus] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [allSnaps, setAllSnaps] = useState([]);
   const [allPhotos, setAllPhotos] = useState([]);
@@ -158,16 +160,20 @@ function Snaps() {
   const filterBySource = (items) => {
     if (sourceFilter === "mine") return items.filter((i) => !i.isShared);
     if (sourceFilter === "shared") return items.filter((i) => i.isShared);
+    if (sourceFilter === "recommended") return items.filter((i) => i.rawItem?._isRecommended);
     return items;
   };
 
   const filterByYearLocal = (items) => filterByYear(items, activeYear, "date");
 
+  const filterByStatusLocal = (items) =>
+    items.filter((i) => matchesDoneWishlist(i.rawItem?.status, activeStatus));
+
   const sortByDate = (items) =>
     [...items].sort((a, b) => b.date.localeCompare(a.date));
 
   const applyFilters = (items) =>
-    sortByDate(filterBySource(filterByYearLocal(filterByCategory(items))));
+    sortByDate(filterBySource(filterByYearLocal(filterByStatusLocal(filterByCategory(items)))));
 
   const yearOptions = getYearOptions([...allSnaps, ...allPhotos], "date");
   const filteredSnaps = applyFilters(allSnaps);
@@ -204,7 +210,10 @@ function Snaps() {
         ]} />
       )}
 
-      {/* Year filter (renders only when 2+ years exist) */}
+      {/* Done / Wishlist status */}
+      <DoneWishlistFilter value={activeStatus} onChange={setActiveStatus} />
+
+      {/* Year filter (renders whenever any dated items exist) */}
       <YearFilter years={yearOptions} value={activeYear} onChange={setActiveYear} />
 
       {/* Category filter pills */}
@@ -260,6 +269,7 @@ function Snaps() {
         onChange={setSourceFilter}
         avatarUrl={profile?.avatar_url}
         sharedCount={[...allSnaps, ...allPhotos].filter((i) => i.isShared).length}
+        recommendedCount={[...allSnaps, ...allPhotos].filter((i) => i.rawItem?._isRecommended).length}
       />
 
       {isEmpty ? (

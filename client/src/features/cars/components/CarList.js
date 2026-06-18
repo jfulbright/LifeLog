@@ -18,6 +18,10 @@ import {
   getStatusLabel,
 } from "../../../helpers/filterUtils";
 
+// Cars often lack a purchase date; fall back to the model year so the Year
+// filter still groups them. Module-level for a stable dateField identity.
+const CAR_DATE = (c) => c.startDate || (c.year ? `${c.year}-01-01` : c.createdAt);
+
 function CarList() {
   const [carFilter, setCarFilter] = React.useState("all");
   const { profile } = useAppData();
@@ -35,7 +39,7 @@ function CarList() {
 
   const carStatuses = getStatusFilterOptions("cars");
   const statusFiltered = filterByStatus(cars, filterStatus);
-  const lf = useListFilters(cars, { dateField: "startDate" });
+  const lf = useListFilters(cars, { dateField: CAR_DATE });
   const commonFiltered = lf.applyCommonFilters(statusFiltered);
 
   const filteredCars = React.useMemo(() => {

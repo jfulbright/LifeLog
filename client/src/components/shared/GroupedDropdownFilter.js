@@ -13,6 +13,25 @@ export const RATING_GROUP = {
   options: RATING_OPTIONS,
 };
 
+// Plain-valued rating options for MultiPillFilter (independent per-pill value,
+// not the "rating:" prefixed single-select values above).
+export const RATING_PILL_OPTIONS = [
+  { value: "5", label: "★★★★★" },
+  { value: "4+", label: "★★★★☆+" },
+  { value: "3+", label: "★★★☆☆+" },
+  { value: "unrated", label: "No rating" },
+];
+
+/** Shared rating matcher for the plain values above ("5" | "4+" | "3+" | "unrated"). */
+export function matchesRatingValue(rating, val) {
+  const r = parseInt(rating, 10);
+  if (val === "unrated") return !r;
+  if (val === "5") return r === 5;
+  if (val === "4+") return r >= 4;
+  if (val === "3+") return r >= 3;
+  return true;
+}
+
 /**
  * Reusable grouped dropdown filter with pill buttons that expand sub-option menus.
  *

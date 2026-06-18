@@ -10,6 +10,7 @@ import SourceFilterPills from "../components/shared/SourceFilterPills";
 import EntryDetailPanel from "../components/shared/EntryDetailPanel";
 import StatsStrip from "../components/shared/StatsStrip";
 import YearFilter from "../components/shared/YearFilter";
+import DoneWishlistFilter, { matchesDoneWishlist } from "../components/shared/DoneWishlistFilter";
 import { useAppData } from "../contexts/AppDataContext";
 import { SCHEMA_MAP, CATEGORY_KEYS } from "../helpers/schemaRegistry";
 import { enrichItemsWithSocialContent, getSocialPreview } from "../helpers/socialContent";
@@ -27,6 +28,8 @@ const MONTH_NAMES = [
 function Timeline() {
   const [activeYear, setActiveYear] = useState("all");
   const [activeMonth, setActiveMonth] = useState("all");
+  const [activeStatus, setActiveStatus] = useState("all");
+  const [activeCategory, setActiveCategory] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [allEntries, setAllEntries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -99,6 +102,8 @@ function Timeline() {
     ),
   ].sort((a, b) => b - a);
 
+  const timelineCategories = [...new Set(allEntries.map((e) => e.category).filter(Boolean))];
+
   // Apply year filter
   let filteredEntries = activeYear === "all"
     ? allEntries
@@ -114,11 +119,23 @@ function Timeline() {
     });
   }
 
-  // Apply source filter (All / Mine / Shared)
+  // Apply Done/Wishlist status filter
+  if (activeStatus !== "all") {
+    filteredEntries = filteredEntries.filter((e) => matchesDoneWishlist(e.status, activeStatus));
+  }
+
+  // Apply category filter
+  if (activeCategory !== "all") {
+    filteredEntries = filteredEntries.filter((e) => e.category === activeCategory);
+  }
+
+  // Apply source filter (All / Mine / Shared / Recommended)
   if (sourceFilter === "mine") {
     filteredEntries = filteredEntries.filter((e) => !e.isShared);
   } else if (sourceFilter === "shared") {
     filteredEntries = filteredEntries.filter((e) => e.isShared);
+  } else if (sourceFilter === "recommended") {
+    filteredEntries = filteredEntries.filter((e) => e.rawItem?._isRecommended);
   }
 
   // Get months that have entries for the selected year (for month pills)
@@ -167,7 +184,10 @@ function Timeline() {
         return <StatsStrip stats={stats} />;
       })()}
 
-      {/* Year filter (shared component; renders only when 2+ years exist) */}
+      {/* Done / Wishlist status */}
+      <DoneWishlistFilter value={activeStatus} onChange={setActiveStatus} />
+
+      {/* Year filter (shared component; renders whenever any dated items exist) */}
       <YearFilter
         years={years}
         value={activeYear}
@@ -195,12 +215,37 @@ function Timeline() {
         </div>
       )}
 
-      {/* Source filter (All / Mine / Shared) */}
+      {/* Category filter */}
+      {timelineCategories.length > 1 && (
+        <div className="status-toggle mb-2">
+          <button
+            className={`btn ${activeCategory === "all" ? "active" : ""}`}
+            onClick={() => setActiveCategory("all")}
+          >
+            All
+          </button>
+          {timelineCategories.map((cat) => {
+            const meta = categoryMeta[cat] || {};
+            return (
+              <button
+                key={cat}
+                className={`btn ${activeCategory === cat ? "active" : ""}`}
+                onClick={() => setActiveCategory(cat)}
+              >
+                {meta.icon} {cat.charAt(0).toUpperCase() + cat.slice(1)}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Source filter (All / Mine / Shared / Recommended) */}
       <SourceFilterPills
         value={sourceFilter}
         onChange={setSourceFilter}
         avatarUrl={profile?.avatar_url}
         sharedCount={allEntries.filter((e) => e.isShared).length}
+        recommendedCount={allEntries.filter((e) => e.rawItem?._isRecommended).length}
       />
 
       {groupedMonths.length === 0 ? (

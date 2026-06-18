@@ -499,7 +499,7 @@ function SharedFeed() {
       <YearFilter years={yearOptions} value={activeYear} onChange={setActiveYear} />
 
       {/* Category filter — single pill, matching the category pages */}
-      {categories.length > 1 && (
+      {categories.length >= 1 && (
         <GroupedDropdownFilter
           groups={categoryFilterGroups}
           value={categoryFilter}

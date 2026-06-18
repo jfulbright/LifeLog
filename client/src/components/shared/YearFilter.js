@@ -5,11 +5,11 @@ import React from "react";
  * pages (Timeline, My Memories, Shared, Recommendations). Reuses the
  * `.status-toggle` pill styling so it matches the Attended/Wishlist row.
  *
- * Renders nothing unless there are at least two years to choose between — a
- * single-year list gains nothing from a year filter.
+ * Renders nothing only when there are no dated items at all; a single year still
+ * shows (All + that year) so the control is present wherever any data exists.
  */
 function YearFilter({ years, value, onChange }) {
-  if (!years || years.length < 2) return null;
+  if (!years || years.length < 1) return null;
 
   return (
     <div className="status-toggle mb-2" role="group" aria-label="Year filter">
