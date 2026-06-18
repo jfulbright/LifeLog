@@ -8,6 +8,7 @@ client/node_modules/
 
 # testing
 /coverage
+scripts/tests/results/
 .env.local
 
 # production
