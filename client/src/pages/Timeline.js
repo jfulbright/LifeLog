@@ -114,11 +114,13 @@ function Timeline() {
     });
   }
 
-  // Apply source filter (All / Mine / Shared)
+  // Apply source filter (All / Mine / Shared / Recommended)
   if (sourceFilter === "mine") {
     filteredEntries = filteredEntries.filter((e) => !e.isShared);
   } else if (sourceFilter === "shared") {
     filteredEntries = filteredEntries.filter((e) => e.isShared);
+  } else if (sourceFilter === "recommended") {
+    filteredEntries = filteredEntries.filter((e) => e.rawItem?._isRecommended);
   }
 
   // Get months that have entries for the selected year (for month pills)
@@ -195,12 +197,13 @@ function Timeline() {
         </div>
       )}
 
-      {/* Source filter (All / Mine / Shared) */}
+      {/* Source filter (All / Mine / Shared / Recommended) */}
       <SourceFilterPills
         value={sourceFilter}
         onChange={setSourceFilter}
         avatarUrl={profile?.avatar_url}
         sharedCount={allEntries.filter((e) => e.isShared).length}
+        recommendedCount={allEntries.filter((e) => e.rawItem?._isRecommended).length}
       />
 
       {groupedMonths.length === 0 ? (

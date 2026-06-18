@@ -48,11 +48,15 @@ function getItemDateValue(item, dateField = DEFAULT_DATE_FIELDS) {
   return "";
 }
 
-/** Extracts a 4-digit year from a date string (date-only or full ISO timestamp). */
+/**
+ * Extracts a 4-digit year from a date string (date-only or full ISO timestamp).
+ * Uses the calendar-date portion (YYYY-MM-DD) parsed as local midnight so a
+ * UTC-midnight timestamp doesn't roll back into the previous year in
+ * negative-offset timezones.
+ */
 function yearOf(value) {
   if (!value) return NaN;
-  const s = String(value);
-  const dt = s.length <= 10 ? new Date(s + "T00:00:00") : new Date(s);
+  const dt = new Date(String(value).slice(0, 10) + "T00:00:00");
   return dt.getFullYear();
 }
 

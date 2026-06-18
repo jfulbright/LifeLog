@@ -18,6 +18,10 @@ import {
   getStatusLabel,
 } from "../../../helpers/filterUtils";
 
+// Homes have no startDate — they record purchase/sold dates. Module-level for a
+// stable dateField identity across renders.
+const HOME_DATE_FIELDS = ["purchaseDate", "soldDate", "createdAt"];
+
 function HomeList() {
   const [homeFilter, setHomeFilter] = React.useState("all");
   const { profile } = useAppData();
@@ -35,7 +39,7 @@ function HomeList() {
 
   const homeStatuses = getStatusFilterOptions("homes");
   const statusFiltered = filterByStatus(homes, filterStatus);
-  const lf = useListFilters(homes, { dateField: "startDate" });
+  const lf = useListFilters(homes, { dateField: HOME_DATE_FIELDS });
   const commonFiltered = lf.applyCommonFilters(statusFiltered);
 
   const filteredHomes = React.useMemo(() => {

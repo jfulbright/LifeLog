@@ -158,6 +158,7 @@ function Snaps() {
   const filterBySource = (items) => {
     if (sourceFilter === "mine") return items.filter((i) => !i.isShared);
     if (sourceFilter === "shared") return items.filter((i) => i.isShared);
+    if (sourceFilter === "recommended") return items.filter((i) => i.rawItem?._isRecommended);
     return items;
   };
 
@@ -260,6 +261,7 @@ function Snaps() {
         onChange={setSourceFilter}
         avatarUrl={profile?.avatar_url}
         sharedCount={[...allSnaps, ...allPhotos].filter((i) => i.isShared).length}
+        recommendedCount={[...allSnaps, ...allPhotos].filter((i) => i.rawItem?._isRecommended).length}
       />
 
       {isEmpty ? (
