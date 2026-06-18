@@ -7,7 +7,8 @@ import SaveToast from "../../../components/shared/SaveToast";
 import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
 import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
 import CategoryListHeader from "../../../components/shared/CategoryListHeader";
-import { RATING_GROUP } from "../../../components/shared/GroupedDropdownFilter";
+import MultiPillFilter from "../../../components/shared/MultiPillFilter";
+import { RATING_PILL_OPTIONS, matchesRatingValue } from "../../../components/shared/GroupedDropdownFilter";
 import cellarSchema, { WINE_TYPES, WHISKEY_TYPES } from "../cellarSchema";
 import useCategory from "../../../hooks/useCategory";
 import useListFilters from "../../../hooks/useListFilters";
@@ -28,7 +29,11 @@ const WHISKEY_TYPE_EMOJIS = {
 };
 
 function CellarList() {
-  const [subFilter, setSubFilter] = useState("all");
+  const [subTypeFilter, setSubTypeFilter] = useState("all");
+  const [wineTypeFilter, setWineTypeFilter] = useState("all");
+  const [varietalFilter, setVarietalFilter] = useState("all");
+  const [whiskeyTypeFilter, setWhiskeyTypeFilter] = useState("all");
+  const [ratingFilter, setRatingFilter] = useState("all");
   const { profile } = useAppData();
 
   const {
@@ -67,65 +72,70 @@ function CellarList() {
     return [...varietalSet].sort();
   }, [cellarItems]);
 
-  // Single-select pill model (Movie-style): one "Type" pill for Wine/Whiskey,
-  // plus dependent sub-type / varietal / rating pills, all sharing one value.
-  const cellarFilterGroups = useMemo(() => {
-    const groups = [
+  // Contextual multi-pill model: a persistent Type pill (Wine/Whiskey) drives
+  // which sub-pills show; with no Type chosen, both sets are available. Each pill
+  // holds its own value so selections combine (e.g. Wine + Red + 4★).
+  const isWineCtx = (v) => v.subtype === "all" || v.subtype === "wine";
+  const isWhiskeyCtx = (v) => v.subtype === "all" || v.subtype === "whiskey";
+  const cellarPills = useMemo(() => {
+    const pills = [
       {
         key: "subtype",
         label: "\u{1F37E} Type",
+        allLabel: "All Types",
+        value: subTypeFilter,
+        onChange: setSubTypeFilter,
         options: [
-          { value: "subtype:wine", label: "\u{1F377} Wine" },
-          { value: "subtype:whiskey", label: "\u{1F943} Whiskey" },
+          { value: "wine", label: "\u{1F377} Wine" },
+          { value: "whiskey", label: "\u{1F943} Whiskey" },
         ],
       },
       {
         key: "wineType",
         label: "\u{1F347} Wine Type",
-        options: WINE_TYPES.map((t) => ({
-          value: `wine:${t}`,
-          label: `${WINE_TYPE_EMOJIS[t] || "\u{1F377}"} ${t}`,
-        })),
+        value: wineTypeFilter,
+        onChange: setWineTypeFilter,
+        options: WINE_TYPES.map((t) => ({ value: t, label: `${WINE_TYPE_EMOJIS[t] || "\u{1F377}"} ${t}` })),
+        visibleWhen: isWineCtx,
       },
     ];
     if (availableVarietals.length > 0) {
-      groups.push({
+      pills.push({
         key: "varietal",
         label: "\u{1F377} Varietal",
-        options: availableVarietals.map((v) => ({ value: `varietal:${v}`, label: v })),
+        value: varietalFilter,
+        onChange: setVarietalFilter,
+        options: availableVarietals.map((v) => ({ value: v, label: v })),
+        visibleWhen: isWineCtx,
       });
     }
-    groups.push({
+    pills.push({
       key: "whiskeyType",
       label: "\u{1F943} Whiskey Type",
-      options: WHISKEY_TYPES.map((t) => ({
-        value: `whiskey:${t}`,
-        label: `${WHISKEY_TYPE_EMOJIS[t] || "\u{1F943}"} ${t}`,
-      })),
+      value: whiskeyTypeFilter,
+      onChange: setWhiskeyTypeFilter,
+      options: WHISKEY_TYPES.map((t) => ({ value: t, label: `${WHISKEY_TYPE_EMOJIS[t] || "\u{1F943}"} ${t}` })),
+      visibleWhen: isWhiskeyCtx,
     });
-    groups.push(RATING_GROUP);
-    return groups;
-  }, [availableVarietals]);
+    pills.push({
+      key: "rating",
+      label: "★ Rating",
+      value: ratingFilter,
+      onChange: setRatingFilter,
+      options: RATING_PILL_OPTIONS,
+    });
+    return pills;
+  }, [availableVarietals, subTypeFilter, wineTypeFilter, varietalFilter, whiskeyTypeFilter, ratingFilter]);
 
   const filteredItems = useMemo(() => {
-    if (subFilter === "all") return commonFiltered;
-    const [type, val] = subFilter.split(":");
-    if (type === "subtype") return commonFiltered.filter((i) => (i.subType || "wine") === val);
-    if (type === "wine") return commonFiltered.filter((i) => i.wineType === val);
-    if (type === "whiskey") return commonFiltered.filter((i) => i.whiskyType === val);
-    if (type === "varietal") return commonFiltered.filter((i) => i.varietal === val);
-    if (type === "rating") {
-      return commonFiltered.filter((i) => {
-        const r = parseInt(i.rating, 10);
-        if (val === "unrated") return !r;
-        if (val === "5") return r === 5;
-        if (val === "4+") return r >= 4;
-        if (val === "3+") return r >= 3;
-        return true;
-      });
-    }
-    return commonFiltered;
-  }, [commonFiltered, subFilter]);
+    let items = commonFiltered;
+    if (subTypeFilter !== "all") items = items.filter((i) => (i.subType || "wine") === subTypeFilter);
+    if (wineTypeFilter !== "all") items = items.filter((i) => i.wineType === wineTypeFilter);
+    if (varietalFilter !== "all") items = items.filter((i) => i.varietal === varietalFilter);
+    if (whiskeyTypeFilter !== "all") items = items.filter((i) => i.whiskyType === whiskeyTypeFilter);
+    if (ratingFilter !== "all") items = items.filter((i) => matchesRatingValue(i.rating, ratingFilter));
+    return items;
+  }, [commonFiltered, subTypeFilter, wineTypeFilter, varietalFilter, whiskeyTypeFilter, ratingFilter]);
 
   const getItemIcon = (item) => {
     return (item.subType || "wine") === "whiskey" ? "\u{1F943}" : "\u{1F377}";
@@ -156,10 +166,9 @@ function CellarList() {
         yearOptions={lf.yearOptions}
         activeYear={lf.activeYear}
         onYearChange={lf.setActiveYear}
-        filterGroups={cellarFilterGroups}
-        filterValue={subFilter}
-        onFilterChange={setSubFilter}
-        filterColor="var(--color-cellar, #8B3A8F)"
+        renderExtraFilters={() => (
+          <MultiPillFilter pills={cellarPills} color="var(--color-cellar, #8B3A8F)" />
+        )}
         sourceFilter={lf.sourceFilter}
         onSourceChange={lf.setSourceFilter}
         avatarUrl={profile?.avatar_url}

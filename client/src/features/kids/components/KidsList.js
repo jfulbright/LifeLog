@@ -7,7 +7,8 @@ import SaveToast from "../../../components/shared/SaveToast";
 import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
 import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
 import CategoryListHeader from "../../../components/shared/CategoryListHeader";
-import { RATING_GROUP } from "../../../components/shared/GroupedDropdownFilter";
+import MultiPillFilter from "../../../components/shared/MultiPillFilter";
+import { RATING_PILL_OPTIONS, matchesRatingValue } from "../../../components/shared/GroupedDropdownFilter";
 import kidsSchema, { KIDS_EVENT_TYPES } from "../kidsSchema";
 import useCategory from "../../../hooks/useCategory";
 import useListFilters from "../../../hooks/useListFilters";
@@ -28,93 +29,6 @@ function getAgeAtDate(birthday, eventDate) {
     age--;
   }
   return age >= 0 ? age : null;
-}
-
-function MilestoneTypeFilter({ value, onChange }) {
-  return (
-    <div className="d-flex gap-2 flex-wrap mb-3">
-      <button
-        type="button"
-        onClick={() => onChange("all")}
-        style={{
-          padding: "0.3rem 0.75rem",
-          borderRadius: "20px",
-          border: "2px solid var(--color-kids, #FF6B35)",
-          background: value === "all" ? "var(--color-kids, #FF6B35)" : "transparent",
-          color: value === "all" ? "#fff" : "var(--color-kids, #FF6B35)",
-          fontWeight: 600,
-          fontSize: "var(--font-size-sm)",
-          cursor: "pointer",
-        }}
-      >
-        All
-      </button>
-      {KIDS_EVENT_TYPES.map((t) => (
-        <button
-          key={t.value}
-          type="button"
-          onClick={() => onChange(t.value)}
-          style={{
-            padding: "0.3rem 0.75rem",
-            borderRadius: "20px",
-            border: "2px solid var(--color-kids, #FF6B35)",
-            background: value === t.value ? "var(--color-kids, #FF6B35)" : "transparent",
-            color: value === t.value ? "#fff" : "var(--color-kids, #FF6B35)",
-            fontWeight: 600,
-            fontSize: "var(--font-size-sm)",
-            cursor: "pointer",
-          }}
-        >
-          {t.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function ChildFilter({ contacts, value, onChange }) {
-  const children = contacts.filter((c) => c.isChild);
-  if (children.length <= 1) return null;
-
-  return (
-    <div className="d-flex gap-2 flex-wrap mb-3">
-      <button
-        type="button"
-        onClick={() => onChange("all")}
-        style={{
-          padding: "0.3rem 0.75rem",
-          borderRadius: "20px",
-          border: "2px solid var(--color-text-tertiary)",
-          background: value === "all" ? "var(--color-text-secondary)" : "transparent",
-          color: value === "all" ? "#fff" : "var(--color-text-secondary)",
-          fontWeight: 600,
-          fontSize: "var(--font-size-sm)",
-          cursor: "pointer",
-        }}
-      >
-        All Kids
-      </button>
-      {children.map((child) => (
-        <button
-          key={child.id}
-          type="button"
-          onClick={() => onChange(child.id)}
-          style={{
-            padding: "0.3rem 0.75rem",
-            borderRadius: "20px",
-            border: "2px solid var(--color-kids, #FF6B35)",
-            background: value === child.id ? "var(--color-kids, #FF6B35)" : "transparent",
-            color: value === child.id ? "#fff" : "var(--color-kids, #FF6B35)",
-            fontWeight: 600,
-            fontSize: "var(--font-size-sm)",
-            cursor: "pointer",
-          }}
-        >
-          {child.displayName}
-        </button>
-      ))}
-    </div>
-  );
 }
 
 function KidsStats({ items, contacts }) {
@@ -192,19 +106,43 @@ function KidsList() {
     let items = commonFiltered
       .filter((i) => milestoneTypeFilter === "all" || i.milestoneType === milestoneTypeFilter)
       .filter((i) => childFilter === "all" || i.childContactId === childFilter);
-    if (ratingFilter !== "all" && ratingFilter.startsWith("rating:")) {
-      const rVal = ratingFilter.split(":")[1];
-      items = items.filter((i) => {
-        const r = parseInt(i.rating, 10);
-        if (rVal === "unrated") return !r;
-        if (rVal === "5") return r === 5;
-        if (rVal === "4+") return r >= 4;
-        if (rVal === "3+") return r >= 3;
-        return true;
-      });
+    if (ratingFilter !== "all") {
+      items = items.filter((i) => matchesRatingValue(i.rating, ratingFilter));
     }
     return items;
   }, [commonFiltered, milestoneTypeFilter, childFilter, ratingFilter]);
+
+  // One combinable pill row: Child (when 2+ kids) + Milestone Type + Rating.
+  const kidsPills = useMemo(() => {
+    const children = contacts.filter((c) => c.isChild);
+    const pills = [];
+    if (children.length > 1) {
+      pills.push({
+        key: "child",
+        label: "\u{1F9D2} Child",
+        allLabel: "All Kids",
+        value: childFilter,
+        onChange: setChildFilter,
+        color: "var(--color-text-secondary)",
+        options: children.map((c) => ({ value: c.id, label: c.displayName })),
+      });
+    }
+    pills.push({
+      key: "milestoneType",
+      label: "\u{1F31F} Type",
+      value: milestoneTypeFilter,
+      onChange: setMilestoneTypeFilter,
+      options: KIDS_EVENT_TYPES.map((t) => ({ value: t.value, label: t.label })),
+    });
+    pills.push({
+      key: "rating",
+      label: "★ Rating",
+      value: ratingFilter,
+      onChange: setRatingFilter,
+      options: RATING_PILL_OPTIONS,
+    });
+    return pills;
+  }, [contacts, childFilter, milestoneTypeFilter, ratingFilter]);
 
   const groupedByYear = useMemo(() => {
     const groups = {};
@@ -245,9 +183,6 @@ function KidsList() {
         title={"\u{1F31F} Kids"}
         addLabel="+ Log Milestone"
         onAdd={openForm}
-        stats={milestones.length > 0 ? [
-          { value: milestones.length, label: "milestones", color: "var(--color-kids, #E91E63)" },
-        ] : null}
         category="kids"
         statusOptions={kidsStatuses}
         filterStatus={filterStatus}
@@ -258,14 +193,9 @@ function KidsList() {
         renderExtraFilters={() => (
           <>
             <KidsStats items={milestones} contacts={contacts} />
-            <ChildFilter contacts={contacts} value={childFilter} onChange={setChildFilter} />
-            <MilestoneTypeFilter value={milestoneTypeFilter} onChange={setMilestoneTypeFilter} />
+            <MultiPillFilter pills={kidsPills} color="var(--color-kids, #FF6B35)" />
           </>
         )}
-        filterGroups={[RATING_GROUP]}
-        filterValue={ratingFilter}
-        onFilterChange={setRatingFilter}
-        filterColor="var(--color-kids, #FF6B35)"
         sourceFilter={lf.sourceFilter}
         onSourceChange={lf.setSourceFilter}
         avatarUrl={profile?.avatar_url}
