@@ -48,7 +48,7 @@ function StatsStrip({ stats, icon, statsLink }) {
           onMouseEnter={(e) => { e.currentTarget.style.background = "var(--color-surface-hover)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}
         >
-          Stats &rarr;
+          Full Stats &rarr;
         </Link>
       )}
     </div>

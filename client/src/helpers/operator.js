@@ -91,11 +91,28 @@ export const getItemPhotos = (item) =>
  * pills. An item belongs to "Shared" if it was either received from someone else
  * (_isShared) or the owner has shared it outward with a collaborator, pending or
  * accepted (_hasOutgoingShares). "Mine" is the complement: owned and unshared.
+ *
+ * This is the single source of truth for source classification across every page
+ * (category lists, Timeline, My Memories, Shared, Recommendations). Do NOT use
+ * isEntryShared (PrivacyIndicator) for source filtering — that one keys on
+ * visibility/ring fields and is for the lock badge only.
  */
 export const isSharedSource = (item) =>
   !!(item._isShared || item._hasOutgoingShares);
 
 export const isMineOnly = (item) => !isSharedSource(item);
+
+/**
+ * Applies the "All | Mine | Shared | Recommended" source filter to a list using
+ * the canonical classifier above. Centralized so the meaning of each tab stays
+ * consistent everywhere instead of being re-implemented per page.
+ */
+export const applySourceFilter = (items, source) => {
+  if (source === "mine") return items.filter(isMineOnly);
+  if (source === "shared") return items.filter(isSharedSource);
+  if (source === "recommended") return items.filter((i) => i._isRecommended);
+  return items;
+};
 
 /**
  * Returns the owner's photos and each companion's overlay photos separately.
