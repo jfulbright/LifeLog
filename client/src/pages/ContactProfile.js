@@ -26,24 +26,24 @@ function ContactProfile() {
         }
         setContact(c);
 
-        // Fetch their items that are visible (shared with rings your level or higher)
+        // Visibility is enforced server-side by RLS (migration 011): this query
+        // returns only the entries this owner shared with us — either via a ring
+        // they placed us in (visibilityRings) or by naming us individually
+        // (visibilityContacts), resolved by linked user id OR normalized email.
+        // No client-side filtering: doing it here would be both insecure (rows
+        // fetched before filtering) and wrong (it keyed off the viewer's ring for
+        // the owner, not the owner's ring for the viewer).
         const { data: rows } = await supabase
           .from("items")
           .select("*")
           .eq("user_id", c.linkedUserId)
           .order("start_date", { ascending: false });
 
-        const allItems = (rows || []).map((row) => ({
+        const visibleItems = (rows || []).map((row) => ({
           ...row.data,
           _category: row.category,
           id: row.id,
         }));
-
-        // Filter to items visible to your ring level
-        const visibleItems = allItems.filter((item) => {
-          const rings = item.visibilityRings || [];
-          return rings.includes(c.ringLevel) || rings.some((r) => r >= c.ringLevel);
-        });
 
         setItems(visibleItems);
       } catch (err) {

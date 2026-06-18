@@ -20,6 +20,7 @@ const TEST_FILES = [
   { name: "07-isolation-security", path: "./07-isolation-security.test.mjs" },
   { name: "08-scale-performance", path: "./08-scale-performance.test.mjs" },
   { name: "10-deferred-share", path: "./10-deferred-share.test.mjs" },
+  { name: "11-visibility-contact-reads", path: "./11-visibility-contact-reads.test.mjs" },
 ];
 
 async function runAll() {
