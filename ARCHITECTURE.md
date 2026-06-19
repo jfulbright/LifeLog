@@ -112,14 +112,45 @@ Every table has RLS enabled. Summary:
 ### 3.4 Storage
 
 **Buckets:**
-- `photos` (public read, write restricted to own `userId/itemId/` path)
+- `photos` (private; read/write restricted to own `userId/itemId/` path via signed URLs)
 - `avatars` (public read, write restricted to own `userId/` path)
 
 **Photo pipeline:**
 1. Client compresses image (browser-image-compression)
-2. Upload to `photos/{userId}/{itemId}/{filename}`
-3. Retrieve via public URL (bucket is publicly readable)
+2. Upload to `photos/{userId}/{itemId}/{slot}.jpg` with `upsert: true`
+3. Retrieve via a 1-year signed URL (`createSignedUrl`) — bucket is private
 4. 3 photo slots per entry (photo1, photo2, photo3)
+
+> **Storage RLS requires all four verbs.** Because uploads use `upsert: true`,
+> overwriting an existing photo is a Postgres **UPDATE** on `storage.objects`, not
+> an INSERT — so the `photos` bucket needs INSERT **and** UPDATE policies (plus
+> SELECT and DELETE). A missing UPDATE policy lets the first upload succeed but
+> silently breaks every re-upload. See migration `012`.
+
+### 3.5 Database Change Management
+
+**Migrations are the single source of truth for schema and RLS — never the
+dashboard.** Drift between hand-edited dashboard policies and the repo is a real
+root-cause class of bug here (e.g. the missing `photos` UPDATE policy). Rules:
+
+1. **Every schema/RLS change is a committed migration** in `supabase/migrations/`,
+   sequentially numbered (`NNN_description.sql`). The Supabase dashboard is for
+   *reading* state and prototyping only — promote any prototype to a migration
+   before it's considered real.
+2. **Append-only.** Once a migration has run against prod it is frozen history.
+   Fixes go in a *new* migration, never by editing an applied one.
+3. **Idempotent and self-healing.** Use `DROP POLICY IF EXISTS "name" ...` then
+   `CREATE POLICY "name" ...` so re-running converges on the correct state and
+   overwrites any drifted dashboard version. Avoid `IF NOT EXISTS` guards that
+   *skip* when a wrong-but-present policy exists — that is how the UPDATE policy
+   went missing.
+4. **Stable, predictable policy names** (`photos_update_own`-style), so the
+   drop-then-create pattern can reliably target them.
+5. **Apply through one path:** `supabase db push` (CLI is linked) runs pending
+   migrations in order and records them in `schema_migrations`. Direct SQL is for
+   emergency hotfixes only, and must be backfilled into a migration immediately.
+6. **Detect drift:** run `supabase db diff --linked` periodically to surface
+   divergence as a diff rather than a production error.
 
 ---
 

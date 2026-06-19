@@ -87,7 +87,24 @@ export function usePhotoUpload() {
     }
   }, []);
 
+  // Remove a previously-uploaded file from storage given its (signed or public)
+  // URL. Best-effort: failures are logged but not surfaced, since the form value
+  // is cleared regardless. Keeps the bucket free of orphaned files when a user
+  // removes a photo, and ensures the next upload to that slot is a clean INSERT.
+  const deletePhoto = useCallback(async (url) => {
+    if (!url) return;
+    try {
+      const match = url.match(/\/photos\/([^?]+)/);
+      if (!match) return;
+      const path = decodeURIComponent(match[1]);
+      const { error } = await supabase.storage.from(BUCKET).remove([path]);
+      if (error) throw error;
+    } catch (err) {
+      console.error("[usePhotoUpload] delete", err);
+    }
+  }, []);
+
   const clearError = useCallback(() => setUploadError(null), []);
 
-  return { uploadPhoto, uploading, uploadError, clearError };
+  return { uploadPhoto, deletePhoto, uploading, uploadError, clearError };
 }

@@ -13,7 +13,7 @@ import { usePhotoUpload } from "../../hooks/usePhotoUpload";
  */
 function PhotoUploadField({ field, value, onChange, itemId }) {
   const inputRef = useRef(null);
-  const { uploadPhoto, uploading, uploadError, clearError } = usePhotoUpload();
+  const { uploadPhoto, deletePhoto, uploading, uploadError, clearError } = usePhotoUpload();
 
   const handleFile = async (file) => {
     if (!file) return;
@@ -22,10 +22,12 @@ function PhotoUploadField({ field, value, onChange, itemId }) {
     if (url) onChange(url);
   };
 
-  const handleRemove = (e) => {
+  const handleRemove = async (e) => {
     e.stopPropagation();
+    const removed = value;
     onChange("");
     if (inputRef.current) inputRef.current.value = "";
+    if (removed) await deletePhoto(removed);
   };
 
   const openPicker = () => {
