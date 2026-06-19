@@ -55,7 +55,59 @@ export async function computeSocialMovieStats(myMovies, contacts) {
     ? computeGenreOverlap(myMovies, moviesByContact[uid(alignments[0].contact)] || [])
     : [];
 
-  return { alignments, suggestions, influence, genreOverlap, socialMovies };
+  // Movies you and your circle agreed / disagreed on
+  const agreements = computeAgreements(myMovies, socialMovies, contacts);
+
+  return { alignments, suggestions, influence, genreOverlap, socialMovies, agreements };
+}
+
+/**
+ * Split movies that both the user and a circle member rated into those they
+ * agreed on (ratings within 1 star) and clashed on (3+ stars apart).
+ * One entry per (movie, friend) pair, so a movie several friends rated can
+ * appear multiple times with different counterparts.
+ */
+function computeAgreements(myMovies, socialMovies, contacts) {
+  const whoByUid = {};
+  contacts.forEach((c) => {
+    const u = uid(c);
+    if (u) whoByUid[u] = { name: c.display_name || c.displayName, ring: c.ring_level || c.ringLevel };
+  });
+
+  const myByTmdb = {};
+  myMovies.forEach((m) => {
+    if (m._isShared) return;
+    const r = parseInt(m.rating, 10);
+    if (m.tmdbId && m.status === "watched" && r > 0) {
+      myByTmdb[m.tmdbId] = { title: m.title, posterUrl: m.posterUrl, rating: r };
+    }
+  });
+
+  const agreed = [];
+  const disagreed = [];
+  socialMovies.forEach((m) => {
+    const mine = m.tmdbId && myByTmdb[m.tmdbId];
+    const theirRating = m._socialRating || parseInt(m.rating, 10) || 0;
+    if (!mine || !theirRating) return;
+    const who = whoByUid[m._sharedByUserId];
+    const entry = {
+      tmdbId: m.tmdbId,
+      title: mine.title,
+      posterUrl: mine.posterUrl,
+      myRating: mine.rating,
+      theirRating,
+      contactName: who?.name || "A friend",
+      contactRing: who?.ring,
+    };
+    const diff = Math.abs(mine.rating - theirRating);
+    if (diff <= 1) agreed.push(entry);
+    else if (diff >= 3) disagreed.push(entry);
+  });
+
+  agreed.sort((a, b) => (b.myRating + b.theirRating) - (a.myRating + a.theirRating));
+  disagreed.sort((a, b) => Math.abs(b.myRating - b.theirRating) - Math.abs(a.myRating - a.theirRating));
+
+  return { agreed: agreed.slice(0, 8), disagreed: disagreed.slice(0, 8) };
 }
 
 function findSharedLovedMovies(myMovies, theirMovies) {
