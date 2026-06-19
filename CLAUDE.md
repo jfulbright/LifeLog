@@ -39,6 +39,7 @@ REACT_APP_SITE_URL=http://localhost:3000
 REACT_APP_MAPBOX_TOKEN=          # city autocomplete
 REACT_APP_TMDB_ACCESS_TOKEN=     # movie search (Bearer)
 REACT_APP_TMDB_API_KEY=          # movie search (v3 fallback)
+REACT_APP_OMDB_API_KEY=          # IMDb / Rotten Tomatoes ratings (omdbapi.com, free tier)
 ```
 
 **`server/.env`** (required):

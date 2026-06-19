@@ -303,6 +303,16 @@ export default function useCategory(category, { migrate, normalize, schema } = {
     setItems((prev) => prev.map((item) => predicate(item) ? { ...item, ...patch } : item));
   }, []);
 
+  /**
+   * Merge per-item partial data keyed by item id in a single state update
+   * (one persist). Used for write-through caches like backfilled IMDb/RT
+   * ratings where each item gets a different patch.
+   */
+  const applyPatchMap = useCallback((byId) => {
+    if (!byId || Object.keys(byId).length === 0) return;
+    setItems((prev) => prev.map((item) => byId[item.id] ? { ...item, ...byId[item.id] } : item));
+  }, []);
+
   const saveDetailEdit = useCallback(
     async (updatedItem) => {
       const id = updatedItem.id;
@@ -424,6 +434,7 @@ export default function useCategory(category, { migrate, normalize, schema } = {
     startEditing,
     deleteItem,
     batchPatch,
+    applyPatchMap,
     closeForm,
     openForm,
     saveDetailEdit,
