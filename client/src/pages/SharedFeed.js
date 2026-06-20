@@ -9,8 +9,7 @@ import { useSocialData } from "../contexts/SocialDataContext";
 import categoryMeta, { getEntryTitle, getEntrySubtitle, getCategoryMeta } from "../helpers/categoryMeta";
 import { formatDateRange } from "../helpers/dateUtils";
 import StarRating from "../components/shared/StarRating";
-import YearFilter from "../components/shared/YearFilter";
-import GroupedDropdownFilter from "../components/shared/GroupedDropdownFilter";
+import MultiPillFilter from "../components/shared/MultiPillFilter";
 import { getYearOptions, filterByYear } from "../helpers/filterUtils";
 
 // ── Shared Entry Card ─────────────────────────────────────────────────────────
@@ -375,15 +374,33 @@ function SharedFeed() {
       }));
 
   const categories = [...new Set(sharedEntries.map((e) => e._category).filter(Boolean))];
-  const categoryFilterGroups = [{
-    key: "category",
-    label: "\u{1F4C2} Category",
-    options: categories.map((cat) => ({
-      value: cat,
-      label: `${getCategoryMeta(cat).icon} ${cat.charAt(0).toUpperCase() + cat.slice(1)}`,
-    })),
-  }];
   const yearOptions = getYearOptions(sharedEntries, ["startDate", "createdAt"]);
+
+  // One dropdown-pill row: Status · Year · Category — consistent with the rest.
+  const sharedPills = [
+    {
+      key: "__status", label: "Status", allLabel: "Any status",
+      value: filterStatus, onChange: setFilterStatus,
+      options: [
+        { value: "pending", label: "Pending" },
+        { value: "accepted", label: "Accepted" },
+        { value: "declined", label: "Declined" },
+      ],
+    },
+    ...(yearOptions.length > 0 ? [{
+      key: "__year", label: "Year", allLabel: "Any year",
+      value: activeYear, onChange: setActiveYear,
+      options: yearOptions.map((y) => ({ value: String(y), label: String(y) })),
+    }] : []),
+    ...(categories.length >= 1 ? [{
+      key: "category", label: "\u{1F4C2} Category", allLabel: "All categories",
+      value: categoryFilter, onChange: setCategoryFilter,
+      options: categories.map((cat) => ({
+        value: cat,
+        label: `${getCategoryMeta(cat).icon} ${cat.charAt(0).toUpperCase() + cat.slice(1)}`,
+      })),
+    }] : []),
+  ];
 
   const filteredEntries = filterByYear(
     sharedEntries.filter((item) => {
@@ -474,39 +491,8 @@ function SharedFeed() {
         Entries shared with you by others appear here. Accept to add them to your timeline and contribute your own Snapshots.
       </div>
 
-      {/* Filters */}
-      <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
-        <div>
-          <div style={{ fontSize: "var(--font-size-xs)", fontWeight: 700, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.25rem" }}>Status</div>
-          <div className="status-toggle">
-            {["all", "pending", "accepted", "declined"].map((s) => (
-              <button
-                key={s}
-                type="button"
-                className={`btn btn-sm ${filterStatus === s ? "active" : ""}`}
-                data-status={s === "all" ? undefined : s}
-                onClick={() => setFilterStatus(s)}
-                style={{ textTransform: "capitalize" }}
-              >
-                {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Year filter (renders only when 2+ years exist) */}
-      <YearFilter years={yearOptions} value={activeYear} onChange={setActiveYear} />
-
-      {/* Category filter — single pill, matching the category pages */}
-      {categories.length >= 1 && (
-        <GroupedDropdownFilter
-          groups={categoryFilterGroups}
-          value={categoryFilter}
-          onChange={setCategoryFilter}
-          color="var(--color-primary)"
-        />
-      )}
+      {/* Unified filter row: Status · Year · Category */}
+      <MultiPillFilter pills={sharedPills} color="var(--color-primary)" />
 
       {loading ? (
         <div style={{ textAlign: "center", padding: "3rem", color: "var(--color-text-tertiary)" }}>Loading…</div>

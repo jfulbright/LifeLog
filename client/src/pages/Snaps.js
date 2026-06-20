@@ -11,8 +11,8 @@ import {
 import dataService from "../services/dataService";
 import SourceFilterPills from "../components/shared/SourceFilterPills";
 import StatsStrip from "../components/shared/StatsStrip";
-import YearFilter from "../components/shared/YearFilter";
-import DoneWishlistFilter, { matchesDoneWishlist } from "../components/shared/DoneWishlistFilter";
+import MultiPillFilter from "../components/shared/MultiPillFilter";
+import { matchesDoneWishlist } from "../components/shared/DoneWishlistFilter";
 import { getYearOptions, filterByYear } from "../helpers/filterUtils";
 import EntryDetailPanel from "../components/shared/EntryDetailPanel";
 import { useAppData } from "../contexts/AppDataContext";
@@ -191,6 +191,28 @@ function Snaps() {
     return hasSnap || hasPhoto;
   });
 
+  // One dropdown-pill row: Status · Year · Category (view toggle stays separate).
+  const snapsPills = [
+    {
+      key: "__status", label: "Status", allLabel: "Any status",
+      value: activeStatus, onChange: setActiveStatus,
+      options: [{ value: "done", label: "Done" }, { value: "wishlist", label: "Wishlist" }],
+    },
+    ...(yearOptions.length > 0 ? [{
+      key: "__year", label: "Year", allLabel: "Any year",
+      value: activeYear, onChange: setActiveYear,
+      options: yearOptions.map((y) => ({ value: String(y), label: String(y) })),
+    }] : []),
+    ...(categoriesWithContent.length > 1 ? [{
+      key: "__category", label: "Category", allLabel: "All categories",
+      value: activeCategory, onChange: setActiveCategory,
+      options: categoriesWithContent.map((cat) => ({
+        value: cat.key,
+        label: `${(categoryMeta[cat.key] || {}).icon || ""} ${cat.label}`,
+      })),
+    }] : []),
+  ];
+
   if (loading) return null;
 
   const totalSnaps = allSnaps.length;
@@ -210,35 +232,8 @@ function Snaps() {
         ]} />
       )}
 
-      {/* Done / Wishlist status */}
-      <DoneWishlistFilter value={activeStatus} onChange={setActiveStatus} />
-
-      {/* Year filter (renders whenever any dated items exist) */}
-      <YearFilter years={yearOptions} value={activeYear} onChange={setActiveYear} />
-
-      {/* Category filter pills */}
-      {categoriesWithContent.length > 1 && (
-        <div className="status-toggle mb-3">
-          <button
-            className={`btn ${activeCategory === "all" ? "active" : ""}`}
-            onClick={() => setActiveCategory("all")}
-          >
-            All
-          </button>
-          {categoriesWithContent.map((cat) => {
-            const meta = categoryMeta[cat.key] || {};
-            return (
-              <button
-                key={cat.key}
-                className={`btn ${activeCategory === cat.key ? "active" : ""}`}
-                onClick={() => setActiveCategory(cat.key)}
-              >
-                {meta.icon} {cat.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {/* Unified filter row: Status · Year · Category */}
+      <MultiPillFilter pills={snapsPills} color="var(--color-primary)" />
 
       {/* View tabs: All / Snaps / Photos */}
       <div className="d-flex gap-2 mb-3">

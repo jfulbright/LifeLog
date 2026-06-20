@@ -9,8 +9,8 @@ import PrivacyIndicator from "../components/shared/PrivacyIndicator";
 import SourceFilterPills from "../components/shared/SourceFilterPills";
 import EntryDetailPanel from "../components/shared/EntryDetailPanel";
 import StatsStrip from "../components/shared/StatsStrip";
-import YearFilter from "../components/shared/YearFilter";
-import DoneWishlistFilter, { matchesDoneWishlist } from "../components/shared/DoneWishlistFilter";
+import MultiPillFilter from "../components/shared/MultiPillFilter";
+import { matchesDoneWishlist } from "../components/shared/DoneWishlistFilter";
 import { useAppData } from "../contexts/AppDataContext";
 import { SCHEMA_MAP, CATEGORY_KEYS } from "../helpers/schemaRegistry";
 import { enrichItemsWithSocialContent, getSocialPreview } from "../helpers/socialContent";
@@ -159,6 +159,34 @@ function Timeline() {
 
   const groupedMonths = Object.keys(grouped);
 
+  // One dropdown-pill row: Status · Year · Month (when a year is picked) · Category.
+  const timelinePills = [
+    {
+      key: "__status", label: "Status", allLabel: "Any status",
+      value: activeStatus, onChange: setActiveStatus,
+      options: [{ value: "done", label: "Done" }, { value: "wishlist", label: "Wishlist" }],
+    },
+    ...(years.length > 0 ? [{
+      key: "__year", label: "Year", allLabel: "Any year",
+      value: activeYear, onChange: (y) => { setActiveYear(y); setActiveMonth("all"); },
+      options: years.map((y) => ({ value: String(y), label: String(y) })),
+    }] : []),
+    ...(monthsWithData.length > 0 ? [{
+      key: "__month", label: "Month", allLabel: "All months",
+      value: activeMonth, onChange: setActiveMonth,
+      options: monthsWithData.map((m) => ({ value: String(m), label: MONTH_NAMES[m] })),
+      visibleWhen: (v) => v.__year && v.__year !== "all",
+    }] : []),
+    ...(timelineCategories.length > 1 ? [{
+      key: "__category", label: "Category", allLabel: "All categories",
+      value: activeCategory, onChange: setActiveCategory,
+      options: timelineCategories.map((cat) => ({
+        value: cat,
+        label: `${(categoryMeta[cat] || {}).icon || ""} ${cat.charAt(0).toUpperCase() + cat.slice(1)}`,
+      })),
+    }] : []),
+  ];
+
   if (loading) return null;
 
   return (
@@ -184,60 +212,8 @@ function Timeline() {
         return <StatsStrip stats={stats} />;
       })()}
 
-      {/* Done / Wishlist status */}
-      <DoneWishlistFilter value={activeStatus} onChange={setActiveStatus} />
-
-      {/* Year filter (shared component; renders whenever any dated items exist) */}
-      <YearFilter
-        years={years}
-        value={activeYear}
-        onChange={(y) => { setActiveYear(y); setActiveMonth("all"); }}
-      />
-
-      {/* Month sub-pills (only when a year is selected) */}
-      {activeYear !== "all" && monthsWithData.length > 0 && (
-        <div className="status-toggle mb-2" style={{ fontSize: "var(--font-size-xs)" }}>
-          <button
-            className={`btn ${activeMonth === "all" ? "active" : ""}`}
-            onClick={() => setActiveMonth("all")}
-          >
-            All Months
-          </button>
-          {monthsWithData.map((m) => (
-            <button
-              key={m}
-              className={`btn ${activeMonth === String(m) ? "active" : ""}`}
-              onClick={() => setActiveMonth(String(m))}
-            >
-              {MONTH_NAMES[m]}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Category filter */}
-      {timelineCategories.length > 1 && (
-        <div className="status-toggle mb-2">
-          <button
-            className={`btn ${activeCategory === "all" ? "active" : ""}`}
-            onClick={() => setActiveCategory("all")}
-          >
-            All
-          </button>
-          {timelineCategories.map((cat) => {
-            const meta = categoryMeta[cat] || {};
-            return (
-              <button
-                key={cat}
-                className={`btn ${activeCategory === cat ? "active" : ""}`}
-                onClick={() => setActiveCategory(cat)}
-              >
-                {meta.icon} {cat.charAt(0).toUpperCase() + cat.slice(1)}
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {/* Unified filter row: Status · Year · Month · Category */}
+      <MultiPillFilter pills={timelinePills} color="var(--color-primary)" />
 
       {/* Source filter (All / Mine / Shared / Recommended) */}
       <SourceFilterPills
