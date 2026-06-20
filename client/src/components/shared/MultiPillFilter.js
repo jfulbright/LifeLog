@@ -60,6 +60,10 @@ export default function MultiPillFilter({ pills, color = "var(--color-primary)" 
         const accent = pill.color || color;
         const isActive = pill.value && pill.value !== "all";
         const resetLabel = pill.allLabel || `All ${pill.label.replace(/^[^\w]*/, "").trim()}`;
+        // When a value is chosen, the pill shows that value; otherwise it shows
+        // the dimension name. The caret signals it opens a dropdown either way.
+        const selectedOption = pill.options.find((o) => o.value === pill.value);
+        const pillText = isActive && selectedOption ? selectedOption.label : pill.label;
 
         return (
           <div
@@ -82,7 +86,8 @@ export default function MultiPillFilter({ pills, color = "var(--color-primary)" 
                 cursor: "pointer",
               }}
             >
-              {pill.label}
+              {pillText}
+              <span aria-hidden="true" style={{ marginLeft: "0.3rem", opacity: 0.7, fontSize: "0.7em" }}>▾</span>
             </button>
 
             {openKey === pill.key && (

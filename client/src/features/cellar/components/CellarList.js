@@ -7,7 +7,6 @@ import SaveToast from "../../../components/shared/SaveToast";
 import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
 import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
 import CategoryListHeader from "../../../components/shared/CategoryListHeader";
-import MultiPillFilter from "../../../components/shared/MultiPillFilter";
 import { RATING_PILL_OPTIONS, matchesRatingValue } from "../../../components/shared/GroupedDropdownFilter";
 import cellarSchema, { WINE_TYPES, WHISKEY_TYPES } from "../cellarSchema";
 import useCategory from "../../../hooks/useCategory";
@@ -166,9 +165,8 @@ function CellarList() {
         yearOptions={lf.yearOptions}
         activeYear={lf.activeYear}
         onYearChange={lf.setActiveYear}
-        renderExtraFilters={() => (
-          <MultiPillFilter pills={cellarPills} color="var(--color-cellar, #8B3A8F)" />
-        )}
+        filterPills={cellarPills}
+        filterColor="var(--color-cellar, #8B3A8F)"
         sourceFilter={lf.sourceFilter}
         onSourceChange={lf.setSourceFilter}
         avatarUrl={profile?.avatar_url}

@@ -110,9 +110,29 @@ function MovieList() {
     viewDetailItem, setViewDetailItem,
   } = useCategory("movies", { normalize: (data) => ({ ...data, status: data.status || "watchlist", startDate: data.startDate || "" }), schema: movieSchema });
 
-  const [movieFilter, setMovieFilter] = useState("all");
+  // Each movie filter dimension is independent so they combine (e.g. Drama +
+  // IMDb 8+ + RT 90+ at once). "all" = that dimension is unset.
+  const [genreFilter, setGenreFilter] = useState("all");
+  const [decadeFilter, setDecadeFilter] = useState("all");
+  const [myRatingFilter, setMyRatingFilter] = useState("all");
+  const [peopleRatingFilter, setPeopleRatingFilter] = useState("all");
+  const [imdbFilter, setImdbFilter] = useState("all");
+  const [rtFilter, setRtFilter] = useState("all");
+  const [ringFilter, setRingFilter] = useState("all");
   const lf = useListFilters(movies, { dateField: "startDate" });
   const { profile } = useAppData();
+
+  // Shared predicate so the library list and the search results filter identically.
+  const matchesRingFilter = useCallback((m, val) => {
+    if (val === "all") return true;
+    if (!m || !m._isShared) return val === "unwatched" ? !!(m && m._isRecommended && m.status !== "watched") : false;
+    const rr = parseInt(m.rating, 10);
+    if (val === "partner") return m._sharedByRing === 1 && rr >= 4;
+    if (val === "family") return (m._sharedByRing === 2 || m._sharedByRing === 3) && rr >= 4;
+    if (val === "friends") return m._sharedByRing === 4 && rr >= 4;
+    if (val === "unwatched") return m._isRecommended && m.status !== "watched";
+    return true;
+  }, []);
 
   // Inline TMDB search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -312,36 +332,26 @@ function MovieList() {
         if (String(y) !== String(lf.activeYear)) return false;
       }
 
-      // Category dropdown (genre / decade / rating / imdb / rt / ring).
-      if (movieFilter !== "all") {
-        const [type, val] = movieFilter.split(":");
-        if (type === "genre") {
-          if (!(r.genre || "").split(",").map((g) => g.trim()).includes(val)) return false;
-        } else if (type === "decade") {
-          if (getDecade(r.year) !== val) return false;
-        } else if (type === "myrating") {
-          if (!matchesRating(lib?.rating, val)) return false;
-        } else if (type === "peoplerating") {
-          const pr = peopleRatingByTmdbId[r.tmdbId];
-          if (!(pr != null && pr >= parseFloat(val))) return false;
-        } else if (type === "imdb") {
-          const v = getImdb({ tmdbId: r.tmdbId, imdbRating: lib?.imdbRating });
-          if (!(v != null && v >= parseFloat(val))) return false;
-        } else if (type === "rt") {
-          const v = getRt({ tmdbId: r.tmdbId, rtRating: lib?.rtRating });
-          if (!(v != null && v >= parseFloat(val))) return false;
-        } else if (type === "ring") {
-          if (!lib || !lib._isShared) return false;
-          const rr = parseInt(lib.rating, 10);
-          if (val === "partner" && !(lib._sharedByRing === 1 && rr >= 4)) return false;
-          if (val === "family" && !((lib._sharedByRing === 2 || lib._sharedByRing === 3) && rr >= 4)) return false;
-          if (val === "friends" && !(lib._sharedByRing === 4 && rr >= 4)) return false;
-          if (val === "unwatched" && !(lib._isRecommended && lib.status !== "watched")) return false;
-        }
+      // Category dropdowns (each independent; they combine).
+      if (genreFilter !== "all" && !(r.genre || "").split(",").map((g) => g.trim()).includes(genreFilter)) return false;
+      if (decadeFilter !== "all" && getDecade(r.year) !== decadeFilter) return false;
+      if (myRatingFilter !== "all" && !matchesRating(lib?.rating, myRatingFilter)) return false;
+      if (peopleRatingFilter !== "all") {
+        const pr = peopleRatingByTmdbId[r.tmdbId];
+        if (!(pr != null && pr >= parseFloat(peopleRatingFilter))) return false;
       }
+      if (imdbFilter !== "all") {
+        const v = getImdb({ tmdbId: r.tmdbId, imdbRating: lib?.imdbRating });
+        if (!(v != null && v >= parseFloat(imdbFilter))) return false;
+      }
+      if (rtFilter !== "all") {
+        const v = getRt({ tmdbId: r.tmdbId, rtRating: lib?.rtRating });
+        if (!(v != null && v >= parseFloat(rtFilter))) return false;
+      }
+      if (ringFilter !== "all" && !matchesRingFilter(lib, ringFilter)) return false;
       return true;
     });
-  }, [searchResults, filterStatus, lf.sourceFilter, lf.activeYear, movieFilter, moviesByTmdbId, socialByTmdbId, peopleRatingByTmdbId, getImdb, getRt]);
+  }, [searchResults, filterStatus, lf.sourceFilter, lf.activeYear, genreFilter, decadeFilter, myRatingFilter, peopleRatingFilter, imdbFilter, rtFilter, ringFilter, matchesRingFilter, moviesByTmdbId, socialByTmdbId, peopleRatingByTmdbId, getImdb, getRt]);
 
   const movieStatuses = getStatusFilterOptions("movies");
 
@@ -367,120 +377,104 @@ function MovieList() {
     return DECADE_ORDER.filter((d) => present.has(d));
   }, [movies]);
 
-  const movieFilterGroups = useMemo(() => {
-    const groups = [];
+  const moviePills = useMemo(() => {
+    const pills = [];
     if (availableGenres.length > 0) {
-      groups.push({
+      pills.push({
         key: "genre",
         label: "\u{1F3AC} Genre",
-        options: availableGenres.map((g) => ({ value: `genre:${g}`, label: `${GENRE_EMOJIS[g] || "\u{1F3DE}️"} ${g}` })),
+        value: genreFilter,
+        onChange: setGenreFilter,
+        options: availableGenres.map((g) => ({ value: g, label: `${GENRE_EMOJIS[g] || "\u{1F3DE}️"} ${g}` })),
       });
     }
     if (availableDecades.length > 0) {
-      groups.push({
+      pills.push({
         key: "decade",
         label: "\u{1F4C5} Decade",
-        options: availableDecades.map((d) => ({ value: `decade:${d}`, label: d })),
+        value: decadeFilter,
+        onChange: setDecadeFilter,
+        options: availableDecades.map((d) => ({ value: d, label: d })),
       });
     }
-    groups.push({
+    pills.push({
       key: "myrating",
       label: "★ My Rating",
+      value: myRatingFilter,
+      onChange: setMyRatingFilter,
       options: [
-        { value: "myrating:5", label: "★★★★★" },
-        { value: "myrating:4+", label: "★★★★☆+" },
-        { value: "myrating:3+", label: "★★★☆☆+" },
-        { value: "myrating:unrated", label: "No rating" },
+        { value: "5", label: "★★★★★" },
+        { value: "4+", label: "★★★★☆+" },
+        { value: "3+", label: "★★★☆☆+" },
+        { value: "unrated", label: "No rating" },
       ],
     });
-    groups.push({
+    pills.push({
       key: "peoplerating",
-      label: "\u{1F465} My People Rating",
+      label: "\u{1F465} People Rating",
+      value: peopleRatingFilter,
+      onChange: setPeopleRatingFilter,
       options: [
-        { value: "peoplerating:4.5+", label: "★★★★★ Loved" },
-        { value: "peoplerating:4+", label: "★★★★☆+" },
-        { value: "peoplerating:3+", label: "★★★☆☆+" },
+        { value: "4.5+", label: "★★★★★ Loved" },
+        { value: "4+", label: "★★★★☆+" },
+        { value: "3+", label: "★★★☆☆+" },
       ],
     });
-    groups.push({
+    pills.push({
       key: "imdb",
-      label: "★ IMDb Rating",
+      label: "★ IMDb",
+      value: imdbFilter,
+      onChange: setImdbFilter,
       options: [
-        { value: "imdb:8+", label: "8+ Exceptional" },
-        { value: "imdb:7+", label: "7+ Great" },
-        { value: "imdb:6+", label: "6+ Good" },
+        { value: "8+", label: "8+ Exceptional" },
+        { value: "7+", label: "7+ Great" },
+        { value: "6+", label: "6+ Good" },
       ],
     });
-    groups.push({
+    pills.push({
       key: "rt",
       label: "\u{1F345} Rotten Tomatoes",
+      value: rtFilter,
+      onChange: setRtFilter,
       options: [
-        { value: "rt:90+", label: "90%+ Certified" },
-        { value: "rt:75+", label: "75%+ Fresh" },
-        { value: "rt:60+", label: "60%+" },
+        { value: "90+", label: "90%+ Certified" },
+        { value: "75+", label: "75%+ Fresh" },
+        { value: "60+", label: "60%+" },
       ],
     });
-    groups.push({
+    pills.push({
       key: "ring",
       label: "\u{1F48E} From Rings",
+      value: ringFilter,
+      onChange: setRingFilter,
       options: [
-        { value: "ring:partner", label: "\u{1F48E} Partner loved" },
-        { value: "ring:family", label: "\u{1F3E0} Family loved" },
-        { value: "ring:friends", label: "\u{1F465} Friends loved" },
-        { value: "ring:unwatched", label: "\u{1F3AF} Not yet watched (rec'd)" },
+        { value: "partner", label: "\u{1F48E} Partner loved" },
+        { value: "family", label: "\u{1F3E0} Family loved" },
+        { value: "friends", label: "\u{1F465} Friends loved" },
+        { value: "unwatched", label: "\u{1F3AF} Not yet watched (rec'd)" },
       ],
     });
-    return groups;
-  }, [availableGenres, availableDecades]);
+    return pills;
+  }, [availableGenres, availableDecades, genreFilter, decadeFilter, myRatingFilter, peopleRatingFilter, imdbFilter, rtFilter, ringFilter]);
 
   const statusFiltered = filterByStatus(movies, filterStatus);
   const commonFiltered = lf.applyCommonFilters(statusFiltered);
 
   const filteredMovies = useMemo(() => {
-    if (movieFilter === "all") return commonFiltered;
-    const [type, val] = movieFilter.split(":");
-    if (type === "genre") {
-      return commonFiltered.filter((m) =>
-        (m.genre || "").split(",").map((g) => g.trim()).includes(val)
-      );
-    }
-    if (type === "decade") {
-      return commonFiltered.filter((m) => getDecade(m.year) === val);
-    }
-    if (type === "myrating") {
-      return commonFiltered.filter((m) => matchesRating(m.rating, val));
-    }
-    if (type === "peoplerating") {
-      const min = parseFloat(val);
-      return commonFiltered.filter((m) => {
+    return commonFiltered.filter((m) => {
+      if (genreFilter !== "all" && !(m.genre || "").split(",").map((g) => g.trim()).includes(genreFilter)) return false;
+      if (decadeFilter !== "all" && getDecade(m.year) !== decadeFilter) return false;
+      if (myRatingFilter !== "all" && !matchesRating(m.rating, myRatingFilter)) return false;
+      if (peopleRatingFilter !== "all") {
         const pr = peopleRatingByTmdbId[m.tmdbId];
-        return pr != null && pr >= min;
-      });
-    }
-    if (type === "imdb") {
-      const min = parseFloat(val);
-      return commonFiltered.filter((m) => { const v = getImdb(m); return v != null && v >= min; });
-    }
-    if (type === "rt") {
-      const min = parseFloat(val);
-      return commonFiltered.filter((m) => { const v = getRt(m); return v != null && v >= min; });
-    }
-    if (type === "ring") {
-      if (val === "partner") {
-        return commonFiltered.filter((m) => m._isShared && m._sharedByRing === 1 && parseInt(m.rating, 10) >= 4);
+        if (!(pr != null && pr >= parseFloat(peopleRatingFilter))) return false;
       }
-      if (val === "family") {
-        return commonFiltered.filter((m) => m._isShared && (m._sharedByRing === 2 || m._sharedByRing === 3) && parseInt(m.rating, 10) >= 4);
-      }
-      if (val === "friends") {
-        return commonFiltered.filter((m) => m._isShared && m._sharedByRing === 4 && parseInt(m.rating, 10) >= 4);
-      }
-      if (val === "unwatched") {
-        return commonFiltered.filter((m) => m._isRecommended && m.status !== "watched");
-      }
-    }
-    return commonFiltered;
-  }, [commonFiltered, movieFilter, peopleRatingByTmdbId, getImdb, getRt]);
+      if (imdbFilter !== "all") { const v = getImdb(m); if (!(v != null && v >= parseFloat(imdbFilter))) return false; }
+      if (rtFilter !== "all") { const v = getRt(m); if (!(v != null && v >= parseFloat(rtFilter))) return false; }
+      if (ringFilter !== "all" && !matchesRingFilter(m, ringFilter)) return false;
+      return true;
+    });
+  }, [commonFiltered, genreFilter, decadeFilter, myRatingFilter, peopleRatingFilter, imdbFilter, rtFilter, ringFilter, matchesRingFilter, peopleRatingByTmdbId, getImdb, getRt]);
 
   const sectionTitle = `Movies - ${getStatusLabel("movies", filterStatus)}`;
   const watchedCount = movies.filter((m) => m.status === "watched").length;
@@ -551,9 +545,7 @@ function MovieList() {
         activeYear={lf.activeYear}
         onYearChange={lf.setActiveYear}
         renderExtraFilters={() => <MovieSocialFeed movies={movies} />}
-        filterGroups={movieFilterGroups}
-        filterValue={movieFilter}
-        onFilterChange={setMovieFilter}
+        filterPills={moviePills}
         filterColor="var(--color-movies, #E91E63)"
         sourceFilter={lf.sourceFilter}
         onSourceChange={lf.setSourceFilter}

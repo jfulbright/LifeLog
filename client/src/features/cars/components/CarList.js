@@ -7,7 +7,7 @@ import SaveToast from "../../../components/shared/SaveToast";
 import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
 import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
 import CategoryListHeader from "../../../components/shared/CategoryListHeader";
-import { RATING_GROUP } from "../../../components/shared/GroupedDropdownFilter";
+import { RATING_PILL_OPTIONS, matchesRatingValue } from "../../../components/shared/GroupedDropdownFilter";
 import carSchema from "../../../features/cars/carSchema";
 import useCategory from "../../../hooks/useCategory";
 import useListFilters from "../../../hooks/useListFilters";
@@ -23,7 +23,7 @@ import {
 const CAR_DATE = (c) => c.startDate || (c.year ? `${c.year}-01-01` : c.createdAt);
 
 function CarList() {
-  const [carFilter, setCarFilter] = React.useState("all");
+  const [ratingFilter, setRatingFilter] = React.useState("all");
   const { profile } = useAppData();
   const {
     items: cars,
@@ -43,20 +43,13 @@ function CarList() {
   const commonFiltered = lf.applyCommonFilters(statusFiltered);
 
   const filteredCars = React.useMemo(() => {
-    if (carFilter === "all") return commonFiltered;
-    if (carFilter.startsWith("rating:")) {
-      const rVal = carFilter.split(":")[1];
-      return commonFiltered.filter((i) => {
-        const r = parseInt(i.rating, 10);
-        if (rVal === "unrated") return !r;
-        if (rVal === "5") return r === 5;
-        if (rVal === "4+") return r >= 4;
-        if (rVal === "3+") return r >= 3;
-        return true;
-      });
-    }
-    return commonFiltered;
-  }, [commonFiltered, carFilter]);
+    if (ratingFilter === "all") return commonFiltered;
+    return commonFiltered.filter((i) => matchesRatingValue(i.rating, ratingFilter));
+  }, [commonFiltered, ratingFilter]);
+
+  const carPills = [
+    { key: "rating", label: "★ Rating", value: ratingFilter, onChange: setRatingFilter, options: RATING_PILL_OPTIONS },
+  ];
 
   const sectionTitle = `Cars - ${getStatusLabel("cars", filterStatus)}`;
 
@@ -76,9 +69,7 @@ function CarList() {
         yearOptions={lf.yearOptions}
         activeYear={lf.activeYear}
         onYearChange={lf.setActiveYear}
-        filterGroups={[RATING_GROUP]}
-        filterValue={carFilter}
-        onFilterChange={setCarFilter}
+        filterPills={carPills}
         filterColor="var(--color-cars, #36C5F0)"
         sourceFilter={lf.sourceFilter}
         onSourceChange={lf.setSourceFilter}

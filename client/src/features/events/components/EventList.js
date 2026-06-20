@@ -8,7 +8,7 @@ import SaveToast from "../../../components/shared/SaveToast";
 import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
 import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
 import CategoryListHeader from "../../../components/shared/CategoryListHeader";
-import { RATING_GROUP } from "../../../components/shared/GroupedDropdownFilter";
+import { RATING_PILL_OPTIONS, matchesRatingValue } from "../../../components/shared/GroupedDropdownFilter";
 import useCategory from "../../../hooks/useCategory";
 import useListFilters from "../../../hooks/useListFilters";
 import { useAppData } from "../../../contexts/AppDataContext";
@@ -48,6 +48,7 @@ function normalizeEvent(data) {
 
 function EventList() {
   const [filterType, setFilterType] = useState("all");
+  const [ratingFilter, setRatingFilter] = useState("all");
   const { profile } = useAppData();
   const {
     items: events,
@@ -99,34 +100,27 @@ function EventList() {
   const commonFiltered = lf.applyCommonFilters(statusFiltered);
 
   const filteredEvents = useMemo(() => {
-    if (filterType === "all") return commonFiltered;
-    if (filterType.startsWith("rating:")) {
-      const rVal = filterType.split(":")[1];
-      return commonFiltered.filter((i) => {
-        const r = parseInt(i.rating, 10);
-        if (rVal === "unrated") return !r;
-        if (rVal === "5") return r === 5;
-        if (rVal === "4+") return r >= 4;
-        if (rVal === "3+") return r >= 3;
-        return true;
-      });
-    }
-    return commonFiltered.filter((i) => i.eventType === filterType);
-  }, [commonFiltered, filterType]);
+    let items = commonFiltered;
+    if (filterType !== "all") items = items.filter((i) => i.eventType === filterType);
+    if (ratingFilter !== "all") items = items.filter((i) => matchesRatingValue(i.rating, ratingFilter));
+    return items;
+  }, [commonFiltered, filterType, ratingFilter]);
 
   const sectionTitle = `Events - ${getStatusLabel("events", filterStatus)}`;
 
-  const eventFilterGroups = useMemo(() => [
+  const eventPills = [
     {
       key: "type",
       label: "🎟️ Type",
+      value: filterType,
+      onChange: setFilterType,
       options: EVENT_TYPES.map((t) => ({
         value: t.value,
         label: `${EVENT_TYPE_EMOJIS[t.value] || "📌"} ${t.label}`,
       })),
     },
-    RATING_GROUP,
-  ], []);
+    { key: "rating", label: "★ Rating", value: ratingFilter, onChange: setRatingFilter, options: RATING_PILL_OPTIONS },
+  ];
 
   const getEventDisplayType = (item) => {
     return typeLabels[item.eventType] || "Event";
@@ -160,9 +154,7 @@ function EventList() {
         yearOptions={lf.yearOptions}
         activeYear={lf.activeYear}
         onYearChange={lf.setActiveYear}
-        filterGroups={eventFilterGroups}
-        filterValue={filterType}
-        onFilterChange={setFilterType}
+        filterPills={eventPills}
         filterColor="var(--color-events)"
         sourceFilter={lf.sourceFilter}
         onSourceChange={lf.setSourceFilter}
