@@ -7,7 +7,7 @@ import SaveToast from "../../../components/shared/SaveToast";
 import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
 import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
 import CategoryListHeader from "../../../components/shared/CategoryListHeader";
-import { RATING_GROUP } from "../../../components/shared/GroupedDropdownFilter";
+import { RATING_PILL_OPTIONS, matchesRatingValue } from "../../../components/shared/GroupedDropdownFilter";
 import homeSchema from "../../../features/homes/homeSchema";
 import useCategory from "../../../hooks/useCategory";
 import useListFilters from "../../../hooks/useListFilters";
@@ -23,7 +23,7 @@ import {
 const HOME_DATE_FIELDS = ["purchaseDate", "soldDate", "createdAt"];
 
 function HomeList() {
-  const [homeFilter, setHomeFilter] = React.useState("all");
+  const [ratingFilter, setRatingFilter] = React.useState("all");
   const { profile } = useAppData();
   const {
     items: homes,
@@ -43,20 +43,13 @@ function HomeList() {
   const commonFiltered = lf.applyCommonFilters(statusFiltered);
 
   const filteredHomes = React.useMemo(() => {
-    if (homeFilter === "all") return commonFiltered;
-    if (homeFilter.startsWith("rating:")) {
-      const rVal = homeFilter.split(":")[1];
-      return commonFiltered.filter((i) => {
-        const r = parseInt(i.rating, 10);
-        if (rVal === "unrated") return !r;
-        if (rVal === "5") return r === 5;
-        if (rVal === "4+") return r >= 4;
-        if (rVal === "3+") return r >= 3;
-        return true;
-      });
-    }
-    return commonFiltered;
-  }, [commonFiltered, homeFilter]);
+    if (ratingFilter === "all") return commonFiltered;
+    return commonFiltered.filter((i) => matchesRatingValue(i.rating, ratingFilter));
+  }, [commonFiltered, ratingFilter]);
+
+  const homePills = [
+    { key: "rating", label: "★ Rating", value: ratingFilter, onChange: setRatingFilter, options: RATING_PILL_OPTIONS },
+  ];
 
   const sectionTitle = `Homes - ${getStatusLabel("homes", filterStatus)}`;
 
@@ -76,9 +69,7 @@ function HomeList() {
         yearOptions={lf.yearOptions}
         activeYear={lf.activeYear}
         onYearChange={lf.setActiveYear}
-        filterGroups={[RATING_GROUP]}
-        filterValue={homeFilter}
-        onFilterChange={setHomeFilter}
+        filterPills={homePills}
         filterColor="var(--color-homes, #2EB67D)"
         sourceFilter={lf.sourceFilter}
         onSourceChange={lf.setSourceFilter}

@@ -9,7 +9,7 @@ import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
 import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
 import TripLink from "../../../components/shared/TripLink";
 import CategoryListHeader from "../../../components/shared/CategoryListHeader";
-import { RATING_GROUP } from "../../../components/shared/GroupedDropdownFilter";
+import { RATING_PILL_OPTIONS, matchesRatingValue } from "../../../components/shared/GroupedDropdownFilter";
 import activitySchema, { ACTIVITY_TYPES } from "../activitySchema";
 import useCategory from "../../../hooks/useCategory";
 import useListFilters from "../../../hooks/useListFilters";
@@ -19,18 +19,15 @@ import {
   filterByStatus,
 } from "../../../helpers/filterUtils";
 
-// Single "Type" pill listing every activity sub-category (Movie-style filter UX).
-const ACTIVITY_TYPE_GROUP = {
-  key: "activityType",
-  label: "\u{1F3D4}️ Type",
-  options: Object.values(ACTIVITY_TYPES).flatMap((g) =>
-    g.options.map((opt) => ({ value: opt, label: opt }))
-  ),
-};
+// Every activity sub-category, flattened into one "Type" dropdown's options.
+const ACTIVITY_TYPE_OPTIONS = Object.values(ACTIVITY_TYPES).flatMap((g) =>
+  g.options.map((opt) => ({ value: opt, label: opt }))
+);
 
 function ActivityList() {
   const location = useLocation();
   const [activityTypeFilter, setActivityTypeFilter] = React.useState("all");
+  const [ratingFilter, setRatingFilter] = React.useState("all");
   const { profile } = useAppData();
 
   const {
@@ -58,20 +55,16 @@ function ActivityList() {
   const statusFiltered = filterByStatus(activities, filterStatus);
   const commonFiltered = lf.applyCommonFilters(statusFiltered);
   const filteredActivities = React.useMemo(() => {
-    if (activityTypeFilter === "all") return commonFiltered;
-    if (activityTypeFilter.startsWith("rating:")) {
-      const rVal = activityTypeFilter.split(":")[1];
-      return commonFiltered.filter((i) => {
-        const r = parseInt(i.rating, 10);
-        if (rVal === "unrated") return !r;
-        if (rVal === "5") return r === 5;
-        if (rVal === "4+") return r >= 4;
-        if (rVal === "3+") return r >= 3;
-        return true;
-      });
-    }
-    return commonFiltered.filter((i) => i.activityType === activityTypeFilter);
-  }, [commonFiltered, activityTypeFilter]);
+    let items = commonFiltered;
+    if (activityTypeFilter !== "all") items = items.filter((i) => i.activityType === activityTypeFilter);
+    if (ratingFilter !== "all") items = items.filter((i) => matchesRatingValue(i.rating, ratingFilter));
+    return items;
+  }, [commonFiltered, activityTypeFilter, ratingFilter]);
+
+  const activityPills = [
+    { key: "activityType", label: "\u{1F3D4}️ Type", value: activityTypeFilter, onChange: setActivityTypeFilter, options: ACTIVITY_TYPE_OPTIONS },
+    { key: "rating", label: "★ Rating", value: ratingFilter, onChange: setRatingFilter, options: RATING_PILL_OPTIONS },
+  ];
 
   const done = activities.filter((i) => i.status === "done");
 
@@ -102,9 +95,7 @@ function ActivityList() {
         yearOptions={lf.yearOptions}
         activeYear={lf.activeYear}
         onYearChange={lf.setActiveYear}
-        filterGroups={[ACTIVITY_TYPE_GROUP, RATING_GROUP]}
-        filterValue={activityTypeFilter}
-        onFilterChange={setActivityTypeFilter}
+        filterPills={activityPills}
         filterColor="var(--color-activities, #2EB67D)"
         sourceFilter={lf.sourceFilter}
         onSourceChange={lf.setSourceFilter}

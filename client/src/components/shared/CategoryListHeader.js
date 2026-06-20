@@ -1,15 +1,17 @@
 import React from "react";
 import { Button } from "react-bootstrap";
 import StatsStrip from "./StatsStrip";
-import StatusToggle from "./StatusToggle";
-import YearFilter from "./YearFilter";
-import GroupedDropdownFilter from "./GroupedDropdownFilter";
+import MultiPillFilter from "./MultiPillFilter";
 import SourceFilterPills from "./SourceFilterPills";
+import { getStatusLabel } from "../../helpers/filterUtils";
 
 /**
- * Shared header component for all category list pages.
- * Renders the standard stack: Title row, StatsStrip, StatusToggle, Tabs, Filters, SourceFilterPills.
- * Each section is optional and driven by props.
+ * Shared header for all category list pages. The data filters — Status
+ * (Wishlist/Visited), Year, and the category-specific dimensions — render as one
+ * row of dropdown pills (each shows its active value, or the dimension name when
+ * unset). Source (Mine/Shared) and the View toggle stay as their own controls.
+ *
+ * Order: Title · Stats · [extra content] · [Status · Year · …filterPills] · Tabs · Source
  */
 export default function CategoryListHeader({
   title,
@@ -19,43 +21,70 @@ export default function CategoryListHeader({
 
   // StatsStrip
   stats,
+  statsLink,
 
-  // StatusToggle
+  // Status pill (built from the category's status options)
   category,
   statusOptions,
   filterStatus,
   onStatusChange,
 
-  // YearFilter (optional — renders only when 2+ years exist)
+  // Year pill
   yearOptions,
   activeYear,
   onYearChange,
 
-  // Tabs (optional view toggle, e.g. List/Map, Snaps/Photos)
+  // Category-specific dropdown pills (MultiPillFilter descriptors)
+  filterPills,
+  filterColor,
+
+  // Non-filter content rendered above the filter row (e.g. KidsStats, social feed)
+  renderExtraFilters,
+
+  // Tabs (view toggle, e.g. List/Map, Snaps/Photos)
   tabs,
   activeTab,
   onTabChange,
   tabColor,
 
-  // Custom filter slot (rendered between tabs and GroupedDropdownFilter)
-  renderExtraFilters,
-
-  // GroupedDropdownFilter
-  filterGroups,
-  filterValue,
-  onFilterChange,
-  filterColor,
-
-  // StatsLink (optional — renders inside StatsStrip)
-  statsLink,
-
-  // SourceFilterPills (optional)
+  // SourceFilterPills
   sourceFilter,
   onSourceChange,
   avatarUrl,
   sharedCount,
   recommendedCount,
 }) {
+  // Assemble the unified filter row: Status, Year, then category dimensions.
+  const unifiedPills = [];
+
+  if (statusOptions && statusOptions.length > 1 && filterStatus !== undefined && onStatusChange) {
+    unifiedPills.push({
+      key: "__status",
+      label: "Status",
+      allLabel: "Any status",
+      value: filterStatus,
+      onChange: onStatusChange,
+      options: statusOptions
+        .filter((s) => s !== "all")
+        .map((s) => ({ value: s, label: getStatusLabel(category, s) })),
+    });
+  }
+
+  if (yearOptions && yearOptions.length >= 1 && onYearChange) {
+    unifiedPills.push({
+      key: "__year",
+      label: "Year",
+      allLabel: "Any year",
+      value: activeYear,
+      onChange: onYearChange,
+      options: yearOptions.map((y) => ({ value: String(y), label: String(y) })),
+    });
+  }
+
+  if (filterPills && filterPills.length > 0) {
+    unifiedPills.push(...filterPills);
+  }
+
   return (
     <>
       {/* Title row */}
@@ -78,36 +107,12 @@ export default function CategoryListHeader({
         <StatsStrip stats={stats} icon="📊" statsLink={statsLink} />
       )}
 
-      {/* StatusToggle */}
-      {statusOptions && (
-        <StatusToggle
-          category={category}
-          options={statusOptions}
-          value={filterStatus}
-          onChange={onStatusChange}
-        />
-      )}
-
-      {/* YearFilter (renders null unless 2+ years available) */}
-      {yearOptions && onYearChange && (
-        <YearFilter
-          years={yearOptions}
-          value={activeYear}
-          onChange={onYearChange}
-        />
-      )}
-
-      {/* Custom extra filters (e.g. Kids ChildFilter, MilestoneTypeFilter) */}
+      {/* Non-filter content (KidsStats, MovieSocialFeed, …) above the filter row */}
       {renderExtraFilters && renderExtraFilters()}
 
-      {/* GroupedDropdownFilter (category-specific pills) */}
-      {filterGroups && filterGroups.length > 0 && (
-        <GroupedDropdownFilter
-          groups={filterGroups}
-          value={filterValue}
-          onChange={onFilterChange}
-          color={filterColor || "var(--color-primary)"}
-        />
+      {/* Unified filter row: Status · Year · category dimensions */}
+      {unifiedPills.length > 0 && (
+        <MultiPillFilter pills={unifiedPills} color={filterColor || "var(--color-primary)"} />
       )}
 
       {/* Tabs (pill-style view toggle, e.g. List/Map, Snaps/Photos) */}

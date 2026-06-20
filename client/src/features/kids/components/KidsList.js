@@ -7,7 +7,6 @@ import SaveToast from "../../../components/shared/SaveToast";
 import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
 import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
 import CategoryListHeader from "../../../components/shared/CategoryListHeader";
-import MultiPillFilter from "../../../components/shared/MultiPillFilter";
 import { RATING_PILL_OPTIONS, matchesRatingValue } from "../../../components/shared/GroupedDropdownFilter";
 import kidsSchema, { KIDS_EVENT_TYPES } from "../kidsSchema";
 import useCategory from "../../../hooks/useCategory";
@@ -190,12 +189,9 @@ function KidsList() {
         yearOptions={lf.yearOptions}
         activeYear={lf.activeYear}
         onYearChange={lf.setActiveYear}
-        renderExtraFilters={() => (
-          <>
-            <KidsStats items={milestones} contacts={contacts} />
-            <MultiPillFilter pills={kidsPills} color="var(--color-kids, #FF6B35)" />
-          </>
-        )}
+        renderExtraFilters={() => <KidsStats items={milestones} contacts={contacts} />}
+        filterPills={kidsPills}
+        filterColor="var(--color-kids, #FF6B35)"
         sourceFilter={lf.sourceFilter}
         onSourceChange={lf.setSourceFilter}
         avatarUrl={profile?.avatar_url}
