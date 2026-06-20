@@ -51,7 +51,7 @@
 ## In Progress
 
 - [x] Unified movie landing page with inline TMDB search and quick-add
-- [ ] Movie social polish (toast, badges, search filtering — current branch)
+- [x] Movie social polish — detail-modal redesign, SERP friend ratings/snaps, IMDb/RT display + four rating filters (My / People / IMDb / Rotten Tomatoes), and a stats scope toggle (Mine / Circle / Individual) with agreements/disagreements
 
 ---
 
@@ -73,7 +73,7 @@
 
 ### Priority 3: Stats Engine
 - [ ] Generic stats service (query items by category + user + time range)
-- [ ] Ring-gated friend comparison (collective stats, non-competitive framing)
+- [ ] Ring-gated friend comparison (collective stats, non-competitive framing) — shipped for **movies** (circle compatibility, agreements/disagreements, Mine/Circle/Individual scope toggle); generalize to other categories
 - [ ] Per-category stats tabs (reusable component pattern)
 - [ ] Dashboard "Your 2026 so far" summary widget
 

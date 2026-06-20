@@ -67,7 +67,7 @@ export async function computeSocialMovieStats(myMovies, contacts) {
  * One entry per (movie, friend) pair, so a movie several friends rated can
  * appear multiple times with different counterparts.
  */
-function computeAgreements(myMovies, socialMovies, contacts) {
+export function computeAgreements(myMovies, socialMovies, contacts) {
   const whoByUid = {};
   contacts.forEach((c) => {
     const u = uid(c);

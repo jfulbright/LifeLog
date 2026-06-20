@@ -92,7 +92,7 @@ This project uses **React Bootstrap** (not Tailwind or shadcn). Follow the exist
 - **`hooks/useCategory.js`:** All CRUD, filtering, modals, and social sharing per category. Do not duplicate this logic in feature components.
 - **dataService.js:** All DB access goes through here. Never call Supabase directly from components.
 - **RLS handles authorization:** No app-level permission checks needed for data access.
-- **Photos:** Compress client-side → upload to Supabase Storage → public URL. Path: `{userId}/{itemId}/{filename}`.
+- **Photos:** Compress client-side → upload to the **private** `photos` bucket with `upsert: true` → serve via 1-year signed URL (`createSignedUrl`). Path: `{userId}/{itemId}/{slot}.jpg`. The bucket needs INSERT **and** UPDATE RLS policies (upsert overwrites are Postgres UPDATEs — see migration `012`).
 - **Server proxy:** Dedicated endpoints only. No open proxy pattern.
 
 ---
