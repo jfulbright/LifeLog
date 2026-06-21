@@ -8,8 +8,7 @@ import dataService from "../services/dataService";
 import { getCategoryMeta } from "../helpers/categoryMeta";
 import statusLabels from "../helpers/statusLabels";
 import { findMatchingOwnedItem, mergeRecommender } from "../helpers/recommendationMatcher";
-import YearFilter from "../components/shared/YearFilter";
-import GroupedDropdownFilter from "../components/shared/GroupedDropdownFilter";
+import MultiPillFilter from "../components/shared/MultiPillFilter";
 import { getYearOptions, filterByYear } from "../helpers/filterUtils";
 
 // Year/category derive from the recommended entry's date (falling back to when
@@ -160,20 +159,34 @@ function Recommendations() {
     : enriched.filter((r) => r.status === TAB_TO_STATUS[statusFilter]);
 
   const categories = [...new Set(enriched.map((r) => r.category))];
-  const categoryFilterGroups = [{
-    key: "category",
-    label: "\u{1F4C2} Category",
-    options: categories.map((cat) => ({
-      value: cat,
-      label: `${getCategoryMeta(cat).icon} ${cat.charAt(0).toUpperCase() + cat.slice(1)}`,
-    })),
-  }];
   const yearOptions = getYearOptions(enriched, recDate);
 
   const categoryFiltered = categoryFilter === "all"
     ? statusFiltered
     : statusFiltered.filter((r) => r.category === categoryFilter);
   const filtered = filterByYear(categoryFiltered, activeYear, recDate);
+
+  // One dropdown-pill row: Status · Year · Category — consistent with the rest.
+  const recPills = [
+    {
+      key: "__status", label: "Status", allLabel: "Any status",
+      value: statusFilter, onChange: setStatusFilter,
+      options: STATUS_TABS.filter((s) => s !== "all").map((s) => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) })),
+    },
+    ...(yearOptions.length > 0 ? [{
+      key: "__year", label: "Year", allLabel: "Any year",
+      value: activeYear, onChange: setActiveYear,
+      options: yearOptions.map((y) => ({ value: String(y), label: String(y) })),
+    }] : []),
+    ...(categories.length >= 1 ? [{
+      key: "category", label: "\u{1F4C2} Category", allLabel: "All categories",
+      value: categoryFilter, onChange: setCategoryFilter,
+      options: categories.map((cat) => ({
+        value: cat,
+        label: `${getCategoryMeta(cat).icon} ${cat.charAt(0).toUpperCase() + cat.slice(1)}`,
+      })),
+    }] : []),
+  ];
 
   if (loading) {
     return (
@@ -194,39 +207,8 @@ function Recommendations() {
         )}
       </div>
 
-      {/* Status filter — mirrors the Shared Experiences feed */}
-      <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap" }}>
-        <div>
-          <div style={{ fontSize: "var(--font-size-xs)", fontWeight: 700, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.25rem" }}>Status</div>
-          <div className="status-toggle">
-            {STATUS_TABS.map((s) => (
-              <button
-                key={s}
-                type="button"
-                className={`btn btn-sm ${statusFilter === s ? "active" : ""}`}
-                data-status={s === "all" ? undefined : s}
-                onClick={() => setStatusFilter(s)}
-                style={{ textTransform: "capitalize" }}
-              >
-                {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Year filter (renders only when 2+ years exist) */}
-      <YearFilter years={yearOptions} value={activeYear} onChange={setActiveYear} />
-
-      {/* Category filter — single pill, matching the category pages */}
-      {categories.length >= 1 && (
-        <GroupedDropdownFilter
-          groups={categoryFilterGroups}
-          value={categoryFilter}
-          onChange={setCategoryFilter}
-          color="var(--color-primary)"
-        />
-      )}
+      {/* Unified filter row: Status · Year · Category */}
+      <MultiPillFilter pills={recPills} color="var(--color-primary)" />
 
       {filtered.length === 0 ? (
         <div className="empty-state">
