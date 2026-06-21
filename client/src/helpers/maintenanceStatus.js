@@ -28,6 +28,7 @@ export function getMaintenance(item) {
     planAdopted: !!m.planAdopted,
     plan: Array.isArray(m.plan) ? m.plan : [],
     log: Array.isArray(m.log) ? m.log : [],
+    dismissedReminders: Array.isArray(m.dismissedReminders) ? m.dismissedReminders : [],
   };
 }
 
