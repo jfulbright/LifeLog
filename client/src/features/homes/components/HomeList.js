@@ -7,11 +7,14 @@ import SaveToast from "../../../components/shared/SaveToast";
 import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
 import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
 import CategoryListHeader from "../../../components/shared/CategoryListHeader";
+import MaintenanceSection from "../../../components/shared/MaintenanceSection";
 import { RATING_PILL_OPTIONS, matchesRatingValue } from "../../../components/shared/GroupedDropdownFilter";
 import homeSchema from "../../../features/homes/homeSchema";
 import useCategory from "../../../hooks/useCategory";
 import useListFilters from "../../../hooks/useListFilters";
 import { useAppData } from "../../../contexts/AppDataContext";
+import { useAuth } from "../../../contexts/AuthContext";
+import { resolveUserName } from "../../../helpers/maintenanceStatus";
 import {
   getStatusFilterOptions,
   filterByStatus,
@@ -25,6 +28,7 @@ const HOME_DATE_FIELDS = ["purchaseDate", "soldDate", "createdAt"];
 function HomeList() {
   const [ratingFilter, setRatingFilter] = React.useState("all");
   const { profile } = useAppData();
+  const { user } = useAuth();
   const {
     items: homes,
     loading,
@@ -36,6 +40,24 @@ function HomeList() {
     showSnapPrompt, snapPromptTitle, handleSnapSave, dismissSnapPrompt,
     viewDetailItem, setViewDetailItem,
   } = useCategory("homes", { schema: homeSchema });
+
+  // Persist maintenance changes through the own-vs-shared save path, keeping an
+  // open detail panel in sync (see CarList for the same pattern).
+  const handleMaintenancePersist = React.useCallback((updatedItem) => {
+    saveDetailEdit(updatedItem);
+    setViewDetailItem((prev) => (prev && prev.id === updatedItem.id ? updatedItem : prev));
+  }, [saveDetailEdit, setViewDetailItem]);
+
+  const renderMaintenance = React.useCallback((item) => (
+    <MaintenanceSection
+      item={item}
+      category="homes"
+      canEdit={!item._isShared || item._canEdit}
+      onPersist={handleMaintenancePersist}
+      currentUserId={user?.id}
+      currentUserName={resolveUserName(profile, user)}
+    />
+  ), [handleMaintenancePersist, user, profile]);
 
   const homeStatuses = getStatusFilterOptions("homes");
   const statusFiltered = filterByStatus(homes, filterStatus);
@@ -107,6 +129,7 @@ function HomeList() {
         onEdit={startEditing}
         onDelete={deleteItem}
         onViewDetail={setViewDetailItem}
+        renderItemExtras={renderMaintenance}
       />
 
       <FormPanel
@@ -143,6 +166,7 @@ function HomeList() {
           onClose={() => setViewDetailItem(null)}
           onSave={(data) => { saveDetailEdit(data); setViewDetailItem(null); }}
           onDelete={(id) => { deleteItem(id); setViewDetailItem(null); }}
+          renderItemExtras={renderMaintenance}
         />
       )}
     </>

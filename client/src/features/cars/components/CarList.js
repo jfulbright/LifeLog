@@ -7,11 +7,14 @@ import SaveToast from "../../../components/shared/SaveToast";
 import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
 import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
 import CategoryListHeader from "../../../components/shared/CategoryListHeader";
+import MaintenanceSection from "../../../components/shared/MaintenanceSection";
 import { RATING_PILL_OPTIONS, matchesRatingValue } from "../../../components/shared/GroupedDropdownFilter";
 import carSchema from "../../../features/cars/carSchema";
 import useCategory from "../../../hooks/useCategory";
 import useListFilters from "../../../hooks/useListFilters";
 import { useAppData } from "../../../contexts/AppDataContext";
+import { useAuth } from "../../../contexts/AuthContext";
+import { resolveUserName } from "../../../helpers/maintenanceStatus";
 import {
   getStatusFilterOptions,
   filterByStatus,
@@ -25,6 +28,7 @@ const CAR_DATE = (c) => c.startDate || (c.year ? `${c.year}-01-01` : c.createdAt
 function CarList() {
   const [ratingFilter, setRatingFilter] = React.useState("all");
   const { profile } = useAppData();
+  const { user } = useAuth();
   const {
     items: cars,
     loading,
@@ -36,6 +40,25 @@ function CarList() {
     showSnapPrompt, snapPromptTitle, handleSnapSave, dismissSnapPrompt,
     viewDetailItem, setViewDetailItem,
   } = useCategory("cars", { schema: carSchema });
+
+  // Persist maintenance changes (adopt plan / log service) through the same
+  // own-vs-shared save path the detail edit uses, then keep an open detail
+  // panel in sync so the new entry shows immediately.
+  const handleMaintenancePersist = React.useCallback((updatedItem) => {
+    saveDetailEdit(updatedItem);
+    setViewDetailItem((prev) => (prev && prev.id === updatedItem.id ? updatedItem : prev));
+  }, [saveDetailEdit, setViewDetailItem]);
+
+  const renderMaintenance = React.useCallback((item) => (
+    <MaintenanceSection
+      item={item}
+      category="cars"
+      canEdit={!item._isShared || item._canEdit}
+      onPersist={handleMaintenancePersist}
+      currentUserId={user?.id}
+      currentUserName={resolveUserName(profile, user)}
+    />
+  ), [handleMaintenancePersist, user, profile]);
 
   const carStatuses = getStatusFilterOptions("cars");
   const statusFiltered = filterByStatus(cars, filterStatus);
@@ -107,6 +130,7 @@ function CarList() {
         onEdit={startEditing}
         onDelete={deleteItem}
         onViewDetail={setViewDetailItem}
+        renderItemExtras={renderMaintenance}
       />
 
       <FormPanel
@@ -143,6 +167,7 @@ function CarList() {
           onClose={() => setViewDetailItem(null)}
           onSave={(data) => { saveDetailEdit(data); setViewDetailItem(null); }}
           onDelete={(id) => { deleteItem(id); setViewDetailItem(null); }}
+          renderItemExtras={renderMaintenance}
         />
       )}
     </>
