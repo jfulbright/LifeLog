@@ -390,7 +390,7 @@ const dataService = {
       // Incoming shares: accepted entries owned by someone else.
       const { data: collabs } = await supabase
         .from("collaborators")
-        .select("entry_id, owner_id")
+        .select("entry_id, owner_id, can_edit")
         .eq("collaborator_user_id", userId)
         .neq("owner_id", userId)
         .eq("status", "accepted")
@@ -410,6 +410,7 @@ const dataService = {
           ...row.data,
           id: row.id,
           _isShared: true,
+          _canEdit: collab?.can_edit !== false,
           _sharedBy: collab?.owner_id,
           _ownerId: collab?.owner_id || row.user_id,
           _category: row.category,
