@@ -4,6 +4,8 @@ import {
   applyCollaborateChange,
   isEveryone,
   toggleEveryone,
+  getVisibilityScope,
+  setVisibilityScope,
 } from "./visibilitySharing";
 
 describe("visibilitySharing — collaborate ⟹ visible (#6)", () => {
@@ -56,5 +58,39 @@ describe("visibilitySharing — Everyone (#7)", () => {
 
   test("toggleEveryone clears all rings when already everyone", () => {
     expect(toggleEveryone({ visibilityRings: [1, 2, 3, 4] }).visibilityRings).toEqual([]);
+  });
+});
+
+describe("visibilitySharing — scope (everyone / custom / private)", () => {
+  test("explicit visibilityScope wins over derivation", () => {
+    expect(getVisibilityScope({ visibilityScope: "private", visibilityRings: [1, 2, 3, 4] })).toBe("private");
+  });
+
+  test("derives everyone / private / custom for legacy entries", () => {
+    expect(getVisibilityScope({ visibilityRings: [1, 2, 3, 4] })).toBe("everyone");
+    expect(getVisibilityScope({ visibilityRings: [] })).toBe("private");
+    expect(getVisibilityScope({ visibilityRings: [1, 2] })).toBe("custom");
+    expect(getVisibilityScope({ visibilityRings: [], visibilityContacts: ["c1"] })).toBe("custom");
+  });
+
+  test("setVisibilityScope('everyone') selects all rings", () => {
+    const out = setVisibilityScope({ visibilityRings: [] }, "everyone");
+    expect(out.visibilityScope).toBe("everyone");
+    expect(out.visibilityRings).toEqual([1, 2, 3, 4]);
+  });
+
+  test("setVisibilityScope('private') clears rings but keeps collaborator contacts", () => {
+    const out = setVisibilityScope(
+      { visibilityRings: [1, 2, 3, 4], visibilityContacts: ["c1"], shareWithCompanionIds: ["c1"] },
+      "private"
+    );
+    expect(out.visibilityScope).toBe("private");
+    expect(out.visibilityRings).toEqual([]);
+    expect(out.visibilityContacts).toEqual(["c1"]); // collaborator retained
+  });
+
+  test("setVisibilityScope('custom') clears rings only when coming from everyone", () => {
+    expect(setVisibilityScope({ visibilityRings: [1, 2, 3, 4] }, "custom").visibilityRings).toEqual([]);
+    expect(setVisibilityScope({ visibilityRings: [2] }, "custom").visibilityRings).toEqual([2]);
   });
 });

@@ -2,6 +2,7 @@
  * Collaborator service -- manages shared entry collaborations in Supabase.
  */
 import { supabase } from "./supabaseClient";
+import { dedupeCollaboratorRows } from "../helpers/collaboratorDedupe";
 
 async function getCurrentUserId() {
   const { data: { session } } = await supabase.auth.getSession();
@@ -42,7 +43,12 @@ const collaboratorService = {
   async shareEntryWithContacts(entryId, category, contacts) {
     const ownerId = await getCurrentUserId();
 
-    const rows = contacts.map((contact) => ({
+    // Guard against the same contact appearing twice in one share call.
+    const uniqueContacts = Array.from(
+      new Map(contacts.map((c) => [c.id, c])).values()
+    );
+
+    const rows = uniqueContacts.map((contact) => ({
       entry_id: entryId,
       entry_category: category,
       owner_id: ownerId,
@@ -186,7 +192,7 @@ const collaboratorService = {
       .in("status", ["accepted", "pending"]);
 
     if (error) return [];
-    const rows = data || [];
+    const rows = dedupeCollaboratorRows(data || []);
 
     const ownerId = rows[0]?.owner_id;
     const collabUserIds = rows.map((r) => r.collaborator_user_id).filter(Boolean);

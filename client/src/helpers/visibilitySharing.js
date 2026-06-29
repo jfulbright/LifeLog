@@ -63,3 +63,39 @@ export function toggleEveryone(formData) {
     visibilityRings: isEveryone(formData.visibilityRings) ? [] : [...RING_LEVELS],
   };
 }
+
+/**
+ * The three audience scopes (Strava-style): everyone / custom / private.
+ *
+ * Persisted explicitly as `visibilityScope` so "Only you, but my collaborators
+ * still see it" stays distinguishable from "specific people" — both have no
+ * rings and may carry collaborator contacts. Legacy entries without the marker
+ * fall back to deriving from the ring selection.
+ */
+export function getVisibilityScope(formData) {
+  if (formData.visibilityScope) return formData.visibilityScope;
+  const rings = formData.visibilityRings || [];
+  if (isEveryone(rings)) return "everyone";
+  if (rings.length === 0 && (formData.visibilityContacts || []).length === 0) return "private";
+  return "custom";
+}
+
+/**
+ * Apply a scope choice. `everyone` selects all rings; `private` clears the
+ * passive ring audience but leaves collaborator contacts untouched (collaborate
+ * ⟹ visible); `custom` starts from a clean ring slate when coming from everyone
+ * so the user picks explicitly, otherwise preserves their current rings.
+ */
+export function setVisibilityScope(formData, scope) {
+  if (scope === "everyone") {
+    return { ...formData, visibilityScope: "everyone", visibilityRings: [...RING_LEVELS] };
+  }
+  if (scope === "private") {
+    return { ...formData, visibilityScope: "private", visibilityRings: [] };
+  }
+  return {
+    ...formData,
+    visibilityScope: "custom",
+    visibilityRings: isEveryone(formData.visibilityRings) ? [] : (formData.visibilityRings || []),
+  };
+}

@@ -140,8 +140,8 @@ SaveToast / SnapCaptureModal
 | `linked-trip` | `LinkedTripPicker` | Search travel entries to link |
 | `child-picker` | `ChildPickerField` | Pill buttons for child contacts |
 | `linked-entry` | `LinkedEntryPicker` | Cross-category entry search |
-| `recommend` | `RecommendSection` | Ring + individual recommendation picker |
-| `visible-to` | `ShareWithSection` | Ring visibility selector |
+| `recommend` | `PeopleField` (mode `recommend`) | Ring + individual recommendation picker |
+| `visible-to` | `VisibilityField` | Strava-style audience selector (Everyone / Specific / Only you) |
 | `photo` | `PhotoUploadField` | Upload with compression + signed URL |
 
 **Section Rendering:** Fields are grouped by `section` property. Special sections get branded banners:
@@ -261,11 +261,17 @@ SaveToast / SnapCaptureModal
 
 ### 2.4 Social Layer
 
-#### ShareWithSection
-**File:** `components/shared/ShareWithSection.js`
-**Role:** Ring visibility selector — controls which rings can browse this entry.
+#### VisibilityField
+**File:** `components/shared/VisibilityField.js`
+**Role:** "Who can see this" audience selector (replaces the old `ShareWithSection`).
 
-**Behavior:** Renders ring checkboxes (1-4). Updates `formData.visibilityRings` array.
+**Behavior:** A collapsed trigger shows the current audience and expands to three
+Strava-style options — **🌐 Everyone**, **👥 Specific people & rings**, **🔒 Only you**.
+"Specific" reveals the ring + contact picker (`PeopleField` mode `visibility`).
+Persists `visibilityScope` (`everyone` | `custom` | `private`) plus `visibilityRings`
+/ `visibilityContacts`. Scope is derived via `getVisibilityScope()` for display
+(`VisibilitySummary`) and legacy entries. "Only you" clears the passive ring
+audience but keeps people you actively collaborate with.
 
 ---
 

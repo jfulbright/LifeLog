@@ -9,6 +9,7 @@ import StateDropdown from "./StateDropdown";
 import CountryDropdown from "./CountryDropdown";
 import CityAutocomplete from "./CityAutocomplete";
 import PeopleField from "./PeopleField";
+import VisibilityField from "./VisibilityField";
 import ShareWithCompanionsToggle from "./ShareWithCompanionsToggle";
 import { applyCollaborateChange } from "../../helpers/visibilitySharing";
 import LinkedTripPicker from "./LinkedTripPicker";
@@ -629,8 +630,7 @@ function ItemForm({
 
       case "visible-to":
         inputElement = (
-          <PeopleField
-            mode="visibility"
+          <VisibilityField
             formData={formData}
             setFormData={setFormData}
           />

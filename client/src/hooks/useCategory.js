@@ -16,6 +16,41 @@ const EXPERIENCED_STATUSES = new Set([
 ]);
 
 /**
+ * Reconcile collaborator shares for an entry against the desired set of contact
+ * ids. Adds newly-toggled companions and removes the ones toggled off. A person
+ * is treated as "already shared" if an existing row matches their contact id OR
+ * their linked user id — otherwise a contact shared earlier via a user-id-only
+ * row would be re-added as a duplicate (see issue #51).
+ */
+async function reconcileCollaboratorShares(entryId, category, shareWithCompanionIds) {
+  const existing = await collaboratorService.getCollaboratorsForOwnedEntry(entryId);
+  const existingContactIds = new Set(existing.map((c) => c.collaborator_contact_id).filter(Boolean));
+  const existingUserIds = new Set(existing.map((c) => c.collaborator_user_id).filter(Boolean));
+
+  const allContacts = await contactsService.getContacts();
+  const byId = new Map(allContacts.map((c) => [c.id, c]));
+
+  const isAlreadyShared = (cid) => {
+    if (existingContactIds.has(cid)) return true;
+    const linked = byId.get(cid)?.linkedUserId;
+    return !!linked && existingUserIds.has(linked);
+  };
+
+  const toAdd = shareWithCompanionIds.filter((cid) => !isAlreadyShared(cid));
+  const toRemove = [...existingContactIds].filter((cid) => !shareWithCompanionIds.includes(cid));
+
+  if (toAdd.length > 0) {
+    const addContacts = toAdd.map((cid) => byId.get(cid)).filter(Boolean);
+    if (addContacts.length > 0) {
+      await collaboratorService.shareEntryWithContacts(entryId, category, addContacts);
+    }
+  }
+  if (toRemove.length > 0) {
+    await collaboratorService.unshareEntryWithContacts(entryId, toRemove);
+  }
+}
+
+/**
  * Shared hook that encapsulates the CRUD + UI state pattern
  * duplicated across all category List components.
  *
@@ -171,23 +206,7 @@ export default function useCategory(category, { migrate, normalize, schema } = {
       // or edit that never touched sharing is a no-op rather than wiping shares.
       if (Array.isArray(shareWithCompanionIds)) {
         try {
-          const existing = await collaboratorService.getCollaboratorsForOwnedEntry(savedId);
-          const existingContactIds = existing
-            .map((c) => c.collaborator_contact_id)
-            .filter(Boolean);
-          const toAdd = shareWithCompanionIds.filter((cid) => !existingContactIds.includes(cid));
-          const toRemove = existingContactIds.filter((cid) => !shareWithCompanionIds.includes(cid));
-
-          if (toAdd.length > 0) {
-            const allContacts = await contactsService.getContacts();
-            const addContacts = allContacts.filter((c) => toAdd.includes(c.id));
-            if (addContacts.length > 0) {
-              await collaboratorService.shareEntryWithContacts(savedId, category, addContacts);
-            }
-          }
-          if (toRemove.length > 0) {
-            await collaboratorService.unshareEntryWithContacts(savedId, toRemove);
-          }
+          await reconcileCollaboratorShares(savedId, category, shareWithCompanionIds);
         } catch (err) {
           console.error("[useCategory] collaborator reconcile failed:", err);
         }
@@ -355,23 +374,7 @@ export default function useCategory(category, { migrate, normalize, schema } = {
       // every existing share.
       if (Array.isArray(shareWithCompanionIds)) {
         try {
-          const existing = await collaboratorService.getCollaboratorsForOwnedEntry(id);
-          const existingContactIds = existing
-            .map((c) => c.collaborator_contact_id)
-            .filter(Boolean);
-          const toAdd = shareWithCompanionIds.filter((cid) => !existingContactIds.includes(cid));
-          const toRemove = existingContactIds.filter((cid) => !shareWithCompanionIds.includes(cid));
-
-          if (toAdd.length > 0) {
-            const allContacts = await contactsService.getContacts();
-            const addContacts = allContacts.filter((c) => toAdd.includes(c.id));
-            if (addContacts.length > 0) {
-              await collaboratorService.shareEntryWithContacts(id, category, addContacts);
-            }
-          }
-          if (toRemove.length > 0) {
-            await collaboratorService.unshareEntryWithContacts(id, toRemove);
-          }
+          await reconcileCollaboratorShares(id, category, shareWithCompanionIds);
         } catch (err) {
           console.error("[useCategory] collaborator reconcile failed:", err);
         }
