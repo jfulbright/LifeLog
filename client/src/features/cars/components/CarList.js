@@ -1,5 +1,5 @@
 import React from "react";
-import { Button } from "react-bootstrap";
+import { Badge, Button } from "react-bootstrap";
 import CarForm from "../../../features/cars/components/CarForm";
 import ItemCardList from "../../../components/shared/ItemCardList";
 import FormPanel from "../../../components/shared/FormPanel";
@@ -14,7 +14,7 @@ import useCategory from "../../../hooks/useCategory";
 import useListFilters from "../../../hooks/useListFilters";
 import { useAppData } from "../../../contexts/AppDataContext";
 import { useAuth } from "../../../contexts/AuthContext";
-import { resolveUserName } from "../../../helpers/maintenanceStatus";
+import { resolveUserName, summarizeMaintenance } from "../../../helpers/maintenanceStatus";
 import {
   getStatusFilterOptions,
   filterByStatus,
@@ -131,6 +131,20 @@ function CarList() {
         onDelete={deleteItem}
         onViewDetail={setViewDetailItem}
         renderItemExtras={renderMaintenance}
+        renderCompactExtra={(item) => {
+          const { overdueCount, dueSoonCount } = summarizeMaintenance(item);
+          const total = overdueCount + dueSoonCount;
+          if (total === 0) return null;
+          return (
+            <Badge
+              bg={overdueCount > 0 ? "danger" : "warning"}
+              text={overdueCount > 0 ? undefined : "dark"}
+              className="mt-1"
+            >
+              {total} maintenance {total === 1 ? "item" : "items"} {overdueCount > 0 ? "overdue" : "due soon"}
+            </Badge>
+          );
+        }}
       />
 
       <FormPanel
