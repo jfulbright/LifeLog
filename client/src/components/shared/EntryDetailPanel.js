@@ -8,7 +8,7 @@ import EntryHeader from "./EntryHeader";
 import EntryView from "./EntryView";
 import ReadOnlySocialSection from "./ReadOnlySocialSection";
 
-function EntryDetailPanel({ item, category, schema, onClose, onSave, onDelete, renderItemExtras, renderCustomView }) {
+function EntryDetailPanel({ item, category, schema, onClose, onSave, onDelete, renderItemExtras, renderCustomView, headerExtra }) {
   const [mode, setMode] = useState("view");
   const [formData, setFormData] = useState({ ...item });
   const { contacts } = useAppData();
@@ -94,6 +94,9 @@ function EntryDetailPanel({ item, category, schema, onClose, onSave, onDelete, r
                 schema={schema}
                 contacts={contacts}
               />
+              {headerExtra && (
+                <div style={{ marginTop: "0.5rem" }}>{headerExtra(item)}</div>
+              )}
               <div style={{ marginTop: "1rem" }}>
                 <EntryView
                   item={item}

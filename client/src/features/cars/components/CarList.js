@@ -7,7 +7,7 @@ import SaveToast from "../../../components/shared/SaveToast";
 import SnapCaptureModal from "../../../components/shared/SnapCaptureModal";
 import EntryDetailPanel from "../../../components/shared/EntryDetailPanel";
 import CategoryListHeader from "../../../components/shared/CategoryListHeader";
-import MaintenanceSection from "../../../components/shared/MaintenanceSection";
+import MaintenanceSection, { NextServiceSummary } from "../../../components/shared/MaintenanceSection";
 import { RATING_PILL_OPTIONS, matchesRatingValue } from "../../../components/shared/GroupedDropdownFilter";
 import carSchema from "../../../features/cars/carSchema";
 import useCategory from "../../../hooks/useCategory";
@@ -168,6 +168,7 @@ function CarList() {
           onSave={(data) => { saveDetailEdit(data); setViewDetailItem(null); }}
           onDelete={(id) => { deleteItem(id); setViewDetailItem(null); }}
           renderItemExtras={renderMaintenance}
+          headerExtra={(item) => <NextServiceSummary item={item} hasMileage />}
         />
       )}
     </>
