@@ -78,7 +78,7 @@ function ContactChip({ contact, onRemove }) {
  * mode="recommend"   → writes formData.recommendedToRings[] + formData.recommendedToContacts[]
  * mode="visibility"  → writes formData.visibilityRings[]
  */
-function PeopleField({ mode, formData, setFormData, placeholder }) {
+function PeopleField({ mode, formData, setFormData, placeholder, showEveryoneButton = true }) {
   const { contacts } = useAppData();
   const [query, setQuery] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -466,7 +466,7 @@ function PeopleField({ mode, formData, setFormData, placeholder }) {
   const chips = renderChips();
   const showRings = true;
   const showContacts = mode === "companions" || mode === "recommend" || mode === "visibility";
-  const showEveryone = mode === "visibility";
+  const showEveryone = mode === "visibility" && showEveryoneButton;
   const everyoneActive = isEveryone(formData.visibilityRings);
 
   return (

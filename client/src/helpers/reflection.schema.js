@@ -71,6 +71,13 @@ export function getReflectionFields(experiencedStatus) {
 export function getVisibilityDefaults() {
   return [
     {
+      name: "visibilityScope",
+      type: "hidden",
+      defaultValue: "everyone",
+      section: "Hidden",
+      order: 64,
+    },
+    {
       name: "visibilityRings",
       type: "hidden",
       defaultValue: [1, 2, 3, 4],

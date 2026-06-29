@@ -68,7 +68,6 @@ function EntryView({
     : photos.map((url) => ({ url }));
   const people = getPeopleWithCollabStatus(item.companions, collaborators, contacts);
   const hasPeople = people.length > 0;
-  const hasVisibility = (item.visibilityRings || []).length > 0;
 
   if (!expanded) {
     return (
@@ -145,14 +144,7 @@ function EntryView({
             <WhoWasTherePills people={people} />
           </div>
         )}
-        {hasVisibility && (
-          <SharingInfo item={item} contacts={contacts} navigate={navigate} />
-        )}
-        {!hasPeople && !hasVisibility && (
-          <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-tertiary)", fontStyle: "italic" }}>
-            No people tagged yet
-          </div>
-        )}
+        <SharingInfo item={item} navigate={navigate} />
       </div>
 
       {/* ─── Shared Memories (all contributors expanded) ─── */}

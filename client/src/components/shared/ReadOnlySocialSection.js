@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { RING_META } from "../../helpers/ringMeta";
 import { getPeopleWithCollabStatus } from "../../helpers/peopleDisplay";
 import collaboratorService from "../../services/collaboratorService";
 import WhoWasTherePills from "./WhoWasTherePills";
+import VisibilitySummary from "./VisibilitySummary";
 
 function ReadOnlySocialSection({ item, contacts }) {
   const [collaborators, setCollaborators] = useState([]);
@@ -18,9 +18,6 @@ function ReadOnlySocialSection({ item, contacts }) {
 
   const people = getPeopleWithCollabStatus(item.companions, collaborators, contacts);
   const hasPeople = people.length > 0;
-  const visibilityRings = item.visibilityRings || [];
-
-  if (!hasPeople && visibilityRings.length === 0) return null;
 
   const sectionStyle = {
     marginBottom: "1rem",
@@ -49,23 +46,7 @@ function ReadOnlySocialSection({ item, contacts }) {
       )}
       <div>
         <div style={labelStyle}>{"🔒"} Who can see this</div>
-        {visibilityRings.length > 0 ? (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem" }}>
-            {visibilityRings.map((ringLevel) => {
-              const ring = RING_META[ringLevel];
-              if (!ring) return null;
-              return (
-                <span key={ringLevel} style={{ background: ring.bgColor, border: `1px solid ${ring.borderColor}`, borderRadius: 10, padding: "0.1rem 0.5rem", fontSize: "0.75rem", color: ring.color, fontWeight: 600 }}>
-                  {ring.emoji} {ring.label}
-                </span>
-              );
-            })}
-          </div>
-        ) : (
-          <span style={{ fontSize: "0.75rem", color: "var(--color-text-tertiary)", fontStyle: "italic" }}>
-            Private (only collaborators)
-          </span>
-        )}
+        <VisibilitySummary item={item} />
       </div>
     </div>
   );
