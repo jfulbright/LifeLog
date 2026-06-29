@@ -17,6 +17,7 @@ function LogServiceModal({
   planTypes = [],
   tracksMileage = false,
   defaultMileage = null,
+  initialValues = null,
 }) {
   const typeOptions = [...planTypes, ...EXTRA_TYPES];
   const [type, setType] = useState(typeOptions[0] || "Other");
@@ -26,15 +27,24 @@ function LogServiceModal({
   const [cost, setCost] = useState("");
   const [notes, setNotes] = useState("");
 
-  // Reset to a clean slate each time the modal opens.
   useEffect(() => {
     if (show) {
-      setType(typeOptions[0] || "Other");
-      setCustomType("");
-      setDate(todayISO());
-      setMileage(defaultMileage ? String(defaultMileage) : "");
-      setCost("");
-      setNotes("");
+      if (initialValues) {
+        const knownType = typeOptions.includes(initialValues.type) ? initialValues.type : "Other";
+        setType(knownType);
+        setCustomType(knownType === "Other" ? (initialValues.type || "") : "");
+        setDate(initialValues.date || todayISO());
+        setMileage(initialValues.mileage != null ? String(initialValues.mileage) : "");
+        setCost(initialValues.cost != null ? String(initialValues.cost) : "");
+        setNotes(initialValues.notes || "");
+      } else {
+        setType(typeOptions[0] || "Other");
+        setCustomType("");
+        setDate(todayISO());
+        setMileage(defaultMileage ? String(defaultMileage) : "");
+        setCost("");
+        setNotes("");
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [show]);
@@ -60,7 +70,7 @@ function LogServiceModal({
       <Form onSubmit={handleSubmit}>
         <Modal.Header closeButton>
           <Modal.Title style={{ fontSize: "1.05rem", fontWeight: 700 }}>
-            🔧 Log Service
+            🔧 {initialValues ? "Edit Service" : "Log Service"}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -127,7 +137,7 @@ function LogServiceModal({
         </Modal.Body>
         <Modal.Footer>
           <Button variant="link" className="text-muted" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" type="submit" disabled={!canSave}>Log Service</Button>
+          <Button variant="primary" type="submit" disabled={!canSave}>{initialValues ? "Save Changes" : "Log Service"}</Button>
         </Modal.Footer>
       </Form>
     </Modal>
