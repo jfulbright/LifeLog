@@ -10,25 +10,27 @@ import {
 import Avatar from "./Avatar";
 
 
-function RingChip({ level, onRemove }) {
+function RingChip({ level, onRemove, onExpand, count }) {
   const meta = RING_META[level];
   if (!meta) return null;
   return (
     <span
-      className="companion-chip companion-chip--contact"
-      style={{ borderColor: meta.color, background: meta.bgColor }}
+      className={`companion-chip companion-chip--contact${onExpand ? " companion-chip--expandable" : ""}`}
+      style={{ borderColor: meta.color, background: meta.bgColor, cursor: onExpand ? "pointer" : undefined }}
+      onClick={onExpand}
+      title={onExpand ? `Tap to choose individuals in ${meta.label}` : undefined}
     >
       <span
         className="companion-chip-dot"
         style={{ background: meta.color }}
         aria-hidden="true"
       />
-      {meta.emoji} {meta.label}
+      {meta.emoji} {meta.label}{count ? ` (${count})` : ""}
       {onRemove && (
         <button
           type="button"
           className="companion-chip-remove"
-          onClick={onRemove}
+          onClick={(e) => { e.stopPropagation(); onRemove(); }}
           aria-label={`Remove ${meta.label}`}
         >
           ×
@@ -81,6 +83,9 @@ function PeopleField({ mode, formData, setFormData, placeholder }) {
   const [query, setQuery] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [dropUp, setDropUp] = useState(false);
+  // Companions mode: rings the user has "broken open" to pick individuals.
+  // A fully-selected ring renders as one collapsed chip unless it's expanded.
+  const [expandedRings, setExpandedRings] = useState(() => new Set());
   const inputRef = useRef(null);
   const containerRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -252,8 +257,27 @@ function PeopleField({ mode, formData, setFormData, placeholder }) {
     }));
   }
 
+  function collapseRing(level) {
+    setExpandedRings((prev) => {
+      if (!prev.has(level)) return prev;
+      const next = new Set(prev);
+      next.delete(level);
+      return next;
+    });
+  }
+
+  function expandRing(level) {
+    setExpandedRings((prev) => {
+      const next = new Set(prev);
+      next.add(level);
+      return next;
+    });
+  }
+
   function toggleRing(level) {
     if (mode === "companions") {
+      // Re-selecting (or clearing) a ring from the dropdown always re-collapses it.
+      collapseRing(level);
       const ringContacts = contacts.filter((c) => c.ringLevel === level);
       const companions = normalizeCompanions(formData.companions || []);
       const currentContactIds = companions.filter((c) => c.type === "contact").map((c) => c.contactId);
@@ -350,8 +374,34 @@ function PeopleField({ mode, formData, setFormData, placeholder }) {
 
     if (mode === "companions") {
       const companions = normalizeCompanions(formData.companions || []);
+
+      // Collapse any fully-selected ring (2+ members, not expanded) into a single
+      // ring chip; its members are then hidden as individual chips. A ring the
+      // user expanded — or a single-member ring — stays as individuals.
+      const collapsedLevels = selectedRings.filter((level) => {
+        const size = contacts.filter((c) => c.ringLevel === level).length;
+        return size >= 2 && !expandedRings.has(level);
+      });
+      const collapsedContactIds = new Set(
+        contacts.filter((c) => collapsedLevels.includes(c.ringLevel)).map((c) => c.id)
+      );
+
+      collapsedLevels.forEach((level) => {
+        const size = contacts.filter((c) => c.ringLevel === level).length;
+        chips.push(
+          <RingChip
+            key={`ring-${level}`}
+            level={level}
+            count={size}
+            onExpand={() => expandRing(level)}
+            onRemove={() => toggleRing(level)}
+          />
+        );
+      });
+
       companions.forEach((entry, i) => {
         if (entry.type === "contact") {
+          if (collapsedContactIds.has(entry.contactId)) return;
           const contact = contacts.find((c) => c.id === entry.contactId);
           chips.push(
             <ContactChip
