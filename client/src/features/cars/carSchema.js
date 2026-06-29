@@ -145,12 +145,22 @@ const carSchema = [
     order: 15,
   },
   {
+    name: "mileageAtPurchase",
+    label: "Miles at Purchase",
+    type: "number",
+    optional: true,
+    placeholder: "e.g. 32,000",
+    inputMode: "numeric",
+    section: "Ownership",
+    order: 16,
+  },
+  {
     name: "endDate",
     label: "Sold Date",
     type: "date",
     optional: true,
     section: "Ownership",
-    order: 16,
+    order: 17,
   },
   {
     name: "purchasePrice",
@@ -160,7 +170,7 @@ const carSchema = [
     placeholder: "$25,000",
     inputMode: "numeric",
     section: "Ownership",
-    order: 17,
+    order: 18,
   },
   {
     name: "soldPrice",
@@ -171,7 +181,7 @@ const carSchema = [
     placeholder: "$20,000",
     inputMode: "numeric",
     section: "Ownership",
-    order: 18,
+    order: 19,
   },
 
   ...getReflectionFields("owned"),
