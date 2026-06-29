@@ -1,5 +1,5 @@
 import React from "react";
-import { Button } from "react-bootstrap";
+import { Badge, Button } from "react-bootstrap";
 import HomeForm from "../../../features/homes/components/HomeForm";
 import ItemCardList from "../../../components/shared/ItemCardList";
 import FormPanel from "../../../components/shared/FormPanel";
@@ -14,7 +14,7 @@ import useCategory from "../../../hooks/useCategory";
 import useListFilters from "../../../hooks/useListFilters";
 import { useAppData } from "../../../contexts/AppDataContext";
 import { useAuth } from "../../../contexts/AuthContext";
-import { resolveUserName } from "../../../helpers/maintenanceStatus";
+import { resolveUserName, summarizeMaintenance } from "../../../helpers/maintenanceStatus";
 import {
   getStatusFilterOptions,
   filterByStatus,
@@ -47,6 +47,15 @@ function HomeList() {
     saveDetailEdit(updatedItem);
     setViewDetailItem((prev) => (prev && prev.id === updatedItem.id ? updatedItem : prev));
   }, [saveDetailEdit, setViewDetailItem]);
+
+  const renderMaintenanceBadge = React.useCallback((item) => {
+    const { overdueCount, dueSoonCount } = summarizeMaintenance(item);
+    if (overdueCount + dueSoonCount === 0) return null;
+    if (overdueCount > 0) {
+      return <Badge bg="danger">{overdueCount} overdue</Badge>;
+    }
+    return <Badge bg="warning" text="dark">{dueSoonCount} due soon</Badge>;
+  }, []);
 
   const renderMaintenance = React.useCallback((item) => (
     <MaintenanceSection
@@ -130,6 +139,7 @@ function HomeList() {
         onDelete={deleteItem}
         onViewDetail={setViewDetailItem}
         renderItemExtras={renderMaintenance}
+        renderCompactExtra={renderMaintenanceBadge}
       />
 
       <FormPanel
