@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { RING_META } from "../../helpers/ringMeta";
+import { getPeopleWithCollabStatus } from "../../helpers/peopleDisplay";
 import collaboratorService from "../../services/collaboratorService";
-import PeoplePills from "./PeoplePills";
+import WhoWasTherePills from "./WhoWasTherePills";
 
 function ReadOnlySocialSection({ item, contacts }) {
   const [collaborators, setCollaborators] = useState([]);
@@ -15,12 +16,11 @@ function ReadOnlySocialSection({ item, contacts }) {
     return () => { cancelled = true; };
   }, [item?.id]);
 
-  const companions = item.companions;
-  const hasCompanions = Array.isArray(companions) && companions.length > 0;
-  const hasCollaborators = collaborators.length > 0;
+  const people = getPeopleWithCollabStatus(item.companions, collaborators, contacts);
+  const hasPeople = people.length > 0;
   const visibilityRings = item.visibilityRings || [];
 
-  if (!hasCompanions && !hasCollaborators) return null;
+  if (!hasPeople && visibilityRings.length === 0) return null;
 
   const sectionStyle = {
     marginBottom: "1rem",
@@ -41,28 +41,10 @@ function ReadOnlySocialSection({ item, contacts }) {
       <div style={{ fontSize: "var(--font-size-xs, 0.75rem)", fontWeight: 700, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.5rem" }}>
         People & Visibility
       </div>
-      {hasCompanions && (
+      {hasPeople && (
         <div style={{ marginBottom: "0.75rem" }}>
           <div style={labelStyle}>{"👥"} Who was there?</div>
-          <PeoplePills people={companions} contacts={contacts} />
-        </div>
-      )}
-      {hasCollaborators && (
-        <div style={{ marginBottom: "0.75rem" }}>
-          <div style={labelStyle}>{"🤝"} Shared Collaborators</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem" }}>
-            {collaborators.map((collab) => {
-              const contact = contacts.find((c) => c.id === collab.collaborator_contact_id || c.linkedUserId === collab.collaborator_user_id);
-              const ring = contact ? RING_META[contact.ringLevel] : null;
-              const name = contact?.displayName || collab._profileName || "Collaborator";
-              const isPending = collab.status === "pending";
-              return (
-                <span key={collab.id || collab.collaborator_user_id} style={{ background: isPending ? "var(--color-warning-bg, #FFF3CD)" : ring ? ring.bgColor : "var(--color-surface-hover)", border: `1px solid ${isPending ? "var(--color-warning, #ECB22E)" : ring ? ring.borderColor : "var(--color-border)"}`, borderRadius: 10, padding: "0.1rem 0.5rem", fontSize: "0.75rem", color: isPending ? "var(--color-warning-text, #856404)" : ring ? ring.color : "var(--color-text-secondary)", fontWeight: 600, opacity: isPending ? 0.85 : 1 }}>
-                  {ring ? ring.emoji + " " : ""}{name}{collab._isOwner ? " (Owner)" : ""}{isPending ? " (Pending)" : ""}
-                </span>
-              );
-            })}
-          </div>
+          <WhoWasTherePills people={people} />
         </div>
       )}
       <div>
