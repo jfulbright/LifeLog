@@ -30,7 +30,7 @@ const homeSchema = [
   },
 
   {
-    name: "purchaseDate",
+    name: "startDate",
     label: "Purchase Date",
     type: "date",
     visibleWhen: { status: "owned" },
@@ -49,7 +49,7 @@ const homeSchema = [
     order: 4,
   },
   {
-    name: "soldDate",
+    name: "endDate",
     label: "Sold Date",
     type: "date",
     optional: true,
@@ -130,7 +130,7 @@ const homeSchema = [
     fullWidth: true,
   },
 
-  ...baseSchema.filter((field) => !["status", "notes"].includes(field.name)),
+  ...baseSchema.filter((field) => !["status", "notes", "startDate", "endDate"].includes(field.name)),
 ];
 
 export default homeSchema;
