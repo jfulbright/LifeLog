@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import ReactDOM from "react-dom";
 import { Form } from "react-bootstrap";
 
 const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
@@ -10,6 +11,9 @@ const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
  * onLocationSelect is called with:
  *   { city, state, country, lat, lng }
  * where country is the ISO 2-letter code.
+ *
+ * The suggestion dropdown is rendered via a React portal on document.body
+ * so it escapes any ancestor overflow:hidden/auto context (e.g. Offcanvas panels).
  */
 function CityAutocomplete({ value, onChange, onLocationSelect, id, placeholder = "e.g. Tokyo", disabled, countryCode, autoGeocode = false, hasCoords = false }) {
   const [query, setQuery] = useState(value || "");
@@ -18,6 +22,8 @@ function CityAutocomplete({ value, onChange, onLocationSelect, id, placeholder =
   const [showDropdown, setShowDropdown] = useState(false);
   // -1 = no keyboard selection yet (typed text wins on Enter)
   const [activeIndex, setActiveIndex] = useState(-1);
+  // Viewport-relative position of the input, used to place the portalled dropdown.
+  const [dropdownStyle, setDropdownStyle] = useState({});
   const debounceRef = useRef(null);
   const wrapperRef = useRef(null);
   // Tracks the query we've already resolved to coordinates so a blur after an
@@ -35,16 +41,41 @@ function CityAutocomplete({ value, onChange, onLocationSelect, id, placeholder =
     }
   }, [value, hasCoords]);
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside. Also listens for scroll/resize so
+  // the portalled dropdown doesn't linger in the wrong position.
   useEffect(() => {
     function handleClickOutside(e) {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
         setShowDropdown(false);
       }
     }
+    function handleScrollOrResize() {
+      setShowDropdown(false);
+    }
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    window.addEventListener("scroll", handleScrollOrResize, true);
+    window.addEventListener("resize", handleScrollOrResize);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", handleScrollOrResize, true);
+      window.removeEventListener("resize", handleScrollOrResize);
+    };
   }, []);
+
+  // Recalculate the dropdown's fixed position whenever it becomes visible so it
+  // tracks the input even when rendered inside a scrollable panel.
+  useEffect(() => {
+    if (showDropdown && wrapperRef.current) {
+      const rect = wrapperRef.current.getBoundingClientRect();
+      setDropdownStyle({
+        position: "fixed",
+        top: rect.bottom + 2,
+        left: rect.left,
+        width: rect.width,
+        zIndex: 99999,
+      });
+    }
+  }, [showDropdown]);
 
   const fetchSuggestions = useCallback(async (q, activeCountryCode) => {
     if (!q || q.length < 2 || !MAPBOX_TOKEN) return;
@@ -188,49 +219,14 @@ function CityAutocomplete({ value, onChange, onLocationSelect, id, placeholder =
   const activeOptionId =
     id && activeIndex >= 0 ? `${id}-option-${activeIndex}` : undefined;
 
-  return (
-    <div ref={wrapperRef} style={{ position: "relative" }}>
-      <Form.Control
-        id={id}
-        type="text"
-        value={query}
-        onChange={handleInputChange}
-        onKeyDown={handleKeyDown}
-        onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
-        onBlur={handleBlur}
-        placeholder={placeholder}
-        disabled={disabled}
-        autoComplete="off"
-        role="combobox"
-        aria-expanded={showDropdown && suggestions.length > 0}
-        aria-controls={listboxId}
-        aria-activedescendant={activeOptionId}
-        aria-autocomplete="list"
-      />
-      {loading && (
-        <div style={{
-          position: "absolute",
-          right: "0.75rem",
-          top: "50%",
-          transform: "translateY(-50%)",
-          fontSize: "0.75rem",
-          color: "var(--color-text-tertiary)",
-        }}>
-          Searching…
-        </div>
-      )}
-      {showDropdown && suggestions.length > 0 && (
+  const dropdown = showDropdown && suggestions.length > 0
+    ? ReactDOM.createPortal(
         <div id={listboxId} role="listbox" style={{
-          position: "absolute",
-          top: "100%",
-          left: 0,
-          right: 0,
-          zIndex: 9999,
+          ...dropdownStyle,
           background: "var(--color-surface)",
           border: "1px solid var(--color-border)",
           borderRadius: "var(--card-radius)",
           boxShadow: "var(--card-shadow-hover)",
-          marginTop: "2px",
           maxHeight: "220px",
           overflowY: "auto",
         }}>
@@ -277,8 +273,44 @@ function CityAutocomplete({ value, onChange, onLocationSelect, id, placeholder =
           }}>
             Powered by Mapbox
           </div>
+        </div>,
+        document.body
+      )
+    : null;
+
+  return (
+    <div ref={wrapperRef} style={{ position: "relative" }}>
+      <Form.Control
+        id={id}
+        type="text"
+        value={query}
+        onChange={handleInputChange}
+        onKeyDown={handleKeyDown}
+        onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
+        onBlur={handleBlur}
+        placeholder={placeholder}
+        disabled={disabled}
+        autoComplete="off"
+        role="combobox"
+        aria-expanded={showDropdown && suggestions.length > 0}
+        aria-controls={listboxId}
+        aria-activedescendant={activeOptionId}
+        aria-autocomplete="list"
+      />
+      {loading && (
+        <div style={{
+          position: "absolute",
+          right: "0.75rem",
+          top: "50%",
+          transform: "translateY(-50%)",
+          fontSize: "0.75rem",
+          color: "var(--color-text-tertiary)",
+          pointerEvents: "none",
+        }}>
+          Searching…
         </div>
       )}
+      {dropdown}
     </div>
   );
 }
