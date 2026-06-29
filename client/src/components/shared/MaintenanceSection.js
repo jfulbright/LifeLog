@@ -83,6 +83,8 @@ function DueChip({ planItem, dueStatus }) {
 
 function MaintenanceSection({ item, category, canEdit = false, onPersist, currentUserId, currentUserName }) {
   const [showLog, setShowLog] = useState(false);
+  const [editEntry, setEditEntry] = useState(null); // log entry being edited
+  const [showAllLog, setShowAllLog] = useState(false);
   const [editor, setEditor] = useState(null); // { type, initial }
   const { planAdopted, plan, log, dismissedReminders = [] } = getMaintenance(item);
   const hasMileage = categoryTracksMileage(category);
@@ -101,9 +103,8 @@ function MaintenanceSection({ item, category, canEdit = false, onPersist, curren
   const suggestions = canEdit ? buildReminderSuggestions(item, category) : [];
   const nextReminder = getUpcomingReminders(item)[0] || null;
 
-  const recent = [...log]
-    .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
-    .slice(0, 3);
+  const sortedLog = [...log].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const recent = showAllLog ? sortedLog : sortedLog.slice(0, 3);
 
   // ── Persistence helpers (all route through onPersist → saveDetailEdit) ──
   const persistMaintenance = (patch) => {
@@ -131,6 +132,18 @@ function MaintenanceSection({ item, category, canEdit = false, onPersist, curren
     };
     persistMaintenance({ log: [full, ...log] });
     setShowLog(false);
+  };
+
+  const handleEditSave = (updates) => {
+    persistMaintenance({ log: log.map((e) => (e.id === editEntry.id ? { ...e, ...updates } : e)) });
+    setEditEntry(null);
+  };
+
+  const handleDelete = (entry) => {
+    const label = `Remove ${entry.type} on ${formatDisplayDate(entry.date)}?`;
+    if (window.confirm(label)) {
+      persistMaintenance({ log: log.filter((e) => e.id !== entry.id) });
+    }
   };
 
   // Apply a reminder schedule to the plan — update the matching item or add one.
@@ -255,16 +268,52 @@ function MaintenanceSection({ item, category, canEdit = false, onPersist, curren
             Recent history
           </div>
           {recent.map((entry) => (
-            <div key={entry.id} style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-primary)", marginBottom: "0.25rem" }}>
-              <span style={{ fontWeight: 600 }}>{entry.type}</span>
-              <span style={{ color: "var(--color-text-tertiary)" }}>
-                {" · "}{formatDisplayDate(entry.date)}
-                {entry.mileage != null ? ` · ${Number(entry.mileage).toLocaleString()} mi` : ""}
-                {entry.cost != null ? ` · $${Number(entry.cost).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ""}
-                {entry.loggedByName ? ` · ${entry.loggedByName}` : ""}
-              </span>
+            <div key={entry.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.25rem" }}>
+              <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-primary)" }}>
+                <span style={{ fontWeight: 600 }}>{entry.type}</span>
+                <span style={{ color: "var(--color-text-tertiary)" }}>
+                  {" · "}{formatDisplayDate(entry.date)}
+                  {entry.mileage != null ? ` · ${Number(entry.mileage).toLocaleString()} mi` : ""}
+                  {entry.cost != null ? ` · $${Number(entry.cost).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ""}
+                  {entry.loggedByName ? ` · ${entry.loggedByName}` : ""}
+                </span>
+              </div>
+              {canEdit && (
+                <div style={{ display: "flex", gap: "0.25rem", flexShrink: 0, marginLeft: "0.5rem" }}>
+                  <Button
+                    size="sm"
+                    variant="link"
+                    className="text-muted p-0"
+                    title="Edit"
+                    onClick={() => setEditEntry(entry)}
+                    style={{ lineHeight: 1, fontSize: "0.8rem" }}
+                  >
+                    ✏️
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="link"
+                    className="text-danger p-0"
+                    title="Delete"
+                    onClick={() => handleDelete(entry)}
+                    style={{ lineHeight: 1, fontSize: "0.8rem" }}
+                  >
+                    🗑️
+                  </Button>
+                </div>
+              )}
             </div>
           ))}
+          {sortedLog.length > 3 && (
+            <Button
+              variant="link"
+              className="text-muted p-0"
+              onClick={() => setShowAllLog((v) => !v)}
+              style={{ fontSize: "var(--font-size-xs)", marginTop: "0.25rem" }}
+            >
+              {showAllLog ? "Show less" : `Show all ${sortedLog.length}`}
+            </Button>
+          )}
         </div>
       )}
 
@@ -275,6 +324,16 @@ function MaintenanceSection({ item, category, canEdit = false, onPersist, curren
         planTypes={plan.map((p) => p.type)}
         tracksMileage={hasMileage}
         defaultMileage={currentMileage || null}
+      />
+
+      <LogServiceModal
+        show={!!editEntry}
+        onClose={() => setEditEntry(null)}
+        onSave={handleEditSave}
+        planTypes={plan.map((p) => p.type)}
+        tracksMileage={hasMileage}
+        defaultMileage={null}
+        initialValues={editEntry}
       />
 
       <ReminderEditor
