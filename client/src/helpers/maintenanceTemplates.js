@@ -27,6 +27,9 @@ export const HOME_MAINTENANCE_TEMPLATE = [
   { type: "Water Heater Flush", intervalMiles: null, intervalMonths: 12 },
   { type: "Dryer Vent Cleaning", intervalMiles: null, intervalMonths: 12 },
   { type: "HVAC Service", intervalMiles: null, intervalMonths: 12 },
+  { type: "Sprinkler Winterization", intervalMiles: null, intervalMonths: 12 },
+  { type: "Sprinkler System Startup", intervalMiles: null, intervalMonths: 12 },
+  { type: "Backflow Preventer Test", intervalMiles: null, intervalMonths: 12 },
 ];
 
 /** Returns the template array for a category, or [] if none. */
