@@ -118,6 +118,9 @@ function MaintenanceSection({ item, category, canEdit = false, onPersist, curren
     persistMaintenance({ planAdopted: true, plan: seeded });
   };
 
+  // Last-write-wins: updateSharedItem overwrites the whole maintenance object.
+  // Two collaborators logging simultaneously could drop one entry. Acceptable for
+  // MVP; a future fix would append server-side rather than replace client-side.
   const handleLog = (entry) => {
     const full = {
       id: crypto.randomUUID(),
