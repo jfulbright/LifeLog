@@ -2,7 +2,7 @@
 
 > Behavioral reference for social sharing. Defines rules, flows, edge cases, and MVP decisions.
 > For data model and RLS policies, see [ARCHITECTURE.md](./ARCHITECTURE.md) §3.
-> Last updated: 2026-05-31
+> Last updated: 2026-06-30
 
 ---
 
@@ -213,17 +213,22 @@ getAllSocialPhotos(item)     // flat array of all photos across contributors
 
 | Component | Role |
 |-----------|------|
-| `PeopleField` | Unified chip-input + inline dropdown for all social fields. Three modes: `companions` (contacts + freetext + rings), `recommend` (rings + contacts), `visibility` (rings only). |
+| `PeopleField` | Unified chip-input + inline dropdown. Modes: `companions` (contacts + freetext + rings, with **collapsible ring chips**), `recommend` (rings + contacts), `visibility` (rings + contacts; used inside `VisibilityField`). |
+| `VisibilityField` | "Who can see this" selector — collapsed trigger expanding to **Everyone / Specific people & rings / Only you**. Persists `visibilityScope`. |
+| `VisibilitySummary` | Scope-aware one-line "Who can see this" display (🌐 Everyone / 🔒 Only you / ring pills). |
+| `WhoWasTherePills` | Single merged "Who was there?" pill list — companions + collaborators (🤝 + Pending), deduped one pill per person. |
 | `ShareWithCompanionsToggle` | Per-companion share toggle (active collaboration) |
 | `EntryDetailPanel` | Modal detail/edit view — collaborators edit via full schema-driven `ItemForm` (Social section hidden). Uses `useCategory.saveDetailEdit()` for persistence. |
 | `OverlayForm` | Unified status-aware overlay form (past: rating + snaps, wishlist: "why I'm interested") |
 | `SocialMemoriesCard` | Airbnb-reviews-style per-contributor display with collapse/expand |
 | `PrivacyIndicator` | Lock/people icon showing shared state on cards |
 
+**Removed:**
+- `PeoplePills` — replaced by `WhoWasTherePills` (merged people + collaborators)
+
 **Deprecated (still in codebase, no longer imported by ItemForm):**
 - `RecommendPicker` — replaced by `PeopleField mode="recommend"`
-- `VisibilityPicker` — replaced by `PeopleField mode="visibility"`
-- `ShareWithSection` — replaced by `PeopleField mode="visibility"`
+- `VisibilityPicker` / `ShareWithSection` — replaced by `VisibilityField`
 
 ### Pages
 
@@ -251,8 +256,23 @@ The unified `PeopleField` component (`client/src/components/shared/PeopleField.j
 
 ### Ring behavior by mode
 
-- **companions:** Toggling a ring bulk-adds or bulk-removes ALL contacts in that ring. `getSelectedRings()` computes whether all members are currently selected.
+- **companions:** Toggling a ring bulk-adds or bulk-removes ALL contacts in that ring. A fully-selected ring (2+ members) renders as a **single collapsed ring chip**; tapping it expands to individuals, and going partial breaks the ring back into individuals. Re-selecting the ring re-collapses it. `getSelectedRings()` computes whether all members are currently selected.
 - **recommend/visibility:** Toggling a ring adds/removes the ring level itself (not individual contacts).
+
+### Visibility scope (`VisibilityField`)
+
+`visible-to` fields render `VisibilityField`, not `PeopleField` directly. It owns a
+three-way scope persisted as `visibilityScope`:
+
+| Scope | `visibilityScope` | Effect |
+|-------|-------------------|--------|
+| Everyone | `everyone` | `visibilityRings = [1,2,3,4]` |
+| Specific | `custom` | user-picked rings + contacts (PeopleField picker) |
+| Only you | `private` | `visibilityRings = []`; collaborator contacts retained (collaborate ⟹ visible) |
+
+`getVisibilityScope()` / `setVisibilityScope()` (`helpers/visibilitySharing.js`)
+read/write the scope; legacy entries without the marker derive it from the ring
+selection. Display surfaces show one summary line via `VisibilitySummary`.
 
 ### Schema integration
 
@@ -266,6 +286,7 @@ Each category schema declares social fields with specific types that ItemForm ma
 
 ### Data persistence
 
+- `visibilityScope`, `visibilityRings`, and `visibilityContacts` persist in item JSONB data
 - `recommendedToRings` and `recommendedToContacts` persist in item JSONB data (not stripped on save)
 - `shareWithCompanionIds` and `_recommendedCompanions` are transient (stripped before save)
 - This ensures edit round-trips show previous selections
@@ -284,6 +305,8 @@ The dropdown is absolutely positioned and can clip below the viewport. On open, 
 **Problem:** The distinction between "tag as companion" (who was there) and "Share & Collaborate" (give them active access) is unclear to users. The `ShareWithCompanionsToggle` appears after companions are selected, creating a two-step mental model that may not be intuitive.
 
 **Current behavior:** Companions field records who experienced the entry together. The toggle then opts each companion into active collaboration (creates collaborator row).
+
+**Display (resolved):** The details page no longer shows a separate "Shared Collaborators" list. Companions and collaborators are merged into one deduped "Who was there?" list (`WhoWasTherePills`), where collaborators are marked with a 🤝 and keep their `(Pending)` status. The form still uses the two-step companions → share toggle.
 
 **Open question:** Should all companions auto-share? Or should sharing be a completely separate action decoupled from the companions field? Options:
 - (a) Auto-share all companions (simplest UX, but removes granular control)
