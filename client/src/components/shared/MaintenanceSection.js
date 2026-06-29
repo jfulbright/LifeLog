@@ -17,6 +17,30 @@ import {
 import LogServiceModal from "./LogServiceModal";
 import ReminderEditor from "./ReminderEditor";
 
+function formatNextServiceLabel(reminder, hasMileage) {
+  const parts = [];
+  if (hasMileage && reminder.nextMileage != null) {
+    parts.push(`${Number(reminder.nextMileage).toLocaleString()} mi`);
+  }
+  if (reminder.nextDate) {
+    const d = reminder.nextDate instanceof Date ? reminder.nextDate : new Date(reminder.nextDate);
+    parts.push(d.toLocaleDateString("en-US", { month: "short", year: "numeric" }));
+  }
+  return parts.length ? `${reminder.type} · ${parts.join(" · ")}` : reminder.type;
+}
+
+export function NextServiceSummary({ item, hasMileage }) {
+  const reminders = getUpcomingReminders(item);
+  if (!reminders.length) return null;
+  const next = reminders[0];
+  return (
+    <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", fontWeight: 500 }}>
+      <span style={{ color: "var(--color-text-tertiary)", fontWeight: 400 }}>Next service: </span>
+      {formatNextServiceLabel(next, hasMileage)}
+    </div>
+  );
+}
+
 const STATUS_STYLE = {
   overdue: { bg: "var(--color-danger-bg, #FDE7EE)", border: "var(--color-danger, #E01E5A)", text: "var(--color-danger, #E01E5A)", label: "Overdue" },
   "due-soon": { bg: "var(--color-warning-bg, #FFF3CD)", border: "var(--color-warning, #ECB22E)", text: "var(--color-warning-text, #856404)", label: "Due soon" },
