@@ -86,7 +86,7 @@ function LogServiceModal({
           )}
 
           <Form.Group className="mb-3">
-            <Form.Label>Date</Form.Label>
+            <Form.Label>Date Performed</Form.Label>
             <Form.Control type="date" value={date} onChange={(e) => setDate(e.target.value)} max={todayISO()} />
           </Form.Group>
 
@@ -121,7 +121,11 @@ function LogServiceModal({
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. Mobil 1 synthetic, rotated tires too"
+              placeholder={
+                tracksMileage
+                  ? "e.g. Mobil 1 synthetic, rotated tires too"
+                  : "e.g. Replaced with Filtrete 1500, contractor was ABC Plumbing, part #12345"
+              }
             />
           </Form.Group>
         </Modal.Body>
