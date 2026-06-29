@@ -26,8 +26,9 @@ describe("getMaintenance", () => {
       planAdopted: true,
       plan: [OIL],
       log: [],
+      dismissedReminders: [],
     });
-    expect(getMaintenance({})).toEqual({ planAdopted: false, plan: [], log: [] });
+    expect(getMaintenance({})).toEqual({ planAdopted: false, plan: [], log: [], dismissedReminders: [] });
   });
 });
 

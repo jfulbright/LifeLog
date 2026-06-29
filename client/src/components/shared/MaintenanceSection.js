@@ -7,7 +7,15 @@ import {
   computeDueStatus,
   getCurrentMileage,
 } from "../../helpers/maintenanceStatus";
+import {
+  buildReminderSuggestions,
+  getUpcomingReminders,
+  suggestionKey,
+  formatInterval,
+  formatNext,
+} from "../../helpers/maintenanceReminders";
 import LogServiceModal from "./LogServiceModal";
+import ReminderEditor from "./ReminderEditor";
 
 const STATUS_STYLE = {
   overdue: { bg: "var(--color-danger-bg, #FDE7EE)", border: "var(--color-danger, #E01E5A)", text: "var(--color-danger, #E01E5A)", label: "Overdue" },
@@ -51,7 +59,8 @@ function DueChip({ planItem, dueStatus }) {
 
 function MaintenanceSection({ item, category, canEdit = false, onPersist, currentUserId, currentUserName }) {
   const [showLog, setShowLog] = useState(false);
-  const { planAdopted, plan, log } = getMaintenance(item);
+  const [editor, setEditor] = useState(null); // { type, initial }
+  const { planAdopted, plan, log, dismissedReminders = [] } = getMaintenance(item);
   const hasMileage = categoryTracksMileage(category);
   const currentMileage = getCurrentMileage(log);
   const now = new Date();
@@ -60,17 +69,29 @@ function MaintenanceSection({ item, category, canEdit = false, onPersist, curren
   if (!planAdopted && log.length === 0 && !canEdit) return null;
 
   const dueItems = plan
+    .filter((planItem) => planItem.reminderOn !== false)
     .map((planItem) => ({ planItem, dueStatus: computeDueStatus(planItem, log, currentMileage, now) }))
     .filter(({ dueStatus }) => dueStatus.status === "overdue" || dueStatus.status === "due-soon")
     .sort((a, b) => (a.dueStatus.status === "overdue" ? -1 : 1));
+
+  const suggestions = canEdit ? buildReminderSuggestions(item, category) : [];
+  const nextReminder = getUpcomingReminders(item)[0] || null;
 
   const recent = [...log]
     .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
     .slice(0, 3);
 
+  // ── Persistence helpers (all route through onPersist → saveDetailEdit) ──
+  const persistMaintenance = (patch) => {
+    onPersist({
+      ...item,
+      maintenance: { planAdopted, plan, log, dismissedReminders, ...patch },
+    });
+  };
+
   const handleAdopt = () => {
-    const seeded = getTemplate(category).map((t) => ({ id: crypto.randomUUID(), ...t }));
-    onPersist({ ...item, maintenance: { planAdopted: true, plan: seeded, log } });
+    const seeded = getTemplate(category).map((t) => ({ id: crypto.randomUUID(), ...t, reminderOn: true }));
+    persistMaintenance({ planAdopted: true, plan: seeded });
   };
 
   const handleLog = (entry) => {
@@ -81,12 +102,41 @@ function MaintenanceSection({ item, category, canEdit = false, onPersist, curren
       loggedByName: currentUserName || null,
       createdAt: new Date().toISOString(),
     };
-    onPersist({ ...item, maintenance: { planAdopted, plan, log: [full, ...log] } });
+    persistMaintenance({ log: [full, ...log] });
     setShowLog(false);
   };
 
+  // Apply a reminder schedule to the plan — update the matching item or add one.
+  const applyReminder = (type, interval) => {
+    const exists = plan.some((p) => p.type === type);
+    const nextPlan = exists
+      ? plan.map((p) => (p.type === type ? { ...p, ...interval } : p))
+      : [...plan, { id: crypto.randomUUID(), type, ...interval }];
+    persistMaintenance({ planAdopted: true, plan: nextPlan });
+  };
+
+  const acceptSuggestion = (s) => {
+    applyReminder(s.type, {
+      intervalMiles: s.suggested.intervalMiles,
+      intervalMonths: s.suggested.intervalMonths,
+      reminderOn: true,
+    });
+  };
+
+  const dismissSuggestion = (s) => {
+    persistMaintenance({ dismissedReminders: [...dismissedReminders, suggestionKey(s)] });
+  };
+
+  const openModify = (type, initial) => setEditor({ type, initial });
+  const saveEditor = (interval) => {
+    if (editor) applyReminder(editor.type, interval);
+    setEditor(null);
+  };
+
+  const wrap = { marginBottom: "1.25rem", padding: "0.75rem", background: "var(--color-surface-hover, #f9f9f9)", borderRadius: 8 };
+
   return (
-    <div style={{ marginBottom: "1.25rem", padding: "0.75rem", background: "var(--color-surface-hover, #f9f9f9)", borderRadius: 8 }}>
+    <div style={wrap}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
         <div style={{ ...labelStyle, marginBottom: 0 }}>🔧 Maintenance</div>
         {canEdit && (
@@ -114,7 +164,7 @@ function MaintenanceSection({ item, category, canEdit = false, onPersist, curren
       )}
 
       {planAdopted && (
-        <div style={{ marginBottom: recent.length ? "0.75rem" : 0 }}>
+        <div style={{ marginBottom: "0.75rem" }}>
           {dueItems.length > 0 ? (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem" }}>
               {dueItems.map(({ planItem, dueStatus }) => (
@@ -126,6 +176,49 @@ function MaintenanceSection({ item, category, canEdit = false, onPersist, curren
               ✓ All up to date
             </div>
           )}
+          {nextReminder && formatNext(nextReminder) && (
+            <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)", marginTop: "0.375rem" }}>
+              ⏰ Next: {nextReminder.type} · {formatNext(nextReminder)}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Reminder recommendations ── */}
+      {suggestions.length > 0 && (
+        <div style={{ marginBottom: "0.75rem" }}>
+          {suggestions.slice(0, 2).map((s) => (
+            <div
+              key={suggestionKey(s)}
+              style={{
+                background: "var(--color-info-bg, #EAF6FE)",
+                border: "1px solid var(--color-info, #36C5F0)",
+                borderRadius: 8,
+                padding: "0.5rem 0.625rem",
+                marginBottom: "0.375rem",
+              }}
+            >
+              <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-primary)", marginBottom: "0.375rem" }}>
+                {s.kind === "tune" ? (
+                  <>💡 You service <strong>{s.type}</strong> about every {formatInterval(s.suggested)} — update the reminder?</>
+                ) : (
+                  <>💡 Set a reminder for <strong>{s.type}</strong>? Suggested every {formatInterval(s.suggested)}.</>
+                )}
+              </div>
+              <div style={{ display: "flex", gap: "0.375rem" }}>
+                <Button size="sm" variant="primary" onClick={() => acceptSuggestion(s)} style={{ fontSize: "0.7rem", padding: "0.1rem 0.5rem" }}>Accept</Button>
+                <Button
+                  size="sm"
+                  variant="outline-secondary"
+                  onClick={() => openModify(s.type, { ...s.suggested, reminderOn: true })}
+                  style={{ fontSize: "0.7rem", padding: "0.1rem 0.5rem" }}
+                >
+                  Modify
+                </Button>
+                <Button size="sm" variant="link" className="text-muted" onClick={() => dismissSuggestion(s)} style={{ fontSize: "0.7rem", padding: "0.1rem 0.25rem" }}>Dismiss</Button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -155,6 +248,15 @@ function MaintenanceSection({ item, category, canEdit = false, onPersist, curren
         planTypes={plan.map((p) => p.type)}
         tracksMileage={hasMileage}
         defaultMileage={currentMileage || null}
+      />
+
+      <ReminderEditor
+        show={!!editor}
+        onClose={() => setEditor(null)}
+        onSave={saveEditor}
+        type={editor?.type}
+        tracksMileage={hasMileage}
+        initial={editor?.initial || {}}
       />
     </div>
   );
