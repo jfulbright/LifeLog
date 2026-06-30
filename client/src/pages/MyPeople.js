@@ -5,6 +5,7 @@ import { useAppData } from "../contexts/AppDataContext";
 import contactsService from "../services/contactsService";
 import inviteService from "../services/inviteService";
 import FormPanel from "../components/shared/FormPanel";
+import ConnectionRequests from "../components/shared/ConnectionRequests";
 import { RING_META, RING_LEVELS } from "../helpers/ringMeta";
 
 function ContactAvatar({ displayName, ringLevel, size = 44 }) {
@@ -472,6 +473,8 @@ function MyPeople() {
           + Add Person
         </Button>
       </div>
+
+      <ConnectionRequests onChange={refreshContacts} />
 
       <div
         style={{

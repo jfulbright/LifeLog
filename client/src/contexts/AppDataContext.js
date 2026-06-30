@@ -8,6 +8,7 @@ import React, {
 import dataService from "../services/dataService";
 import contactsService from "../services/contactsService";
 import collaboratorService from "../services/collaboratorService";
+import connectionService from "../services/connectionService";
 import recommendationService from "../services/recommendationService";
 import profileService from "../services/profileService";
 import { migrateSocialDataToSupabase } from "../utils/migrateSocialData";
@@ -18,6 +19,7 @@ const AppDataContext = createContext({
   notifications: [],
   pendingCollaborations: 0,
   pendingRecommendations: 0,
+  pendingConnections: 0,
   profile: null,
   refreshContacts: () => {},
   refreshCounts: () => {},
@@ -42,6 +44,7 @@ export function AppDataProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const [pendingCollaborations, setPendingCollaborations] = useState(0);
   const [pendingRecommendations, setPendingRecommendations] = useState(0);
+  const [pendingConnections, setPendingConnections] = useState(0);
 
   const refreshContacts = useCallback(async () => {
     const data = await contactsService.getContacts();
@@ -55,19 +58,22 @@ export function AppDataProvider({ children }) {
 
   const refreshNotifications = useCallback(async () => {
     try {
-      const [collabCount, recCount] = await Promise.all([
+      const [collabCount, recCount, connCount] = await Promise.all([
         collaboratorService.getPendingCount(),
         recommendationService.getActiveCount(),
+        connectionService.getPendingCount(),
       ]);
       setPendingCollaborations(collabCount);
       setPendingRecommendations(recCount);
-      const total = collabCount + recCount;
+      setPendingConnections(connCount);
+      const total = collabCount + recCount + connCount;
       setNotifications(total > 0 ? Array(total).fill({ status: "pending" }) : []);
     } catch (err) {
       console.error("[AppDataContext] refreshNotifications failed:", err);
       setNotifications([]);
       setPendingCollaborations(0);
       setPendingRecommendations(0);
+      setPendingConnections(0);
     }
   }, []);
 
@@ -109,6 +115,7 @@ export function AppDataProvider({ children }) {
         notifications,
         pendingCollaborations,
         pendingRecommendations,
+        pendingConnections,
         profile,
         refreshContacts,
         refreshCounts,
