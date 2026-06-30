@@ -12,7 +12,7 @@ const RATING_OPTIONS = [
 ];
 
 function SocialSearchPanel({ contacts, ownMovies, onSelect }) {
-  const [selectedRings, setSelectedRings] = useState([1, 2, 3, 4]);
+  const [selectedRings, setSelectedRings] = useState([1, 2, 3, 4, 5]);
   const [minRating, setMinRating] = useState(3);
   const [hideWatched, setHideWatched] = useState(true);
   const [selectedContact, setSelectedContact] = useState("");

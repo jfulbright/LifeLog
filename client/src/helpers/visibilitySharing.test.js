@@ -45,16 +45,16 @@ describe("visibilitySharing — collaborate ⟹ visible (#6)", () => {
 
 describe("visibilitySharing — Everyone (#7)", () => {
   test("isEveryone is true only when all rings are selected", () => {
-    expect(isEveryone([1, 2, 3, 4])).toBe(true);
-    expect(isEveryone([1, 2, 3])).toBe(false);
+    expect(isEveryone([1, 2, 3, 4, 5])).toBe(true);
+    expect(isEveryone([1, 2, 3, 4])).toBe(false);
     expect(isEveryone([])).toBe(false);
   });
 
   test("toggleEveryone selects all rings when not everyone", () => {
-    expect(toggleEveryone({ visibilityRings: [1] }).visibilityRings).toEqual([1, 2, 3, 4]);
+    expect(toggleEveryone({ visibilityRings: [1] }).visibilityRings).toEqual([1, 2, 3, 4, 5]);
   });
 
   test("toggleEveryone clears all rings when already everyone", () => {
-    expect(toggleEveryone({ visibilityRings: [1, 2, 3, 4] }).visibilityRings).toEqual([]);
+    expect(toggleEveryone({ visibilityRings: [1, 2, 3, 4, 5] }).visibilityRings).toEqual([]);
   });
 });

@@ -10,7 +10,7 @@ async function getCurrentUserId() {
  * Get movies from the user's social circles with optional filters.
  * Queries other users' movie items where visibility allows access.
  */
-export async function getSocialMovies({ ringLevels = [1, 2, 3, 4], minRating = 0, excludeTmdbIds = [], contactId = null } = {}) {
+export async function getSocialMovies({ ringLevels = [1, 2, 3, 4, 5], minRating = 0, excludeTmdbIds = [], contactId = null } = {}) {
   const userId = await getCurrentUserId();
 
   // Get contacts with linked accounts in the specified rings
@@ -216,7 +216,7 @@ export function computeTasteAlignment(ownMovies, contactMovies) {
  * Returns sections: consensus, taste-match, genre-affinity.
  */
 export async function getSuggestedMovies(ownMovies, contacts) {
-  const allSocial = await getSocialMovies({ ringLevels: [1, 2, 3, 4], minRating: 0 });
+  const allSocial = await getSocialMovies({ ringLevels: [1, 2, 3, 4, 5], minRating: 0 });
   if (allSocial.length === 0) return { consensus: [], tasteMatch: [], genreAffinity: [] };
 
   const ownTmdbIds = new Set(ownMovies.map((m) => m.tmdbId).filter(Boolean));

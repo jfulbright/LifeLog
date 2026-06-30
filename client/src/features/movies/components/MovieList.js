@@ -183,7 +183,7 @@ function MovieList() {
       ...clean,
       status: status || "watchlist",
       startDate: status === "watched" ? TODAY() : "",
-      visibilityRings: [1, 2, 3, 4],
+      visibilityRings: [1, 2, 3, 4, 5],
     };
     if (status === "watched") openDetailAfterAddRef.current = movie.tmdbId || movie.title;
     pendingQuickAdd.current = true;

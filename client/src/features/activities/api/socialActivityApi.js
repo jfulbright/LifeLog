@@ -7,7 +7,7 @@ async function getCurrentUserId() {
   return session.user.id;
 }
 
-export async function getSocialActivities({ ringLevels = [1, 2, 3, 4] } = {}) {
+export async function getSocialActivities({ ringLevels = [1, 2, 3, 4, 5] } = {}) {
   const userId = await getCurrentUserId();
 
   const { data: contacts, error: contactErr } = await supabase
@@ -85,7 +85,7 @@ export async function computeSocialActivityStats(myActivities, contacts) {
     return { partners: [], bucketListOverlap: [], circleAchievements: [], influence: null, profileComparison: null, socialActivities: [] };
   }
 
-  const socialActivities = await getSocialActivities({ ringLevels: [1, 2, 3, 4] });
+  const socialActivities = await getSocialActivities({ ringLevels: [1, 2, 3, 4, 5] });
 
   const activitiesByContact = {};
   socialActivities.forEach((a) => {

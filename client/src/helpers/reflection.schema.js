@@ -73,7 +73,7 @@ export function getVisibilityDefaults() {
     {
       name: "visibilityRings",
       type: "hidden",
-      defaultValue: [1, 2, 3, 4],
+      defaultValue: [1, 2, 3, 4, 5],
       section: "Hidden",
       order: 64,
     },

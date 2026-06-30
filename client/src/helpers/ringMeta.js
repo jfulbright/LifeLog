@@ -4,7 +4,7 @@
  */
 export const RING_META = {
   1: {
-    label: "Partner in Crime",
+    label: "Partners",
     emoji: "💎",
     description: "Your partner or spouse",
     color: "#4A154B",
@@ -35,9 +35,17 @@ export const RING_META = {
     bgColor: "#EAF8FE",
     borderColor: "#B3E7F9",
   },
+  5: {
+    label: "Acquaintances",
+    emoji: "👋",
+    description: "People you know casually",
+    color: "#5A6B7B",
+    bgColor: "#EEF2F5",
+    borderColor: "#CFD9E0",
+  },
 };
 
-export const RING_LEVELS = [1, 2, 3, 4];
+export const RING_LEVELS = [1, 2, 3, 4, 5];
 
 export function getRingMeta(ringLevel) {
   return RING_META[ringLevel] || null;

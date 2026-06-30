@@ -13,7 +13,7 @@ export async function computeSocialMovieStats(myMovies, contacts) {
     return { alignments: [], suggestions: null, influence: null, genreOverlap: [], socialMovies: [] };
   }
 
-  const socialMovies = await getSocialMovies({ ringLevels: [1, 2, 3, 4] });
+  const socialMovies = await getSocialMovies({ ringLevels: [1, 2, 3, 4, 5] });
 
   const moviesByContact = {};
   socialMovies.forEach((m) => {
