@@ -18,6 +18,7 @@ const contactsService = {
         .from("contacts")
         .select("*")
         .eq("owner_id", userId)
+        .is("removed_at", null)
         .order("display_name");
 
       if (error) throw error;
@@ -116,6 +117,68 @@ const contactsService = {
 
     if (error) throw error;
     window.dispatchEvent(new Event("data-changed"));
+  },
+
+  /**
+   * Soft-remove a person (B3). Hides every shared collaboration + person-to-person
+   * recommendation between the two of you (reciprocally) and archives your contact —
+   * never hard-deletes. Restorable via restorePerson(). Uses the SECURITY DEFINER
+   * hide_shared_with_person() so it can revoke rows owned by the other user too.
+   */
+  async removePerson(contact) {
+    const { error } = await supabase.rpc("hide_shared_with_person", {
+      p_other_user: contact.linkedUserId || null,
+      p_contact_id: contact.id,
+    });
+    if (error) throw error;
+    window.dispatchEvent(new Event("data-changed"));
+  },
+
+  /**
+   * Add a previously-removed person back: clears the revocations on both sides,
+   * immediately restoring the shared collabs/recs and un-archiving the contact.
+   */
+  async restorePerson(contact) {
+    const { error } = await supabase.rpc("restore_shared_with_person", {
+      p_other_user: contact.linkedUserId || null,
+      p_contact_id: contact.id,
+    });
+    if (error) throw error;
+    window.dispatchEvent(new Event("data-changed"));
+  },
+
+  /**
+   * Contacts the current user has soft-removed (for the "Removed people" section).
+   */
+  async getRemovedContacts() {
+    try {
+      const userId = await getCurrentUserId();
+      const { data, error } = await supabase
+        .from("contacts")
+        .select("*")
+        .eq("owner_id", userId)
+        .not("removed_at", "is", null)
+        .order("display_name");
+
+      if (error) throw error;
+
+      return (data || []).map((c) => ({
+        id: c.id,
+        email: c.email,
+        displayName: c.display_name,
+        ringLevel: c.ring_level,
+        inviteStatus: c.invite_status,
+        linkedUserId: c.linked_user_id,
+        phone: c.phone,
+        isChild: c.is_child || false,
+        birthday: c.birthday || null,
+        removedAt: c.removed_at,
+        createdAt: c.created_at,
+      }));
+    } catch (err) {
+      console.error("[contactsService] getRemovedContacts failed:", err);
+      return [];
+    }
   },
 
   /**

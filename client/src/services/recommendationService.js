@@ -61,6 +61,7 @@ const recommendationService = {
       .select("*")
       .eq("to_user_id", userId)
       .in("status", statuses)
+      .is("revoked_at", null)
       .order("created_at", { ascending: false });
 
     if (directErr) return [];
@@ -80,7 +81,8 @@ const recommendationService = {
           .eq("from_user_id", contact.recommender_id)
           .eq("to_ring_level", contact.ring_level)
           .in("status", statuses)
-          .is("to_user_id", null);
+          .is("to_user_id", null)
+          .is("revoked_at", null);
 
         if (recs) ringRecs = [...ringRecs, ...recs];
       }
@@ -144,6 +146,7 @@ const recommendationService = {
       .from("recommendations")
       .select("*")
       .eq("from_user_id", userId)
+      .is("revoked_at", null)
       .order("created_at", { ascending: false });
 
     if (error) return [];

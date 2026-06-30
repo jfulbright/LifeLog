@@ -162,6 +162,21 @@ const collaboratorService = {
   },
 
   /**
+   * Leave a single collaboration you've accepted (B3 soft-hide). Sets revoked_at
+   * on your own row, hiding the shared entry from your timeline while preserving
+   * status + your overlay for restore. Reused by E2 (leave from the details panel).
+   */
+  async leaveCollaboration(collaborationId) {
+    const { error } = await supabase
+      .from("collaborators")
+      .update({ revoked_at: new Date().toISOString() })
+      .eq("id", collaborationId);
+
+    if (error) throw error;
+    window.dispatchEvent(new Event("data-changed"));
+  },
+
+  /**
    * Get all collaborator rows for an entry the current user owns (any status).
    * Used to hydrate the share toggle when re-editing an owned item.
    */
