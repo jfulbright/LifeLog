@@ -7,10 +7,13 @@ import ItemForm from "./ItemForm";
 import EntryHeader from "./EntryHeader";
 import EntryView from "./EntryView";
 import ReadOnlySocialSection from "./ReadOnlySocialSection";
+import ConfirmHideModal from "./ConfirmHideModal";
 
-function EntryDetailPanel({ item, category, schema, onClose, onSave, onDelete, renderItemExtras, renderCustomView, headerExtra }) {
+function EntryDetailPanel({ item, category, schema, onClose, onSave, onDelete, onLeave, renderItemExtras, renderCustomView, headerExtra }) {
   const [mode, setMode] = useState("view");
   const [formData, setFormData] = useState({ ...item });
+  const [showLeave, setShowLeave] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const { contacts } = useAppData();
 
   // Hydrate the share toggle from the collaborators table when editing an owned
@@ -65,6 +68,21 @@ function EntryDetailPanel({ item, category, schema, onClose, onSave, onDelete, r
     }
   };
 
+  // Leave a shared entry (E2) — soft-hide via B3's revoked_at, never a delete.
+  const handleLeave = async () => {
+    setLeaving(true);
+    try {
+      await collaboratorService.leaveSharedEntry(item.id);
+      if (onLeave) onLeave(item.id);
+      onClose();
+    } catch (err) {
+      console.error("[EntryDetailPanel] leave failed:", err);
+    } finally {
+      setLeaving(false);
+      setShowLeave(false);
+    }
+  };
+
   const headerFieldNames = new Set([
     meta.primaryField,
     ...(meta.secondaryFields || []),
@@ -75,6 +93,7 @@ function EntryDetailPanel({ item, category, schema, onClose, onSave, onDelete, r
   ]);
 
   return (
+    <>
     <Modal show={true} onHide={onClose} centered size="xl" dialogClassName="entry-detail-modal">
       <Modal.Header closeButton>
         <Modal.Title style={{ fontSize: "1.05rem", fontWeight: 700 }}>
@@ -85,7 +104,7 @@ function EntryDetailPanel({ item, category, schema, onClose, onSave, onDelete, r
       <Modal.Body style={{ padding: "1.25rem" }}>
         {mode === "view" ? (
           renderCustomView ? (
-            renderCustomView({ item, onEdit: () => setMode("edit"), onDelete: !item._isShared ? handleDelete : undefined, onClose })
+            renderCustomView({ item, onEdit: () => setMode("edit"), onDelete: !item._isShared ? handleDelete : undefined, onLeave: item._isShared ? () => setShowLeave(true) : undefined, onClose })
           ) : (
             <>
               <EntryHeader
@@ -106,6 +125,7 @@ function EntryDetailPanel({ item, category, schema, onClose, onSave, onDelete, r
                   headerFieldNames={headerFieldNames}
                   onEdit={() => setMode("edit")}
                   onDelete={!item._isShared ? handleDelete : undefined}
+                  onLeave={item._isShared ? () => setShowLeave(true) : undefined}
                   renderItemExtras={renderItemExtras}
                   expanded
                 />
@@ -144,6 +164,22 @@ function EntryDetailPanel({ item, category, schema, onClose, onSave, onDelete, r
         )}
       </Modal.Body>
     </Modal>
+    <ConfirmHideModal
+      show={showLeave}
+      onConfirm={handleLeave}
+      onCancel={() => setShowLeave(false)}
+      busy={leaving}
+      title="Leave this shared entry?"
+      body={
+        <>
+          It'll be <strong style={{ color: "var(--color-text-primary)" }}>hidden from your timeline</strong> —
+          not deleted. The owner keeps it, and it comes back if you reconnect.
+        </>
+      }
+      confirmLabel="Leave"
+      busyLabel="Leaving…"
+    />
+    </>
   );
 }
 

@@ -21,6 +21,7 @@ function EntryView({
   headerFieldNames,
   onEdit,
   onDelete,
+  onLeave,
   renderItemExtras,
   expanded = false,
   onShowDetails,
@@ -180,13 +181,16 @@ function EntryView({
       <SharedMemoriesSection item={item} contacts={contacts} expanded={true} />
 
       {/* ─── Actions ─── */}
-      {(onEdit || onDelete) && (
+      {(onEdit || onDelete || (onLeave && item._isShared)) && (
         <div className="d-flex gap-2" style={{ marginTop: "1.25rem", paddingTop: "0.75rem", borderTop: "1px solid var(--color-border)" }}>
           {onEdit && (
             <Button size="sm" variant="outline-primary" onClick={onEdit}>Edit</Button>
           )}
           {onDelete && !item._isShared && (
             <Button size="sm" variant="outline-danger" onClick={onDelete}>Delete</Button>
+          )}
+          {onLeave && item._isShared && (
+            <Button size="sm" variant="outline-danger" onClick={onLeave}>Leave</Button>
           )}
         </div>
       )}

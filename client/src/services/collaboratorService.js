@@ -177,6 +177,21 @@ const collaboratorService = {
   },
 
   /**
+   * Leave a shared entry from its detail view (E2), given only the entry id.
+   * Resolves the caller's own collaborator row (by user_id OR email, via
+   * get_my_collaborations) and soft-hides it through leaveCollaboration().
+   * No-op if the caller is the owner or not a collaborator on the entry.
+   */
+  async leaveSharedEntry(entryId) {
+    const me = await getCurrentUserId();
+    const { data: mine, error } = await supabase.rpc("get_my_collaborations");
+    if (error) throw error;
+    const row = (mine || []).find((c) => c.entry_id === entryId && c.owner_id !== me);
+    if (!row) return;
+    await collaboratorService.leaveCollaboration(row.collaborator_id);
+  },
+
+  /**
    * Get all collaborator rows for an entry the current user owns (any status).
    * Used to hydrate the share toggle when re-editing an owned item.
    */
