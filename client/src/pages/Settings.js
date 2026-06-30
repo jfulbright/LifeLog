@@ -536,9 +536,16 @@ function MyPeopleTab() {
 // ── Placeholder Tabs ──────────────────────────────────────────────────────────
 
 function NotificationsTab() {
+  const { user } = useAuth();
   const [prefs, setPrefs] = useState({
     collab_snaps_inapp: true,
     invite_accepted_inapp: true,
+    // Email channel defaults — must match supabase migration 013 + Edge Functions.
+    email_enabled: true,
+    email_delivery: "weekly_digest", // "immediate" | "weekly_digest" | "off"
+    email_collab_invite: true,
+    email_recommendation: true,
+    email_invite_accepted: false,
   });
   const [loading, setLoading] = useState(true);
   const [saveMsg, setSaveMsg] = useState(null);
@@ -552,13 +559,15 @@ function NotificationsTab() {
     }).catch(() => setLoading(false));
   }, []);
 
-  const handleToggle = (key) => {
-    const updated = { ...prefs, [key]: !prefs[key] };
+  const persist = (updated) => {
     setPrefs(updated);
     profileService.updateProfile({ notification_preferences: updated })
       .then(() => { setSaveMsg("Saved"); setTimeout(() => setSaveMsg(null), 2000); })
       .catch(() => {});
   };
+
+  const handleToggle = (key) => persist({ ...prefs, [key]: !prefs[key] });
+  const handleDelivery = (mode) => persist({ ...prefs, email_delivery: mode });
 
   const sectionStyle = {
     backgroundColor: "#fff",
@@ -643,15 +652,91 @@ function NotificationsTab() {
         </div>
       </div>
 
-      <div style={{
-        background: "var(--color-bg)",
-        border: "1px solid var(--color-border)",
-        borderRadius: 8,
-        padding: "0.75rem 1rem",
-        fontSize: "var(--font-size-xs)",
-        color: "var(--color-text-tertiary)",
-      }}>
-        <strong style={{ color: "var(--color-text-secondary)" }}>Coming soon:</strong> Email notifications for collaboration requests, recommendations, and weekly digests.
+      <div style={sectionStyle}>
+        <div style={labelStyle}>Email</div>
+
+        <div style={rowStyle}>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: "var(--font-size-sm)" }}>Email notifications</div>
+            <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)" }}>
+              Sent to {user?.email || "your email"}
+            </div>
+          </div>
+          <div className="form-check form-switch mb-0">
+            <input className="form-check-input" type="checkbox" role="switch"
+              id="notif-email-enabled"
+              checked={prefs.email_enabled} onChange={() => handleToggle("email_enabled")} />
+            <label htmlFor="notif-email-enabled" style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)" }}>On</label>
+          </div>
+        </div>
+
+        {prefs.email_enabled && (
+          <>
+            {/* Delivery mode — the core "immediate vs digest" choice */}
+            <div style={{ ...rowStyle, alignItems: "flex-start", flexDirection: "column", gap: "0.5rem" }}>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: "var(--font-size-sm)" }}>How often</div>
+                <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)" }}>
+                  Get each event right away, or one weekly roundup
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: "0.5rem", width: "100%" }}>
+                {[
+                  { value: "immediate", label: "Immediate" },
+                  { value: "weekly_digest", label: "Weekly digest" },
+                ].map((opt) => {
+                  const active = prefs.email_delivery === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => handleDelivery(opt.value)}
+                      style={{
+                        flex: 1,
+                        padding: "0.5rem 0.75rem",
+                        borderRadius: 8,
+                        border: `1px solid ${active ? "var(--color-primary)" : "var(--color-border)"}`,
+                        background: active ? "var(--color-primary)" : "#fff",
+                        color: active ? "#fff" : "var(--color-text-secondary)",
+                        fontSize: "var(--font-size-sm)",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Which events trigger an email */}
+            <div style={rowStyle}>
+              <div style={{ fontWeight: 600, fontSize: "var(--font-size-sm)" }}>Someone shares an entry with me</div>
+              <div className="form-check form-switch mb-0">
+                <input className="form-check-input" type="checkbox" role="switch"
+                  id="notif-email-collab"
+                  checked={prefs.email_collab_invite} onChange={() => handleToggle("email_collab_invite")} />
+              </div>
+            </div>
+            <div style={rowStyle}>
+              <div style={{ fontWeight: 600, fontSize: "var(--font-size-sm)" }}>Someone recommends something to me</div>
+              <div className="form-check form-switch mb-0">
+                <input className="form-check-input" type="checkbox" role="switch"
+                  id="notif-email-rec"
+                  checked={prefs.email_recommendation} onChange={() => handleToggle("email_recommendation")} />
+              </div>
+            </div>
+            <div style={{ ...rowStyle, borderBottom: "none" }}>
+              <div style={{ fontWeight: 600, fontSize: "var(--font-size-sm)" }}>Someone I invited joins LifeSnaps</div>
+              <div className="form-check form-switch mb-0">
+                <input className="form-check-input" type="checkbox" role="switch"
+                  id="notif-email-invite-accepted"
+                  checked={prefs.email_invite_accepted} onChange={() => handleToggle("email_invite_accepted")} />
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {saveMsg && (

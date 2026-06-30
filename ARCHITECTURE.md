@@ -91,10 +91,16 @@ All 8 snap categories share a single polymorphic table. Category-specific fields
 | `collaborators` | Shared entry access | entry_id, owner_id, collaborator_user_id, status (pending/accepted/declined), can_edit |
 | `overlays` | Personal reflections on shared entries | entry_id, user_id, snapshot1-3, rating, photos |
 | `recommendations` | Entry recommendations | from_user_id, entry_id, to_user_id, to_ring_level, status |
+| `notification_outbox` | Durable notification queue (email now, push later) | recipient_user_id, type, source_id, payload, email_sent_at, digest_included_at |
 
 **Auto-linking triggers:**
 - `on_auth_user_created` → creates profile from signup metadata
 - `on_auth_user_created_link` → links pending invites and contacts when new user's email matches
+
+**Notification enqueue triggers** (migration `015`):
+- `on_collaborator_invite_notify` → outbox row when an entry is shared with a user
+- `on_recommendation_notify` → outbox row(s) for a recommendation (direct, or fanned out across a ring)
+- `on_invite_accepted_notify` → outbox row to the inviter when an invitee joins
 
 ### 3.3 Row Level Security
 
@@ -406,8 +412,26 @@ Express.js server (`server/server.js`) protects third-party API keys from client
 | Frontend (React SPA) | Vercel | lifesnaps.org |
 | Server (Express proxy) | TBD (Railway planned) | api.lifesnaps.org (planned) |
 | Database + Auth + Storage | Supabase Cloud | — |
+| Email notifications | Supabase Edge Functions + Resend | `supabase/functions/` |
 
 **Build:** `client/` directory, output to `build/`, configured via `client/vercel.json`.
+
+### 10.1 Email Notification Subsystem
+
+Email runs entirely on Supabase — no dependency on the (undeployed) Express proxy.
+A `notification_outbox` queue is fed by DB triggers; two Edge Functions drain it:
+
+- **`send-notification-email`** — invoked by a Database Webhook on outbox INSERT;
+  sends immediately for users whose `notification_preferences.email_delivery` is
+  `immediate`.
+- **`weekly-digest`** — run by `pg_cron` (migration `016`); batches a week of
+  outbox rows into one email per `weekly_digest` user.
+
+Provider is **Resend** (free tier). User preferences live in
+`profiles.notification_preferences` (migration `013`), surfaced in Settings →
+Notifications. Setup and local-testing steps: `supabase/functions/README.md`.
+The outbox is channel-agnostic by design — native mobile push will add a
+`push_sent_at` column and a delivery worker without touching the triggers.
 
 ---
 

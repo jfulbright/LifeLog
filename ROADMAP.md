@@ -32,7 +32,8 @@
 - Personal overlays (your reflections on shared entries)
 - Recommendations with ring-gated distribution
 - Invite system with auto-link on signup
-- In-app notifications
+- In-app notifications (sidebar badges)
+- Email notifications — Resend + Supabase Edge Functions; per-user immediate vs. weekly digest, for collaboration invites, recommendations, and invite-accepted
 - Contact profiles with shared entry history
 
 ### Pages
@@ -99,6 +100,7 @@
 Items here are directional — not committed.
 
 - Public profiles / follow model (extending Ring 4 to public)
+- Mobile push notifications (native app) — reuses the `notification_outbox` queue; add a push channel + device-token table alongside email
 - Push notifications (PWA service worker or native wrapper)
 - AI-powered entry suggestions ("You were in Denver last weekend — log it?")
 - Trip linking across categories (dinner + event + hotel = one trip)
