@@ -189,17 +189,17 @@ const collaboratorService = {
     const rows = data || [];
 
     const ownerId = rows[0]?.owner_id;
-    const collabUserIds = rows.map((r) => r.collaborator_user_id).filter(Boolean);
-    const allUserIds = [...new Set([...collabUserIds, ownerId].filter(Boolean))];
 
+    // Resolve names+avatars via the SECURITY DEFINER reveal (B1) so co-collaborators
+    // we are NOT connected to still surface their real name+avatar instead of null.
+    // Falls back to an empty map (names stay null → "Collaborator") if the function
+    // is not yet applied in this environment.
     let profileMap = {};
-    if (allUserIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, display_name, avatar_url")
-        .in("id", allUserIds);
-      (profiles || []).forEach((p) => { profileMap[p.id] = p; });
-    }
+    const { data: profiles } = await supabase
+      .rpc("get_entry_collaborator_profiles", { p_entry_id: entryId });
+    (profiles || []).forEach((p) => {
+      profileMap[p.user_id] = { id: p.user_id, display_name: p.display_name, avatar_url: p.avatar_url };
+    });
 
     const enrichedRows = rows.map((r) => ({
       ...r,
