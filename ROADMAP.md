@@ -23,7 +23,8 @@ backlog. Each first-wave story below maps to a GitHub epic/issue in `jfulbright/
 
 | Decision | Choice | Why it matters |
 |---|---|---|
-| Virality reveal on shared entries | **Full name + Connect** (profile/snaps stay locked until both accept) | Maximizes discovery/growth; identity is the hook, content stays gated |
+| Virality reveal on shared entries | **Full name + Connect** for **every** collaborator on a shared trip, **always visible** (no opt-out); profile/snaps stay locked until both accept | The shared trip is the consent surface; identity is the hook, content stays gated |
+| Ring-overlap reveal (#2.5) | **Folded into B1** — trip-anchored only; no separate off-trip reveal | Co-presence on a trip a friend added them to is the warrant; off-trip ring-overlap was the only risky part |
 | Recommendation model (SOCIAL.md §9.3) | **Keep new entry + add `inspired by` backlink** | Additive, low-risk; powers attribution and "between you two" stats |
 | Home/Profile IA | **Today's Dashboard becomes "My Profile"; landing = unified Timeline** | One layout serves self + others; no duplicate home/profile UI |
 | First execution wave | **Social + Profile + Timeline (P0/P1)**; categories/lifespan/PWA/email = backlog | Focus the build on the three target experiences |
@@ -70,11 +71,13 @@ Travel/Movie Stats, Settings.
   existing `recommendationService` / `collaboratorService`; no schema churn.
 
 **Where we're pushing back**
-- **Ring-overlap reveal is the riskiest idea and ships separately.** Revealing a
-  *shared-entry's* co-collaborators has clear consent — you were on the same trip. But
-  surfacing a collaborator's *other* ring members (people who shared nothing with you and
-  never consented) is a privacy footgun. Ship shared-entry co-presence first; treat
-  ring-overlap reveal as a gated, opt-in Phase-2 experiment.
+- **#2.5 is trip-anchored, not a separate ring-overlap feature.** The reveal keys on the
+  **shared entry**: anyone who is a collaborator on a trip you can see gets full name +
+  Connect, regardless of who invited them — a friend in your circle adding someone is exactly
+  the "welcome mat," and co-presence on the trip is the consent surface. This folds #2.5 into
+  B1. The only version left out of scope is the literal *off-trip* ring-overlap (seeing a
+  connection's other ring members who aren't on a shared entry) — that surfaces people who
+  shared nothing with you. No opt-out: being on a shared trip always reveals your name.
 - **The `items` schema is frozen.** Every new category and sub-type lives in JSONB `data`
   + a `*Schema.js` + `categoryMeta` + `schemaRegistry`. Watch the dual-definition risk
   (`categoryMeta` and schema must stay in sync). Categories are backlog because each
@@ -113,10 +116,11 @@ Travel/Movie Stats, Settings.
 - **A4. Rename "Partner in Crime" → "Partners"** (#2.6). Label-only. → `ringMeta.js`
 
 ### EPIC B — Connection & Virality Paradigm (P0)
-- **B1. Shared-entry co-presence reveal** (#2.4). On any entry you can see, show the **full
-  names** of all collaborators — including those you're not connected to — each with a
-  **Connect** CTA. Profile/snaps stay locked until both accept. New SECURITY DEFINER read
-  (sibling of `get_my_shared_entry_ids()`) returning collaborator `display_name` only.
+- **B1. Shared-entry co-presence reveal** (#2.4 + #2.5). On any entry you can see, show the
+  **full names** of **every** collaborator — including those you're not connected to and those
+  a *different* circle member invited — each with a **Connect** CTA, always visible (no
+  opt-out). Profile/snaps stay locked until both accept. New SECURITY DEFINER read (sibling of
+  `get_my_shared_entry_ids()`) returning collaborator `display_name` only.
   → new SQL fn + migration, `collaboratorService.js`, `SocialMemoriesCard`/`EntryDetailPanel`
 - **B2. Connect handshake.** "Connect" creates a pending mutual contact link; on mutual
   accept, both see each other's full profile + co-attended entries. Reuse contact/invite
@@ -125,8 +129,8 @@ Travel/Movie Stats, Settings.
   and `removePerson` (all shared context) as soft-hide, never hard-delete; restore on
   re-add + accept; reciprocal hide; **warning modal** ("hidden, not deleted — restorable").
   → `collaboratorService.js`, `overlayService.js` (preserve rows), detail panel, confirm modal
-- **B4. (Phase-2, gated) Ring-overlap reveal** (#2.5). Opt-in, separate issue, behind the
-  privacy discussion. **Not in the first build wave.**
+- ~~**B4. Ring-overlap reveal** (#2.5).~~ **Dropped.** #2.5's intent is satisfied by B1's
+  trip-anchored reveal; the off-trip ring-overlap version is intentionally not built.
 
 ### EPIC C — Landing Timeline (P0)
 - **C1. Make the unified Timeline the landing route** (#4.1, #4.6). Repoint `/` to one
@@ -206,7 +210,8 @@ Travel/Movie Stats, Settings.
 5. **Collab/rec polish + stats integrity:** E1–E4, F1–F2.
 6. **Backlog** as capacity allows; email blocked on the infra decision.
 
-B4 (ring-overlap reveal) and all backlog items are explicitly out of the first wave.
+The off-trip ring-overlap reveal (former B4) is dropped; all backlog items are out of the
+first wave.
 
 ---
 
