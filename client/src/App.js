@@ -124,7 +124,8 @@ function AppShell() {
         <Container className="py-4">
           <MigrationBanner />
           <Routes>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<Timeline />} />
+            <Route path="/me" element={<Dashboard />} />
             <Route path="/timeline" element={<Timeline />} />
             <Route path="/snaps" element={<Snaps />} />
             <Route path="/cars" element={<CarList />} />

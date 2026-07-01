@@ -30,8 +30,7 @@ function SidebarNav({ counts = {}, notificationCount = 0, recommendationCount = 
       <div style={{ flex: 1 }}>
         {/* Profile link (user's name) */}
         <NavLink
-          to="/"
-          end
+          to="/me"
           className={({ isActive }) => `sidebar-nav-item ${isActive ? "active" : ""}`}
           onClick={onItemClick}
         >
@@ -60,12 +59,13 @@ function SidebarNav({ counts = {}, notificationCount = 0, recommendationCount = 
           {displayName}
         </NavLink>
         <NavLink
-          to="/timeline"
+          to="/"
+          end
           className={({ isActive }) => `sidebar-nav-item ${isActive ? "active" : ""}`}
           onClick={onItemClick}
         >
           <span className="sidebar-nav-icon">📅</span>
-          My Timeline
+          Timeline
         </NavLink>
         <NavLink
           to="/snaps"

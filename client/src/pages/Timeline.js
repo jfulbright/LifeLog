@@ -13,7 +13,9 @@ import MultiPillFilter from "../components/shared/MultiPillFilter";
 import { matchesDoneWishlist } from "../components/shared/DoneWishlistFilter";
 import { useAppData } from "../contexts/AppDataContext";
 import { SCHEMA_MAP, CATEGORY_KEYS } from "../helpers/schemaRegistry";
-import { enrichItemsWithSocialContent, getSocialPreview } from "../helpers/socialContent";
+import { enrichItemsWithSocialContent, getSocialPreview, getAllSocialPhotos } from "../helpers/socialContent";
+import { RING_META } from "../helpers/ringMeta";
+import IncomingSummary from "../components/shared/IncomingSummary";
 
 const categories = CATEGORY_KEYS.map((key) => ({
   key,
@@ -30,6 +32,7 @@ function Timeline() {
   const [activeMonth, setActiveMonth] = useState("all");
   const [activeStatus, setActiveStatus] = useState("all");
   const [activeCategory, setActiveCategory] = useState("all");
+  const [activePeople, setActivePeople] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [allEntries, setAllEntries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -74,9 +77,15 @@ function Timeline() {
               date,
               isWishlist: item.status === "wishlist",
               isShared: isSharedSource(item),
+              ownerId: item._ownerId || null,
               rawItem: item,
               snapshot: getSnapshotTeaser(item),
               socialPreview: getSocialPreview(item),
+              thumbs: (() => {
+                const social = (getAllSocialPhotos(item) || []).map((p) => p.url).filter(Boolean);
+                const base = social.length > 0 ? social : [item.photo1, item.photo2, item.photo3];
+                return base.filter(Boolean).slice(0, 3);
+              })(),
             };
           });
         })
@@ -129,6 +138,18 @@ function Timeline() {
     filteredEntries = filteredEntries.filter((e) => e.category === activeCategory);
   }
 
+  // Apply People filter (a specific ring, or a specific individual). Owners are
+  // resolved to a contact via linked_user_id → ring level (same as SharedFeed).
+  const contactByUserId = {};
+  (contacts || []).forEach((c) => { if (c.linkedUserId) contactByUserId[c.linkedUserId] = c; });
+  if (activePeople.startsWith("ring:")) {
+    const ring = Number(activePeople.slice(5));
+    filteredEntries = filteredEntries.filter((e) => contactByUserId[e.ownerId]?.ringLevel === ring);
+  } else if (activePeople.startsWith("person:")) {
+    const uid = activePeople.slice(7);
+    filteredEntries = filteredEntries.filter((e) => e.ownerId === uid);
+  }
+
   // Apply source filter (All / Mine / Shared / Recommended)
   if (sourceFilter === "mine") {
     filteredEntries = filteredEntries.filter((e) => !e.isShared);
@@ -159,6 +180,16 @@ function Timeline() {
 
   const groupedMonths = Object.keys(grouped);
 
+  // People filter options: rings + individuals present among shared entries.
+  const sharedOwnerIds = [...new Set(allEntries.map((e) => e.ownerId).filter((id) => id && contactByUserId[id]))];
+  const ringsPresent = [...new Set(sharedOwnerIds.map((id) => contactByUserId[id].ringLevel))]
+    .filter((r) => r != null)
+    .sort((a, b) => a - b);
+  const peopleOptions = [
+    ...ringsPresent.map((r) => ({ value: `ring:${r}`, label: `${RING_META[r]?.emoji || ""} ${RING_META[r]?.label || `Ring ${r}`}` })),
+    ...sharedOwnerIds.map((id) => ({ value: `person:${id}`, label: contactByUserId[id].displayName || "Someone" })),
+  ];
+
   // One dropdown-pill row: Status · Year · Month (when a year is picked) · Category.
   const timelinePills = [
     {
@@ -185,14 +216,21 @@ function Timeline() {
         label: `${(categoryMeta[cat] || {}).icon || ""} ${cat.charAt(0).toUpperCase() + cat.slice(1)}`,
       })),
     }] : []),
+    ...(peopleOptions.length > 0 ? [{
+      key: "__people", label: "People", allLabel: "Everyone",
+      value: activePeople, onChange: setActivePeople,
+      options: peopleOptions,
+    }] : []),
   ];
 
   if (loading) return null;
 
   return (
     <div>
+      <IncomingSummary />
+
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4 className="mb-0" style={{ fontWeight: 700 }}>My Timeline</h4>
+        <h4 className="mb-0" style={{ fontWeight: 700 }}>Timeline</h4>
         <Link to="/travel/stats" className="btn btn-sm btn-outline-secondary">
           🗺️ Map & Stats
         </Link>
@@ -289,6 +327,19 @@ function Timeline() {
                       {entry.socialPreview && (
                         <div className="timeline-snapshot">
                           🤝 &ldquo;{entry.socialPreview}&rdquo;
+                        </div>
+                      )}
+                      {entry.thumbs.length > 0 && (
+                        <div style={{ display: "flex", gap: "0.375rem", marginTop: "0.5rem" }}>
+                          {entry.thumbs.map((url, ti) => (
+                            <img
+                              key={ti}
+                              src={url}
+                              alt=""
+                              loading="lazy"
+                              style={{ width: 56, height: 56, borderRadius: 8, objectFit: "cover", border: "1px solid var(--color-border)" }}
+                            />
+                          ))}
                         </div>
                       )}
                     </div>
