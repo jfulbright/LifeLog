@@ -104,6 +104,31 @@ const dataService = {
   },
 
   /**
+   * Read another user's items for a category (profile visitor mode, Epic D).
+   * RLS silently returns only the entries the current viewer is allowed to see
+   * (own ring/contact visibility per migration 011), so no app-level filtering
+   * is needed. Never returns the viewer's own edits — read-only by nature.
+   */
+  async getItemsForUser(targetUserId, category) {
+    if (!SUPABASE_CATEGORIES.has(category) || !targetUserId) return [];
+    try {
+      const viewerId = await getCurrentUserId();
+      const { data, error } = await supabase
+        .from("items")
+        .select("*")
+        .eq("user_id", targetUserId)
+        .eq("category", category)
+        .order("start_date", { ascending: false, nullsFirst: false });
+
+      if (error) throw error;
+      return (data || []).map((row) => rowToItem(row, viewerId));
+    } catch (err) {
+      console.error(`[dataService] getItemsForUser(${targetUserId}, ${category}) failed:`, err);
+      return [];
+    }
+  },
+
+  /**
    * Sync the full items array for a category.
    * - Upserts all items in the provided array (handles create + update)
    * - Deletes any DB rows for this category that are no longer in the array

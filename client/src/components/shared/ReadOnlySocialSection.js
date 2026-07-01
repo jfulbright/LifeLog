@@ -4,6 +4,7 @@ import collaboratorService from "../../services/collaboratorService";
 import connectionService from "../../services/connectionService";
 import { supabase } from "../../services/supabaseClient";
 import PeoplePills from "./PeoplePills";
+import ProfileLink from "./ProfileLink";
 
 function ReadOnlySocialSection({ item, contacts }) {
   const [collaborators, setCollaborators] = useState([]);
@@ -89,7 +90,9 @@ function ReadOnlySocialSection({ item, contacts }) {
               return (
                 <span key={collab.id || collab.collaborator_user_id} style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
                   <span style={{ background: isPending ? "var(--color-warning-bg, #FFF3CD)" : ring ? ring.bgColor : "var(--color-surface-hover)", border: `1px solid ${isPending ? "var(--color-warning, #ECB22E)" : ring ? ring.borderColor : "var(--color-border)"}`, borderRadius: 10, padding: "0.1rem 0.5rem", fontSize: "0.75rem", color: isPending ? "var(--color-warning-text, #856404)" : ring ? ring.color : "var(--color-text-secondary)", fontWeight: 600, opacity: isPending ? 0.85 : 1 }}>
-                    {ring ? ring.emoji + " " : ""}{name}{collab._isOwner ? " (Owner)" : ""}{isPending ? " (Pending)" : ""}
+                    {ring ? ring.emoji + " " : ""}
+                    <ProfileLink userId={uid && uid !== currentUserId ? uid : null} displayName={name} style={{ color: "inherit" }} />
+                    {collab._isOwner ? " (Owner)" : ""}{isPending ? " (Pending)" : ""}
                   </span>
                   {canConnect && (
                     requested ? (

@@ -9,7 +9,7 @@ import EntryView from "./EntryView";
 import ReadOnlySocialSection from "./ReadOnlySocialSection";
 import ConfirmHideModal from "./ConfirmHideModal";
 
-function EntryDetailPanel({ item, category, schema, onClose, onSave, onDelete, onLeave, renderItemExtras, renderCustomView, headerExtra }) {
+function EntryDetailPanel({ item, category, schema, onClose, onSave, onDelete, onLeave, readOnly = false, renderItemExtras, renderCustomView, headerExtra }) {
   const [mode, setMode] = useState("view");
   const [formData, setFormData] = useState({ ...item });
   const [showLeave, setShowLeave] = useState(false);
@@ -104,7 +104,7 @@ function EntryDetailPanel({ item, category, schema, onClose, onSave, onDelete, o
       <Modal.Body style={{ padding: "1.25rem" }}>
         {mode === "view" ? (
           renderCustomView ? (
-            renderCustomView({ item, onEdit: () => setMode("edit"), onDelete: !item._isShared ? handleDelete : undefined, onLeave: item._isShared ? () => setShowLeave(true) : undefined, onClose })
+            renderCustomView({ item, onEdit: readOnly ? undefined : () => setMode("edit"), onDelete: readOnly || item._isShared ? undefined : handleDelete, onLeave: !readOnly && item._isShared ? () => setShowLeave(true) : undefined, onClose })
           ) : (
             <>
               <EntryHeader
@@ -123,9 +123,9 @@ function EntryDetailPanel({ item, category, schema, onClose, onSave, onDelete, o
                   schema={schema}
                   contacts={contacts}
                   headerFieldNames={headerFieldNames}
-                  onEdit={() => setMode("edit")}
-                  onDelete={!item._isShared ? handleDelete : undefined}
-                  onLeave={item._isShared ? () => setShowLeave(true) : undefined}
+                  onEdit={readOnly ? undefined : () => setMode("edit")}
+                  onDelete={readOnly || item._isShared ? undefined : handleDelete}
+                  onLeave={!readOnly && item._isShared ? () => setShowLeave(true) : undefined}
                   renderItemExtras={renderItemExtras}
                   expanded
                 />

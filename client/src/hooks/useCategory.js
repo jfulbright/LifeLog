@@ -25,7 +25,10 @@ const EXPERIENCED_STATUSES = new Set([
  * @param {function} [options.normalize] - Optional normalization applied before save
  * @param {Array} [options.schema] - Optional schema array to derive default values from
  */
-export default function useCategory(category, { migrate, normalize, schema } = {}) {
+export default function useCategory(category, { migrate, normalize, schema, profileUserId } = {}) {
+  // Viewer mode (Epic D): when profileUserId is set, load THAT user's
+  // visibility-gated items read-only and never persist.
+  const isViewer = !!profileUserId;
   const { contacts } = useAppData();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,7 +58,9 @@ export default function useCategory(category, { migrate, normalize, schema } = {
     let cancelled = false;
     async function load() {
       try {
-        let loaded = await dataService.getItemsWithShared(category);
+        let loaded = isViewer
+          ? await dataService.getItemsForUser(profileUserId, category)
+          : await dataService.getItemsWithShared(category);
         if (migrate) loaded = loaded.map(migrate);
         if (normalize) loaded = loaded.map(normalize);
         loaded = loaded.map((item) =>
@@ -79,7 +84,7 @@ export default function useCategory(category, { migrate, normalize, schema } = {
     return () => {
       cancelled = true;
     };
-  }, [category, contacts]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [category, contacts, profileUserId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-open edit form when navigated with ?edit=<itemId>
   useEffect(() => {
@@ -100,7 +105,7 @@ export default function useCategory(category, { migrate, normalize, schema } = {
   // Persist after every mutation — skips pre-load renders and the first post-load echo
   // Only saves OWN items (not shared items from collaborators)
   useEffect(() => {
-    if (!isReady.current) return;
+    if (!isReady.current || isViewer) return; // never persist another user's data
     if (skipNextSave.current) {
       skipNextSave.current = false;
       return;
@@ -110,7 +115,7 @@ export default function useCategory(category, { migrate, normalize, schema } = {
       .saveItems(category, ownItems)
       .then(() => window.dispatchEvent(new Event("data-changed")))
       .catch((err) => console.error("[useCategory] save failed:", err));
-  }, [category, items]);
+  }, [category, items, isViewer]);
 
   const handleSubmit = useCallback(
     async (e) => {

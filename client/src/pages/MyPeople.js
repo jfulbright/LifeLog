@@ -433,7 +433,12 @@ function MyPeople() {
   const handleAdd = () => { setEditContact(null); setShowPanel(true); };
   const handleEdit = (contact) => { setEditContact(contact); setShowPanel(true); };
   const handleClose = () => { setShowPanel(false); setEditContact(null); };
-  const handleViewProfile = (contact) => { navigate(`/people/${contact.id}`); };
+  const handleViewProfile = (contact) => {
+    // Linked people get the full ProfileView; unlinked contacts keep the
+    // lite ContactProfile ("not on LifeSnaps") fallback.
+    if (contact.linkedUserId) navigate(`/u/${contact.linkedUserId}`);
+    else navigate(`/people/${contact.id}`);
+  };
 
   const handleSave = useCallback(async (data) => {
     if (editContact) {
