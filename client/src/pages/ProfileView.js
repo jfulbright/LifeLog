@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { Row, Col } from "react-bootstrap";
 import categoryMeta, { getEntryTitle } from "../helpers/categoryMeta";
 import { getSnapshotTeaser } from "../helpers/operator";
-import { enrichItemsWithSocialContent, getAllSocialSnaps } from "../helpers/socialContent";
+import { enrichItemsWithSocialContent, getAllSocialSnaps, getAllSocialPhotos } from "../helpers/socialContent";
 import dataService from "../services/dataService";
 import profileService from "../services/profileService";
 import collaboratorService from "../services/collaboratorService";
@@ -165,6 +165,11 @@ function ProfileView({ profileUserId, isOwnProfile }) {
           date: item.startDate || item.createdAt || "",
           color: cat.meta.color || "var(--color-primary)",
           rawItem: item,
+          thumbs: (() => {
+            const social = (getAllSocialPhotos(item) || []).map((p) => p.url).filter(Boolean);
+            const base = social.length > 0 ? social : [item.photo1, item.photo2, item.photo3];
+            return base.filter(Boolean).slice(0, 3);
+          })(),
         };
       })
     )
@@ -369,6 +374,13 @@ function ProfileView({ profileUserId, isOwnProfile }) {
                 <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)", marginTop: "0.25rem" }}>
                   {snap.title} &middot; {snap.label}{snap.displayName ? ` &middot; ${snap.displayName}` : ""}
                 </div>
+                {snap.thumbs.length > 0 && (
+                  <div style={{ display: "flex", gap: "0.375rem", marginTop: "0.5rem" }}>
+                    {snap.thumbs.map((url, ti) => (
+                      <img key={ti} src={url} alt="" loading="lazy" style={{ width: 52, height: 52, borderRadius: 8, objectFit: "cover", border: "1px solid var(--color-border)" }} />
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
