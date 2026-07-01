@@ -3,6 +3,7 @@ import { getCategoryMeta, getEntryTitle, getEntrySubtitle } from "../../helpers/
 import { formatDisplayDate } from "../../helpers/dateUtils";
 import StatusBadge from "./StatusBadge";
 import PrivacyIndicator from "./PrivacyIndicator";
+import ProfileLink from "./ProfileLink";
 
 const EVENT_TYPE_EMOJI = {
   concert: "🎵",
@@ -97,21 +98,26 @@ function EntryHeader({ item, category, schema, contacts, onClick }) {
               </span>
             </span>
           )}
-          {!item._isShared && item.recommendedBy && typeof item.recommendedBy === "object" && (
-            <span style={{ fontWeight: 600 }}>
-              {"⭐"} Recommended by{" "}
-              <span style={{ color: "var(--color-primary)" }}>
-                {(() => {
-                  if (Array.isArray(item.recommendedBy)) {
-                    const names = item.recommendedBy.map((r) => r.displayName || "Someone");
-                    if (names.length <= 2) return names.join(", ");
-                    return `${names.slice(0, 2).join(", ")} and ${names.length - 2} other${names.length - 2 > 1 ? "s" : ""}`;
-                  }
-                  return item.recommendedBy.displayName || "Someone";
-                })()}
+          {!item._isShared && item.recommendedBy && typeof item.recommendedBy === "object" && (() => {
+            const recs = Array.isArray(item.recommendedBy) ? item.recommendedBy : [item.recommendedBy];
+            if (recs.length === 0) return null;
+            return (
+              <span style={{ fontWeight: 600 }}>
+                {"⭐"} Inspired by{" "}
+                {recs.length === 1 ? (
+                  <ProfileLink userId={recs[0].userId} displayName={recs[0].displayName || "Someone"} style={{ color: "var(--color-primary)" }} />
+                ) : (
+                  <span style={{ color: "var(--color-primary)" }}>
+                    {(() => {
+                      const names = recs.map((r) => r.displayName || "Someone");
+                      if (names.length <= 2) return names.join(", ");
+                      return `${names.slice(0, 2).join(", ")} and ${names.length - 2} other${names.length - 2 > 1 ? "s" : ""}`;
+                    })()}
+                  </span>
+                )}
               </span>
-            </span>
-          )}
+            );
+          })()}
         </div>
       </div>
     </div>
