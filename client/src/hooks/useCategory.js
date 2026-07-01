@@ -7,6 +7,7 @@ import recommendationService from "../services/recommendationService";
 import { hasAnySnapshot } from "../helpers/operator";
 import { enrichItemsWithSocialContent } from "../helpers/socialContent";
 import { useAppData } from "../contexts/AppDataContext";
+import { useViewerMode } from "../contexts/ViewerModeContext";
 
 const EXPERIENCED_STATUSES = new Set([
   "attended",
@@ -26,9 +27,12 @@ const EXPERIENCED_STATUSES = new Set([
  * @param {Array} [options.schema] - Optional schema array to derive default values from
  */
 export default function useCategory(category, { migrate, normalize, schema, profileUserId } = {}) {
-  // Viewer mode (Epic D): when profileUserId is set, load THAT user's
-  // visibility-gated items read-only and never persist.
-  const isViewer = !!profileUserId;
+  // Viewer mode (Epic D): when profileUserId is set (explicitly or via the
+  // ViewerModeContext for native category pages on someone's profile), load THAT
+  // user's visibility-gated items read-only and never persist.
+  const viewerUserId = useViewerMode();
+  const effectiveProfileUserId = profileUserId || viewerUserId;
+  const isViewer = !!effectiveProfileUserId;
   const { contacts } = useAppData();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -59,7 +63,7 @@ export default function useCategory(category, { migrate, normalize, schema, prof
     async function load() {
       try {
         let loaded = isViewer
-          ? await dataService.getItemsForUser(profileUserId, category)
+          ? await dataService.getItemsForUser(effectiveProfileUserId, category)
           : await dataService.getItemsWithShared(category);
         if (migrate) loaded = loaded.map(migrate);
         if (normalize) loaded = loaded.map(normalize);
@@ -84,7 +88,7 @@ export default function useCategory(category, { migrate, normalize, schema, prof
     return () => {
       cancelled = true;
     };
-  }, [category, contacts, profileUserId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [category, contacts, effectiveProfileUserId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-open edit form when navigated with ?edit=<itemId>
   useEffect(() => {

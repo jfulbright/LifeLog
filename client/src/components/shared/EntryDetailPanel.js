@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Modal } from "react-bootstrap";
 import { getCategoryMeta, getEntryTitle } from "../../helpers/categoryMeta";
 import { useAppData } from "../../contexts/AppDataContext";
+import { useViewerMode } from "../../contexts/ViewerModeContext";
 import collaboratorService from "../../services/collaboratorService";
 import ItemForm from "./ItemForm";
 import EntryHeader from "./EntryHeader";
@@ -10,6 +11,9 @@ import ReadOnlySocialSection from "./ReadOnlySocialSection";
 import ConfirmHideModal from "./ConfirmHideModal";
 
 function EntryDetailPanel({ item, category, schema, onClose, onSave, onDelete, onLeave, readOnly = false, renderItemExtras, renderCustomView, headerExtra }) {
+  // Viewing another user's category page → force read-only regardless of props.
+  const viewerUserId = useViewerMode();
+  readOnly = readOnly || !!viewerUserId;
   const [mode, setMode] = useState("view");
   const [formData, setFormData] = useState({ ...item });
   const [showLeave, setShowLeave] = useState(false);

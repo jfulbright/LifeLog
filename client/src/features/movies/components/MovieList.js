@@ -15,6 +15,7 @@ import SocialMemoriesCard from "../../../components/shared/SocialMemoriesCard";
 import useCategory from "../../../hooks/useCategory";
 import useListFilters from "../../../hooks/useListFilters";
 import { useAppData } from "../../../contexts/AppDataContext";
+import { useViewerMode } from "../../../contexts/ViewerModeContext";
 import { searchMovies, getExternalIds } from "../api/movieApi";
 import { getOmdbRatings } from "../api/omdbApi";
 import {
@@ -98,6 +99,7 @@ function contributionFromShared(m) {
 }
 
 function MovieList() {
+  const isViewer = !!useViewerMode();
   const {
     items: movies,
     loading,
@@ -554,7 +556,8 @@ function MovieList() {
         recommendedCount={lf.recommendedCount}
       />
 
-      {/* Inline TMDB Search Bar */}
+      {/* Inline TMDB Search Bar (hidden when viewing another user's movies) */}
+      {!isViewer && (
       <div style={{ marginBottom: "1.25rem" }}>
         <div className="d-flex gap-2 align-items-center">
           <div style={{ position: "relative", flex: 1 }}>
@@ -591,6 +594,7 @@ function MovieList() {
           )}
         </div>
       </div>
+      )}
 
       {/* Search Results (replaces library when active) */}
       {searchActive ? (
