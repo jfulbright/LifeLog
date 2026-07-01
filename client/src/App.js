@@ -12,7 +12,8 @@ import MovieList from "./features/movies/components/MovieList";
 import MovieStatsPage from "./features/movies/components/MovieStatsPage";
 import EventStatsPage from "./features/events/components/EventStatsPage";
 import ActivityStatsPage from "./features/activities/components/ActivityStatsPage";
-import Dashboard from "./pages/Dashboard";
+import { MyProfile, UserProfile } from "./pages/ProfileView";
+import VisitorCategoryPage from "./pages/VisitorCategoryPage";
 import Timeline from "./pages/Timeline";
 import Snaps from "./pages/Snaps";
 import Settings from "./pages/Settings";
@@ -124,7 +125,10 @@ function AppShell() {
         <Container className="py-4">
           <MigrationBanner />
           <Routes>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<Timeline />} />
+            <Route path="/me" element={<MyProfile />} />
+            <Route path="/u/:userId" element={<UserProfile />} />
+            <Route path="/u/:userId/:category" element={<VisitorCategoryPage />} />
             <Route path="/timeline" element={<Timeline />} />
             <Route path="/snaps" element={<Snaps />} />
             <Route path="/cars" element={<CarList />} />

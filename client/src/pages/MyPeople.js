@@ -1,10 +1,12 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Button, Form, Alert } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { useAppData } from "../contexts/AppDataContext";
 import contactsService from "../services/contactsService";
 import inviteService from "../services/inviteService";
 import FormPanel from "../components/shared/FormPanel";
+import ConnectionRequests from "../components/shared/ConnectionRequests";
+import ConfirmHideModal from "../components/shared/ConfirmHideModal";
 import { RING_META, RING_LEVELS } from "../helpers/ringMeta";
 
 function ContactAvatar({ displayName, ringLevel, size = 44 }) {
@@ -413,11 +415,30 @@ function MyPeople() {
   const [showPanel, setShowPanel] = useState(false);
   const [editContact, setEditContact] = useState(null);
   const [inviteToast, setInviteToast] = useState(null);
+  const [removeTarget, setRemoveTarget] = useState(null);
+  const [removing, setRemoving] = useState(false);
+  const [removedContacts, setRemovedContacts] = useState([]);
+
+  const loadRemoved = useCallback(() => {
+    contactsService.getRemovedContacts().then(setRemovedContacts).catch(() => setRemovedContacts([]));
+  }, []);
+
+  useEffect(() => {
+    loadRemoved();
+    const handler = () => loadRemoved();
+    window.addEventListener("data-changed", handler);
+    return () => window.removeEventListener("data-changed", handler);
+  }, [loadRemoved]);
 
   const handleAdd = () => { setEditContact(null); setShowPanel(true); };
   const handleEdit = (contact) => { setEditContact(contact); setShowPanel(true); };
   const handleClose = () => { setShowPanel(false); setEditContact(null); };
-  const handleViewProfile = (contact) => { navigate(`/people/${contact.id}`); };
+  const handleViewProfile = (contact) => {
+    // Linked people get the full ProfileView; unlinked contacts keep the
+    // lite ContactProfile ("not on LifeSnaps") fallback.
+    if (contact.linkedUserId) navigate(`/u/${contact.linkedUserId}`);
+    else navigate(`/people/${contact.id}`);
+  };
 
   const handleSave = useCallback(async (data) => {
     if (editContact) {
@@ -430,15 +451,39 @@ function MyPeople() {
     handleClose();
   }, [editContact, refreshContacts]);
 
-  const handleDelete = useCallback(async () => {
+  // Removing a person is a reversible soft-hide (B3). Open the warning modal
+  // instead of hard-deleting; actual removal runs in confirmRemove.
+  const handleDelete = useCallback(() => {
     if (!editContact) return;
-    if (window.confirm(`Remove ${editContact.displayName} from your people?`)) {
-      await contactsService.deleteContact(editContact.id);
+    setRemoveTarget(editContact);
+    setShowPanel(false);
+  }, [editContact]);
+
+  const confirmRemove = useCallback(async () => {
+    if (!removeTarget) return;
+    setRemoving(true);
+    try {
+      await contactsService.removePerson(removeTarget);
       await refreshContacts();
-      window.dispatchEvent(new Event("data-changed"));
-      handleClose();
+      loadRemoved();
+    } catch (err) {
+      console.error("[MyPeople] removePerson failed:", err);
+    } finally {
+      setRemoving(false);
+      setRemoveTarget(null);
+      setEditContact(null);
     }
-  }, [editContact, refreshContacts]);
+  }, [removeTarget, refreshContacts, loadRemoved]);
+
+  const handleAddBack = useCallback(async (contact) => {
+    try {
+      await contactsService.restorePerson(contact);
+      await refreshContacts();
+      loadRemoved();
+    } catch (err) {
+      console.error("[MyPeople] restorePerson failed:", err);
+    }
+  }, [refreshContacts, loadRemoved]);
 
   const handleInvite = useCallback(async (contact) => {
     try {
@@ -472,6 +517,8 @@ function MyPeople() {
           + Add Person
         </Button>
       </div>
+
+      <ConnectionRequests onChange={refreshContacts} />
 
       <div
         style={{
@@ -512,6 +559,40 @@ function MyPeople() {
           />
         ))
       )}
+
+      {removedContacts.length > 0 && (
+        <div style={{ marginTop: "2rem", paddingTop: "1.25rem", borderTop: "1px solid var(--color-border)" }}>
+          <div style={{ fontSize: "var(--font-size-xs, 0.75rem)", fontWeight: 700, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.5rem" }}>
+            Removed people
+          </div>
+          <p style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", margin: "0 0 0.75rem" }}>
+            Hidden, not deleted. Add anyone back to restore your shared trips and recommendations.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            {removedContacts.map((c) => (
+              <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
+                <span style={{ display: "flex", alignItems: "center", gap: "0.625rem", minWidth: 0 }}>
+                  <ContactAvatar displayName={c.displayName} ringLevel={c.ringLevel} size={32} />
+                  <span style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {c.displayName || c.email}
+                  </span>
+                </span>
+                <Button variant="outline-primary" size="sm" onClick={() => handleAddBack(c)} style={{ whiteSpace: "nowrap" }}>
+                  Add back
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <ConfirmHideModal
+        show={!!removeTarget}
+        name={removeTarget?.displayName}
+        onConfirm={confirmRemove}
+        onCancel={() => setRemoveTarget(null)}
+        busy={removing}
+      />
 
       {inviteToast && (
         <div

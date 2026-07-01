@@ -4,6 +4,7 @@ import StatsStrip from "./StatsStrip";
 import MultiPillFilter from "./MultiPillFilter";
 import SourceFilterPills from "./SourceFilterPills";
 import { getStatusLabel } from "../../helpers/filterUtils";
+import { useViewerMode } from "../../contexts/ViewerModeContext";
 
 /**
  * Shared header for all category list pages. The data filters — Status
@@ -54,6 +55,8 @@ export default function CategoryListHeader({
   sharedCount,
   recommendedCount,
 }) {
+  const isViewer = !!useViewerMode();
+
   // Assemble the unified filter row: Status, Year, then category dimensions.
   const unifiedPills = [];
 
@@ -93,8 +96,8 @@ export default function CategoryListHeader({
           {title}
         </h4>
         <div className="d-flex align-items-center gap-2">
-          {extraActions}
-          {onAdd && (
+          {!isViewer && extraActions}
+          {onAdd && !isViewer && (
             <Button variant="primary" size="sm" onClick={onAdd}>
               {addLabel}
             </Button>
@@ -141,8 +144,8 @@ export default function CategoryListHeader({
         </div>
       )}
 
-      {/* SourceFilterPills */}
-      {sourceFilter !== undefined && onSourceChange && (
+      {/* SourceFilterPills (hidden in viewer mode — all items are the profile owner's) */}
+      {sourceFilter !== undefined && onSourceChange && !isViewer && (
         <SourceFilterPills
           value={sourceFilter}
           onChange={onSourceChange}

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import dataService from "../services/dataService";
 import contactsService from "../services/contactsService";
 
-export default function useStatsPage(category, computeStatsFn, computeSocialStatsFn) {
+export default function useStatsPage(category, computeStatsFn, computeSocialStatsFn, { profileUserId } = {}) {
   const [items, setItems] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -11,15 +11,21 @@ export default function useStatsPage(category, computeStatsFn, computeSocialStat
   const [socialLoading, setSocialLoading] = useState(false);
 
   useEffect(() => {
+    // When viewing another user's stats (F2), read their items via
+    // getItemsForUser so RLS gates visibility; otherwise the viewer's own
+    // items + accepted shares.
+    const itemsPromise = profileUserId
+      ? dataService.getItemsForUser(profileUserId, category)
+      : dataService.getItemsWithShared(category);
     Promise.all([
-      dataService.getItemsWithShared(category),
+      itemsPromise,
       contactsService.getContacts(),
     ]).then(([itemData, contactData]) => {
       setItems(itemData || []);
       setContacts(contactData || []);
       setLoading(false);
     });
-  }, [category]);
+  }, [category, profileUserId]);
 
   useEffect(() => {
     if (!computeSocialStatsFn || items.length === 0 || contacts.length === 0) return;

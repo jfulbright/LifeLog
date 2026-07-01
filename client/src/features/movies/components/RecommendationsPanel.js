@@ -59,7 +59,7 @@ function RecommendationsPanel({ ownMovies, onSelect }) {
           </div>
           <div style={{ display: "flex", gap: "0.3rem" }}>
             <FilterPill label="All" active={ringFilter === "all"} onClick={() => setRingFilter("all")} />
-            {[1, 2, 3, 4].map((level) => (
+            {[1, 2, 3, 4, 5].map((level) => (
               <FilterPill
                 key={level}
                 label={`${RING_META[level].emoji} ${RING_META[level].label}`}

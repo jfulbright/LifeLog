@@ -162,6 +162,36 @@ const collaboratorService = {
   },
 
   /**
+   * Leave a single collaboration you've accepted (B3 soft-hide). Sets revoked_at
+   * on your own row, hiding the shared entry from your timeline while preserving
+   * status + your overlay for restore. Reused by E2 (leave from the details panel).
+   */
+  async leaveCollaboration(collaborationId) {
+    const { error } = await supabase
+      .from("collaborators")
+      .update({ revoked_at: new Date().toISOString() })
+      .eq("id", collaborationId);
+
+    if (error) throw error;
+    window.dispatchEvent(new Event("data-changed"));
+  },
+
+  /**
+   * Leave a shared entry from its detail view (E2), given only the entry id.
+   * Resolves the caller's own collaborator row (by user_id OR email, via
+   * get_my_collaborations) and soft-hides it through leaveCollaboration().
+   * No-op if the caller is the owner or not a collaborator on the entry.
+   */
+  async leaveSharedEntry(entryId) {
+    const me = await getCurrentUserId();
+    const { data: mine, error } = await supabase.rpc("get_my_collaborations");
+    if (error) throw error;
+    const row = (mine || []).find((c) => c.entry_id === entryId && c.owner_id !== me);
+    if (!row) return;
+    await collaboratorService.leaveCollaboration(row.collaborator_id);
+  },
+
+  /**
    * Get all collaborator rows for an entry the current user owns (any status).
    * Used to hydrate the share toggle when re-editing an owned item.
    */
@@ -189,17 +219,17 @@ const collaboratorService = {
     const rows = data || [];
 
     const ownerId = rows[0]?.owner_id;
-    const collabUserIds = rows.map((r) => r.collaborator_user_id).filter(Boolean);
-    const allUserIds = [...new Set([...collabUserIds, ownerId].filter(Boolean))];
 
+    // Resolve names+avatars via the SECURITY DEFINER reveal (B1) so co-collaborators
+    // we are NOT connected to still surface their real name+avatar instead of null.
+    // Falls back to an empty map (names stay null → "Collaborator") if the function
+    // is not yet applied in this environment.
     let profileMap = {};
-    if (allUserIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, display_name, avatar_url")
-        .in("id", allUserIds);
-      (profiles || []).forEach((p) => { profileMap[p.id] = p; });
-    }
+    const { data: profiles } = await supabase
+      .rpc("get_entry_collaborator_profiles", { p_entry_id: entryId });
+    (profiles || []).forEach((p) => {
+      profileMap[p.user_id] = { id: p.user_id, display_name: p.display_name, avatar_url: p.avatar_url };
+    });
 
     const enrichedRows = rows.map((r) => ({
       ...r,
@@ -221,6 +251,25 @@ const collaboratorService = {
     }
 
     return enrichedRows;
+  },
+
+  /**
+   * Count distinct entries collaborated on between the current user and another
+   * user (either direction, accepted, not revoked). For the profile "stats in
+   * common" header (D3). RLS permits both subsets (own rows + rows where I'm the
+   * collaborator).
+   */
+  async getSharedCountWith(otherUserId) {
+    if (!otherUserId) return 0;
+    const me = await getCurrentUserId();
+    const { data, error } = await supabase
+      .from("collaborators")
+      .select("entry_id")
+      .or(`and(owner_id.eq.${me},collaborator_user_id.eq.${otherUserId}),and(owner_id.eq.${otherUserId},collaborator_user_id.eq.${me})`)
+      .eq("status", "accepted")
+      .is("revoked_at", null);
+    if (error) return 0;
+    return new Set((data || []).map((r) => r.entry_id)).size;
   },
 
   /**

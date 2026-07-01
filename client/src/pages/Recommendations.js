@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button, Badge } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import StarRating from "../components/shared/StarRating";
@@ -152,6 +152,28 @@ function Recommendations() {
     }
   }
 
+  // Accept every pending recommendation at once (E1). Adds each to your list with
+  // its category's default "want to" status; accepted rows stay visible under the
+  // Accepted filter pill.
+  async function handleAcceptAll() {
+    const pending = enriched.filter((r) => r.status === "active");
+    for (const rec of pending) {
+      await handleAccept(rec, rec.category === "movies" ? "watchlist" : "wishlist");
+    }
+  }
+
+  // Auto-accept toggle (E1): if enabled in Settings, clear pending on load. Runs
+  // once per mount, after the initial load resolves.
+  const autoRunRef = useRef(false);
+  useEffect(() => {
+    if (loading || autoRunRef.current) return;
+    autoRunRef.current = true;
+    profileService.getMyProfile().then((p) => {
+      if (p?.notification_preferences?.auto_accept_recs) handleAcceptAll();
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
+
   const pendingCount = enriched.filter((r) => r.status === "active").length;
 
   const statusFiltered = statusFilter === "all"
@@ -201,9 +223,14 @@ function Recommendations() {
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h4 className="mb-0" style={{ fontWeight: 700 }}>Recommendations</h4>
         {pendingCount > 0 && (
-          <Badge bg="warning" text="dark" pill>
-            {pendingCount} pending
-          </Badge>
+          <div className="d-flex align-items-center gap-2">
+            <Badge bg="warning" text="dark" pill>
+              {pendingCount} pending
+            </Badge>
+            <Button size="sm" variant="outline-primary" onClick={handleAcceptAll}>
+              Accept all
+            </Button>
+          </div>
         )}
       </div>
 

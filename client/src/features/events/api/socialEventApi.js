@@ -7,7 +7,7 @@ async function getCurrentUserId() {
   return session.user.id;
 }
 
-export async function getSocialEvents({ ringLevels = [1, 2, 3, 4] } = {}) {
+export async function getSocialEvents({ ringLevels = [1, 2, 3, 4, 5] } = {}) {
   const userId = await getCurrentUserId();
 
   const { data: contacts, error: contactErr } = await supabase
@@ -60,7 +60,7 @@ export async function computeSocialEventStats(myEvents, contacts) {
     return { buddies: [], sharedArtists: [], upcomingFromCircle: [], influence: null, socialEvents: [] };
   }
 
-  const socialEvents = await getSocialEvents({ ringLevels: [1, 2, 3, 4] });
+  const socialEvents = await getSocialEvents({ ringLevels: [1, 2, 3, 4, 5] });
 
   const eventsByContact = {};
   socialEvents.forEach((e) => {

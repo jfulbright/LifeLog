@@ -1,6 +1,7 @@
 import React from "react";
 import { getCategoryMeta } from "../../helpers/categoryMeta";
 import { useAppData } from "../../contexts/AppDataContext";
+import { useViewerMode } from "../../contexts/ViewerModeContext";
 import EntryHeader from "./EntryHeader";
 import ItemDetailContent from "./ItemDetailContent";
 
@@ -17,6 +18,9 @@ function ItemCardList({
 }) {
   const meta = getCategoryMeta(category);
   const { contacts } = useAppData();
+  const isViewer = !!useViewerMode();
+  // Never expose edit/delete when viewing another user's profile.
+  if (isViewer) { onEdit = undefined; onDelete = undefined; }
 
   if (!Array.isArray(items)) {
     console.warn("ItemCardList received non-array items:", items);

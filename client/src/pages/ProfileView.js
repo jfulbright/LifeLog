@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { Row, Col } from "react-bootstrap";
 import categoryMeta, { getEntryTitle } from "../helpers/categoryMeta";
 import { getSnapshotTeaser } from "../helpers/operator";
-import { enrichItemsWithSocialContent, getAllSocialSnaps } from "../helpers/socialContent";
+import { enrichItemsWithSocialContent, getAllSocialSnaps, getAllSocialPhotos } from "../helpers/socialContent";
 import dataService from "../services/dataService";
 import profileService from "../services/profileService";
+import collaboratorService from "../services/collaboratorService";
+import recommendationService from "../services/recommendationService";
 import { computeTravelStats } from "../services/travelStats";
 import { codeToFlag } from "../data/countries";
 import { useAuth } from "../contexts/AuthContext";
@@ -31,7 +33,7 @@ function StatBubble({ value, label, color }) {
   );
 }
 
-function CategoryStatCard({ cat, items }) {
+function CategoryStatCard({ cat, items, linkTo }) {
   const meta = categoryMeta[cat.key] || {};
   const count = items.length;
   if (count === 0) return null;
@@ -40,11 +42,7 @@ function CategoryStatCard({ cat, items }) {
   const wishlist = items.filter((i) => i.status === "wishlist");
 
   return (
-    <Link
-      to={cat.key === "travel" ? "/travel/stats" : cat.key === "movies" ? "/movies/stats" : `/${cat.key}`}
-      className="text-decoration-none"
-      style={{ display: "block" }}
-    >
+    <Link to={linkTo} className="text-decoration-none" style={{ display: "block" }}>
       <div style={{
         background: "var(--color-surface)",
         border: "1px solid var(--color-border)",
@@ -71,28 +69,52 @@ function CategoryStatCard({ cat, items }) {
           )}
         </div>
         <div style={{ fontSize: "var(--font-size-xs)", color: meta.color, fontWeight: 600, marginTop: "0.375rem" }}>
-          View Stats &rarr;
+          View &rarr;
         </div>
       </div>
     </Link>
   );
 }
 
-function Dashboard() {
+/**
+ * Parameterized profile page (Epic D). Renders the current user's home dashboard
+ * (isOwnProfile) OR another user's profile — the same layout, scoped to their
+ * visibility-gated items via RLS. Add/edit affordances are gated on isOwnProfile.
+ */
+function ProfileView({ profileUserId, isOwnProfile }) {
   const { user } = useAuth();
   const { contacts } = useAppData();
   const [profile, setProfile] = useState(null);
   const [allData, setAllData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [detailEntry, setDetailEntry] = useState(null);
+  const [common, setCommon] = useState(null);
+
+  // "Stats in common" between the viewer and the profile owner (D3).
+  useEffect(() => {
+    if (isOwnProfile || !profileUserId) { setCommon(null); return; }
+    let cancelled = false;
+    Promise.all([
+      collaboratorService.getSharedCountWith(profileUserId),
+      recommendationService.getRecStatsWith(profileUserId),
+    ]).then(([sharedCount, recStats]) => {
+      if (!cancelled) setCommon({ sharedCount, recStats });
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [isOwnProfile, profileUserId]);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       const [prof, ...catData] = await Promise.all([
-        profileService.getMyProfile().catch(() => null),
+        (isOwnProfile
+          ? profileService.getMyProfile()
+          : profileService.getProfileByUserId(profileUserId)
+        ).catch(() => null),
         ...categories.map(async (cat) => {
-          const items = await dataService.getItemsWithShared(cat.key);
+          const items = isOwnProfile
+            ? await dataService.getItemsWithShared(cat.key)
+            : await dataService.getItemsForUser(profileUserId, cat.key);
           return {
             ...cat,
             items: await enrichItemsWithSocialContent(items, contacts),
@@ -110,7 +132,7 @@ function Dashboard() {
     const refresh = () => load();
     window.addEventListener("data-changed", refresh);
     return () => { cancelled = true; window.removeEventListener("data-changed", refresh); };
-  }, [contacts]);
+  }, [contacts, profileUserId, isOwnProfile]);
 
   if (loading) return null;
 
@@ -143,6 +165,11 @@ function Dashboard() {
           date: item.startDate || item.createdAt || "",
           color: cat.meta.color || "var(--color-primary)",
           rawItem: item,
+          thumbs: (() => {
+            const social = (getAllSocialPhotos(item) || []).map((p) => p.url).filter(Boolean);
+            const base = social.length > 0 ? social : [item.photo1, item.photo2, item.photo3];
+            return base.filter(Boolean).slice(0, 3);
+          })(),
         };
       })
     )
@@ -150,7 +177,16 @@ function Dashboard() {
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 4);
 
-  const displayName = profile?.display_name || user?.email?.split("@")[0] || "You";
+  const displayName = profile?.display_name || (isOwnProfile ? user?.email?.split("@")[0] || "You" : "Someone");
+
+  // Category tile link: own profile → stats/category page; visitor → the rich
+  // read-only category page scoped to this user.
+  const categoryLink = (cat) => {
+    if (!isOwnProfile) return `/u/${profileUserId}/${cat.key}`;
+    if (cat.key === "travel") return "/travel/stats";
+    if (cat.key === "movies") return "/movies/stats";
+    return `/${cat.key}`;
+  };
 
   return (
     <div>
@@ -191,16 +227,43 @@ function Dashboard() {
             </div>
           )}
           <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)", marginTop: "0.25rem" }}>
-            {totalItems} life moments captured
+            {totalItems} life moments{isOwnProfile ? " captured" : " you can see"}
           </div>
         </div>
-        <Link
-          to="/settings?tab=account"
-          style={{ marginLeft: "auto", fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)", textDecoration: "none" }}
-        >
-          Edit Profile
-        </Link>
+        {isOwnProfile && (
+          <Link
+            to="/settings?tab=account"
+            style={{ marginLeft: "auto", fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)", textDecoration: "none" }}
+          >
+            Edit Profile
+          </Link>
+        )}
       </div>
+
+      {/* Stats in common (viewing someone else) */}
+      {!isOwnProfile && common && (
+        (common.sharedCount > 0 ||
+         common.recStats.sent.accepted + common.recStats.sent.pending +
+         common.recStats.received.accepted + common.recStats.received.pending > 0) && (
+          <div style={{
+            padding: "0.875rem 1rem",
+            background: "var(--color-surface)",
+            border: "1px solid var(--color-border)",
+            borderRadius: "var(--card-radius, 8px)",
+            marginBottom: "1.5rem",
+          }}>
+            <div style={{ fontSize: "var(--font-size-xs)", fontWeight: 700, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.5rem" }}>
+              Between you two
+            </div>
+            <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
+              <StatBubble value={common.sharedCount} label="shared" color="var(--color-primary)" />
+              <StatBubble value={common.recStats.sent.accepted} label="recs accepted" color="var(--color-success)" />
+              <StatBubble value={common.recStats.sent.pending} label="recs pending" color="var(--color-warning, #ECB22E)" />
+              <StatBubble value={common.recStats.received.accepted + common.recStats.received.pending} label="from them" color="var(--color-info, #36C5F0)" />
+            </div>
+          </div>
+        )
+      )}
 
       {/* Headline stats row */}
       {totalItems > 0 && (
@@ -235,7 +298,7 @@ function Dashboard() {
 
       {/* World map teaser (if travel data exists) */}
       {travelStats.visitedCountryCount > 0 && (
-        <Link to="/travel/stats" className="text-decoration-none" style={{ display: "block", marginBottom: "1.5rem" }}>
+        <Link to={isOwnProfile ? "/travel/stats" : `/u/${profileUserId}/travel`} className="text-decoration-none" style={{ display: "block", marginBottom: "1.5rem" }}>
           <div style={{
             background: "var(--color-surface)",
             border: "1px solid var(--color-border)",
@@ -248,7 +311,7 @@ function Dashboard() {
             <div style={{ fontSize: "2rem" }}>🗺️</div>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 700, color: "var(--color-text-primary)" }}>
-                Your World Map
+                {isOwnProfile ? "Your World Map" : `${displayName}'s World Map`}
               </div>
               <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)" }}>
                 {travelStats.visitedCountryCount} countries &middot; {travelStats.visitedContinentCount} continents
@@ -273,7 +336,7 @@ function Dashboard() {
       <Row className="g-3 mb-4">
         {allData.map((cat) => (
           <Col sm={6} lg={4} key={cat.key}>
-            <CategoryStatCard cat={cat} items={cat.items} />
+            <CategoryStatCard cat={cat} items={cat.items} linkTo={categoryLink(cat)} />
           </Col>
         ))}
       </Row>
@@ -285,9 +348,11 @@ function Dashboard() {
             <h6 style={{ fontWeight: 700, color: "var(--color-text-primary)", margin: 0 }}>
               Recent Memories
             </h6>
-            <Link to="/snaps" style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)", textDecoration: "none" }}>
-              View all &rarr;
-            </Link>
+            {isOwnProfile && (
+              <Link to="/snaps" style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)", textDecoration: "none" }}>
+                View all &rarr;
+              </Link>
+            )}
           </div>
           <div className="d-flex flex-column" style={{ gap: "0.5rem" }}>
             {recentSnaps.map((snap, i) => (
@@ -309,6 +374,13 @@ function Dashboard() {
                 <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)", marginTop: "0.25rem" }}>
                   {snap.title} &middot; {snap.label}{snap.displayName ? ` &middot; ${snap.displayName}` : ""}
                 </div>
+                {snap.thumbs.length > 0 && (
+                  <div style={{ display: "flex", gap: "0.375rem", marginTop: "0.5rem" }}>
+                    {snap.thumbs.map((url, ti) => (
+                      <img key={ti} src={url} alt="" loading="lazy" style={{ width: 52, height: 52, borderRadius: 8, objectFit: "cover", border: "1px solid var(--color-border)" }} />
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -321,9 +393,11 @@ function Dashboard() {
           <div className="empty-state-icon" style={{ backgroundColor: "var(--color-primary)", color: "#fff" }}>
             📸
           </div>
-          <div className="empty-state-title">Start capturing your life</div>
+          <div className="empty-state-title">{isOwnProfile ? "Start capturing your life" : "Nothing to see yet"}</div>
           <div className="empty-state-text">
-            Pick a category to add your first entry. Your stats will build from here.
+            {isOwnProfile
+              ? "Pick a category to add your first entry. Your stats will build from here."
+              : `${displayName} hasn't shared anything visible to you yet.`}
           </div>
         </div>
       )}
@@ -333,18 +407,37 @@ function Dashboard() {
           item={detailEntry.rawItem}
           category={detailEntry.category}
           schema={SCHEMA_MAP[detailEntry.category] || []}
+          readOnly={!isOwnProfile}
           onClose={() => setDetailEntry(null)}
-          onSave={(updatedData) => {
-            dataService.saveItems(detailEntry.category, [updatedData]);
+          onSave={isOwnProfile ? (updatedData) => {
+            // Save the FULL category array (merge the edited item) so siblings are
+            // not deleted by saveItems' orphan-cleanup.
+            const cat = detailEntry.category;
+            const full = (allData.find((c) => c.key === cat)?.items || []).map(
+              (it) => (it.id === updatedData.id ? updatedData : it)
+            );
+            dataService.saveItems(cat, full);
             setDetailEntry(null);
-          }}
-          onDelete={(id) => {
-            setDetailEntry(null);
-          }}
+          } : undefined}
+          onDelete={isOwnProfile ? () => setDetailEntry(null) : undefined}
         />
       )}
     </div>
   );
 }
 
-export default Dashboard;
+/** Route wrapper: the current user's own profile (/me). */
+export function MyProfile() {
+  const { user } = useAuth();
+  if (!user) return null;
+  return <ProfileView profileUserId={user.id} isOwnProfile />;
+}
+
+/** Route wrapper: another user's profile (/u/:userId). */
+export function UserProfile() {
+  const { userId } = useParams();
+  const { user } = useAuth();
+  return <ProfileView profileUserId={userId} isOwnProfile={!!user && user.id === userId} />;
+}
+
+export default ProfileView;

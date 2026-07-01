@@ -1,3 +1,5 @@
+import { extractRatings, avgOf } from "../helpers/ratingStats";
+
 /**
  * Compute movie-watching statistics from an array of movie items.
  * All computation is client-side; no extra API calls.
@@ -23,8 +25,8 @@ export function computeMovieStats(items, period = "all") {
   const watched = movies.filter((m) => m.status === "watched");
   const watchlist = movies.filter((m) => m.status === "watchlist");
 
-  const ratings = watched.map((m) => parseInt(m.rating, 10)).filter((r) => r > 0);
-  const avgRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
+  const ratings = extractRatings(watched);
+  const avgRating = avgOf(ratings);
 
   const ratingDistribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
   ratings.forEach((r) => { if (ratingDistribution[r] !== undefined) ratingDistribution[r]++; });

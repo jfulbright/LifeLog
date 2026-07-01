@@ -1,4 +1,5 @@
 import { getCountryName, getCountryContinent, CONTINENT_LABELS, TOTAL_COUNTRIES } from "../data/countries";
+import { computeAvgRating } from "../helpers/ratingStats";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -120,6 +121,7 @@ export function computeTravelStats(items) {
   return {
     totalTrips: visited.length,
     totalWishlist: wishlist.length,
+    avgRating: computeAvgRating(visited),
     visitedCountries: visitedCountryCodes.map((code) => ({ code, name: getCountryName(code) })),
     visitedCountryCount: visitedCountryCodes.length,
     wishlistCountries: wishlistCountryCodes.map((code) => ({ code, name: getCountryName(code) })),
