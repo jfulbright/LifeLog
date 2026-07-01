@@ -28,6 +28,7 @@ function EntryView({
 }) {
   const navigate = useNavigate();
   const [collaborators, setCollaborators] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     if (!expanded || !item?.id) return;
@@ -179,6 +180,31 @@ function EntryView({
 
       {/* ─── Shared Memories (all contributors expanded) ─── */}
       <SharedMemoriesSection item={item} contacts={contacts} expanded={true} />
+
+      {/* ─── Edit history (E4) ─── */}
+      {Array.isArray(item.editHistory) && item.editHistory.length > 0 && (
+        <div style={{ marginBottom: "1.25rem" }}>
+          <button
+            type="button"
+            onClick={() => setShowHistory((v) => !v)}
+            style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: "var(--font-size-xs)", fontWeight: 700, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em" }}
+          >
+            {"🕓"} Edit history ({item.editHistory.length}) {showHistory ? "▲" : "▼"}
+          </button>
+          {showHistory && (
+            <div style={{ marginTop: "0.5rem", display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+              {[...item.editHistory].reverse().map((h, i) => {
+                const who = (contacts || []).find((c) => c.linkedUserId === h.editedBy)?.displayName || "A collaborator";
+                return (
+                  <div key={i} style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)" }}>
+                    {new Date(h.editedAt).toLocaleDateString()} &middot; <strong>{who}</strong> edited {(h.fields || []).join(", ")}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ─── Actions ─── */}
       {(onEdit || onDelete || (onLeave && item._isShared)) && (

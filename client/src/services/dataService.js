@@ -45,6 +45,28 @@ function stripTransientFields(item) {
   );
 }
 
+/**
+ * Append-only edit history for shared entries (Epic E / E4). Diffs the incoming
+ * data against the stored data and, if any content field changed, appends an
+ * entry recording who changed which fields (names only — not before/after — to
+ * bound size and avoid retaining removed content). Capped at 50 entries. Lives in
+ * the JSONB `data` column (no schema change). No-op when nothing changed.
+ */
+const EDIT_HISTORY_SKIP = new Set([
+  "editHistory", "last_edited_at", "last_edited_by", "updatedAt", "createdAt", "id",
+]);
+function appendEditHistory(existingData, newData, editedBy) {
+  const prev = Array.isArray(existingData?.editHistory) ? existingData.editHistory : [];
+  const keys = new Set([...Object.keys(existingData || {}), ...Object.keys(newData || {})]);
+  const changed = [];
+  keys.forEach((k) => {
+    if (EDIT_HISTORY_SKIP.has(k) || k.startsWith("_")) return;
+    if (JSON.stringify(existingData?.[k]) !== JSON.stringify(newData?.[k])) changed.push(k);
+  });
+  if (changed.length === 0) return prev;
+  return [...prev, { editedAt: new Date().toISOString(), editedBy, fields: changed }].slice(-50);
+}
+
 function itemToRow(item, category, userId) {
   // Strip transient UI-only form fields that must not be persisted to Supabase
   // eslint-disable-next-line no-unused-vars
@@ -205,7 +227,8 @@ const dataService = {
 
     if (readError) throw readError;
 
-    const mergedData = { ...(existing?.data || {}), ...cleanItem, last_edited_at: now, last_edited_by: userId };
+    const editHistory = appendEditHistory(existing?.data, cleanItem, userId);
+    const mergedData = { ...(existing?.data || {}), ...cleanItem, last_edited_at: now, last_edited_by: userId, editHistory };
 
     const { error } = await supabase
       .from("items")
