@@ -4,13 +4,25 @@ import { Link } from "react-router-dom";
 import { computeEventStats } from "../../../services/eventStats";
 import { computeSocialEventStats } from "../api/socialEventApi";
 import useStatsPage from "../../../hooks/useStatsPage";
+import useScopeToggle from "../../../hooks/useScopeToggle";
 import { StatsPageLayout, BarChart, HorizontalBar, SectionHeader } from "../../../components/shared/stats";
 import CircleStats from "../../../components/shared/stats/CircleStats";
+import ScopeToggleBar from "../../../components/shared/stats/ScopeToggleBar";
 
 const RING_COLORS = { 1: "#4A154B", 2: "#2EB67D", 3: "#8B6914", 4: "#36C5F0" };
 
 export default function EventStatsPage() {
-  const { items: events, contacts, loading, periodFilter, setPeriodFilter, stats, socialStats, socialLoading, hasLinkedContacts } = useStatsPage("events", computeEventStats, computeSocialEventStats);
+  const { items: events, contacts, loading, periodFilter, setPeriodFilter, stats: baseStats, socialStats, socialLoading, hasLinkedContacts } = useStatsPage("events", computeEventStats, computeSocialEventStats);
+  const { setScope, scopeContacts, activeScope, scopedStats, inCommonCount } = useScopeToggle({
+    socialItems: socialStats?.socialEvents,
+    contacts,
+    baseStats,
+    computeStatsFn: computeEventStats,
+    experiencedStatus: "attended",
+    myItems: events,
+    matchKey: (m) => (m.title || m.eventName || m.artist || "").toLowerCase() || null,
+  });
+  const stats = scopedStats;
 
   if (loading) {
     return <div style={{ padding: "2rem", textAlign: "center", color: "var(--color-text-tertiary)" }}>Loading stats...</div>;
@@ -35,6 +47,7 @@ export default function EventStatsPage() {
         { label: "This Year", value: stats.attendedThisYear, color: "var(--color-success)" },
       ] : null}
     >
+      <ScopeToggleBar scopeContacts={scopeContacts} activeScope={activeScope} setScope={setScope} inCommonCount={inCommonCount} color="var(--color-events)" />
       {!hasData ? (
         <div style={{ textAlign: "center", padding: "3rem 2rem", background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: "var(--card-radius)" }}>
           <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>{"\u{1F39F}️"}</div>

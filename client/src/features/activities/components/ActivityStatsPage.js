@@ -4,15 +4,27 @@ import { Link } from "react-router-dom";
 import { computeActivityStats } from "../../../services/activityStats";
 import { computeSocialActivityStats } from "../api/socialActivityApi";
 import useStatsPage from "../../../hooks/useStatsPage";
+import useScopeToggle from "../../../hooks/useScopeToggle";
 import { StatsPageLayout, BarChart, HorizontalBar, SectionHeader } from "../../../components/shared/stats";
 import CircleStats from "../../../components/shared/stats/CircleStats";
+import ScopeToggleBar from "../../../components/shared/stats/ScopeToggleBar";
 
 const RING_COLORS = { 1: "#4A154B", 2: "#2EB67D", 3: "#8B6914", 4: "#36C5F0" };
 const GROUP_LABELS = { snow: "Snow", bike: "Bike", water: "Water", land: "Land", air: "Air" };
 const GROUP_COLORS = { snow: "#36C5F0", bike: "#2EB67D", water: "#4A90D9", land: "#8B6914", air: "#E91E63" };
 
 export default function ActivityStatsPage() {
-  const { items: activities, contacts, loading, periodFilter, setPeriodFilter, stats, socialStats, socialLoading, hasLinkedContacts } = useStatsPage("activities", computeActivityStats, computeSocialActivityStats);
+  const { items: activities, contacts, loading, periodFilter, setPeriodFilter, stats: baseStats, socialStats, socialLoading, hasLinkedContacts } = useStatsPage("activities", computeActivityStats, computeSocialActivityStats);
+  const { setScope, scopeContacts, activeScope, scopedStats, inCommonCount } = useScopeToggle({
+    socialItems: socialStats?.socialActivities,
+    contacts,
+    baseStats,
+    computeStatsFn: computeActivityStats,
+    experiencedStatus: "done",
+    myItems: activities,
+    matchKey: (m) => (m.title || m.name || "").toLowerCase() || null,
+  });
+  const stats = scopedStats;
 
   if (loading) {
     return <div style={{ padding: "2rem", textAlign: "center", color: "var(--color-text-tertiary)" }}>Loading stats...</div>;
@@ -37,6 +49,7 @@ export default function ActivityStatsPage() {
         { label: "This Year", value: stats.doneThisYear, color: "var(--color-warning)" },
       ] : null}
     >
+      <ScopeToggleBar scopeContacts={scopeContacts} activeScope={activeScope} setScope={setScope} inCommonCount={inCommonCount} color="var(--color-activities, #2EB67D)" />
       {!hasData ? (
         <div style={{ textAlign: "center", padding: "3rem 2rem", background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: "var(--card-radius)" }}>
           <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>{"\u{1F3D4}️"}</div>
