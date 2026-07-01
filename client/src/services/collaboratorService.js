@@ -254,6 +254,25 @@ const collaboratorService = {
   },
 
   /**
+   * Count distinct entries collaborated on between the current user and another
+   * user (either direction, accepted, not revoked). For the profile "stats in
+   * common" header (D3). RLS permits both subsets (own rows + rows where I'm the
+   * collaborator).
+   */
+  async getSharedCountWith(otherUserId) {
+    if (!otherUserId) return 0;
+    const me = await getCurrentUserId();
+    const { data, error } = await supabase
+      .from("collaborators")
+      .select("entry_id")
+      .or(`and(owner_id.eq.${me},collaborator_user_id.eq.${otherUserId}),and(owner_id.eq.${otherUserId},collaborator_user_id.eq.${me})`)
+      .eq("status", "accepted")
+      .is("revoked_at", null);
+    if (error) return 0;
+    return new Set((data || []).map((r) => r.entry_id)).size;
+  },
+
+  /**
    * Get all entries shared with the current user (accepted).
    * Resolves via get_my_collaborations() so email-linked (deferred) shares are
    * included even if collaborator_user_id was never back-filled.

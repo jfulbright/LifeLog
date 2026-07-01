@@ -137,6 +137,35 @@ const recommendationService = {
   },
 
   /**
+   * Recommendation stats between the current user and another user (D3).
+   * Returns counts you sent them and they sent you, by status. RLS permits
+   * reading rows where from_user_id = me (sent) or to_user_id = me (received).
+   */
+  async getRecStatsWith(otherUserId) {
+    const empty = { sent: { pending: 0, accepted: 0 }, received: { pending: 0, accepted: 0 } };
+    if (!otherUserId) return empty;
+    const me = await getCurrentUserId();
+
+    const [sentRes, recvRes] = await Promise.all([
+      supabase.from("recommendations").select("status")
+        .eq("from_user_id", me).eq("to_user_id", otherUserId).is("revoked_at", null),
+      supabase.from("recommendations").select("status")
+        .eq("from_user_id", otherUserId).eq("to_user_id", me).is("revoked_at", null),
+    ]);
+
+    const tally = (rows) => {
+      const out = { pending: 0, accepted: 0 };
+      (rows || []).forEach((r) => {
+        if (r.status === "accepted") out.accepted += 1;
+        else if (r.status === "active") out.pending += 1;
+      });
+      return out;
+    };
+
+    return { sent: tally(sentRes.data), received: tally(recvRes.data) };
+  },
+
+  /**
    * Get recommendations the current user has sent.
    */
   async getMySentRecommendations() {

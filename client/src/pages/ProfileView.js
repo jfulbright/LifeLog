@@ -6,6 +6,8 @@ import { getSnapshotTeaser } from "../helpers/operator";
 import { enrichItemsWithSocialContent, getAllSocialSnaps } from "../helpers/socialContent";
 import dataService from "../services/dataService";
 import profileService from "../services/profileService";
+import collaboratorService from "../services/collaboratorService";
+import recommendationService from "../services/recommendationService";
 import { computeTravelStats } from "../services/travelStats";
 import { codeToFlag } from "../data/countries";
 import { useAuth } from "../contexts/AuthContext";
@@ -86,6 +88,20 @@ function ProfileView({ profileUserId, isOwnProfile }) {
   const [allData, setAllData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [detailEntry, setDetailEntry] = useState(null);
+  const [common, setCommon] = useState(null);
+
+  // "Stats in common" between the viewer and the profile owner (D3).
+  useEffect(() => {
+    if (isOwnProfile || !profileUserId) { setCommon(null); return; }
+    let cancelled = false;
+    Promise.all([
+      collaboratorService.getSharedCountWith(profileUserId),
+      recommendationService.getRecStatsWith(profileUserId),
+    ]).then(([sharedCount, recStats]) => {
+      if (!cancelled) setCommon({ sharedCount, recStats });
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [isOwnProfile, profileUserId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -218,6 +234,31 @@ function ProfileView({ profileUserId, isOwnProfile }) {
           </Link>
         )}
       </div>
+
+      {/* Stats in common (viewing someone else) */}
+      {!isOwnProfile && common && (
+        (common.sharedCount > 0 ||
+         common.recStats.sent.accepted + common.recStats.sent.pending +
+         common.recStats.received.accepted + common.recStats.received.pending > 0) && (
+          <div style={{
+            padding: "0.875rem 1rem",
+            background: "var(--color-surface)",
+            border: "1px solid var(--color-border)",
+            borderRadius: "var(--card-radius, 8px)",
+            marginBottom: "1.5rem",
+          }}>
+            <div style={{ fontSize: "var(--font-size-xs)", fontWeight: 700, color: "var(--color-text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.5rem" }}>
+              Between you two
+            </div>
+            <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
+              <StatBubble value={common.sharedCount} label="shared" color="var(--color-primary)" />
+              <StatBubble value={common.recStats.sent.accepted} label="recs accepted" color="var(--color-success)" />
+              <StatBubble value={common.recStats.sent.pending} label="recs pending" color="var(--color-warning, #ECB22E)" />
+              <StatBubble value={common.recStats.received.accepted + common.recStats.received.pending} label="from them" color="var(--color-info, #36C5F0)" />
+            </div>
+          </div>
+        )
+      )}
 
       {/* Headline stats row */}
       {totalItems > 0 && (
