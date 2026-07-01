@@ -1,3 +1,5 @@
+import { extractRatings, avgOf } from "../helpers/ratingStats";
+
 export function computeEventStats(items, period = "year") {
   let events = [...items];
   const currentYear = new Date().getFullYear();
@@ -19,8 +21,8 @@ export function computeEventStats(items, period = "year") {
   const attended = events.filter((e) => e.status === "attended");
   const wishlist = events.filter((e) => e.status === "wishlist");
 
-  const ratings = attended.map((e) => parseInt(e.rating, 10)).filter((r) => r > 0);
-  const avgRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
+  const ratings = extractRatings(attended);
+  const avgRating = avgOf(ratings);
 
   const ratingDistribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
   ratings.forEach((r) => { if (ratingDistribution[r] !== undefined) ratingDistribution[r]++; });

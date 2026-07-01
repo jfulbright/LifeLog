@@ -1,3 +1,5 @@
+import { extractRatings, avgOf } from "../helpers/ratingStats";
+
 export function computeActivityStats(items, period = "year") {
   let activities = [...items];
   const currentYear = new Date().getFullYear();
@@ -19,8 +21,8 @@ export function computeActivityStats(items, period = "year") {
   const done = activities.filter((a) => a.status === "done");
   const wishlist = activities.filter((a) => a.status === "wishlist");
 
-  const ratings = done.map((a) => parseInt(a.rating, 10)).filter((r) => r > 0);
-  const avgRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
+  const ratings = extractRatings(done);
+  const avgRating = avgOf(ratings);
 
   const ratingDistribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
   ratings.forEach((r) => { if (ratingDistribution[r] !== undefined) ratingDistribution[r]++; });
