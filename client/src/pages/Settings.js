@@ -539,6 +539,8 @@ function NotificationsTab() {
   const [prefs, setPrefs] = useState({
     collab_snaps_inapp: true,
     invite_accepted_inapp: true,
+    auto_accept_collabs: false,
+    auto_accept_recs: false,
   });
   const [loading, setLoading] = useState(true);
   const [saveMsg, setSaveMsg] = useState(null);
@@ -639,6 +641,34 @@ function NotificationsTab() {
               id="notif-invite-accepted"
               checked={prefs.invite_accepted_inapp} onChange={() => handleToggle("invite_accepted_inapp")} />
             <label htmlFor="notif-invite-accepted" style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)" }}>In-app</label>
+          </div>
+        </div>
+      </div>
+
+      <div style={sectionStyle}>
+        <div style={labelStyle}>Auto-accept</div>
+        <div style={rowStyle}>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: "var(--font-size-sm)" }}>Auto-accept shared experiences</div>
+            <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)" }}>New collaborations are accepted automatically (status still shown in filters)</div>
+          </div>
+          <div className="form-check form-switch mb-0">
+            <input className="form-check-input" type="checkbox" role="switch"
+              id="auto-accept-collabs"
+              checked={prefs.auto_accept_collabs} onChange={() => handleToggle("auto_accept_collabs")} />
+            <label htmlFor="auto-accept-collabs" style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)" }}>On</label>
+          </div>
+        </div>
+        <div style={{ ...rowStyle, borderBottom: "none" }}>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: "var(--font-size-sm)" }}>Auto-accept recommendations</div>
+            <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-tertiary)" }}>New recommendations are added to your list automatically</div>
+          </div>
+          <div className="form-check form-switch mb-0">
+            <input className="form-check-input" type="checkbox" role="switch"
+              id="auto-accept-recs"
+              checked={prefs.auto_accept_recs} onChange={() => handleToggle("auto_accept_recs")} />
+            <label htmlFor="auto-accept-recs" style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-secondary)" }}>On</label>
           </div>
         </div>
       </div>

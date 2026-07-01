@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Button, Badge } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import collaboratorService from "../services/collaboratorService";
+import profileService from "../services/profileService";
 import overlayService from "../services/overlayService";
 import SharedMemoriesSection from "../components/shared/SharedMemoriesSection";
 import { useAppData } from "../contexts/AppDataContext";
@@ -426,6 +427,28 @@ function SharedFeed() {
     refreshNotifications();
   };
 
+  // Accept every pending collaboration at once (E1).
+  const handleAcceptAll = async () => {
+    const pending = allItems.filter((c) => c.status === "pending");
+    for (const c of pending) {
+      await collaboratorService.acceptCollaboration(c.id);
+    }
+    incrementVersion();
+    await load();
+    refreshNotifications();
+  };
+
+  // Auto-accept toggle (E1): if enabled in Settings, accept pending on load once.
+  const autoRunRef = useRef(false);
+  useEffect(() => {
+    if (loading || autoRunRef.current) return;
+    autoRunRef.current = true;
+    profileService.getMyProfile().then((p) => {
+      if (p?.notification_preferences?.auto_accept_collabs) handleAcceptAll();
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
+
   const handleViewOverlays = (entry, tag) => {
     setOverlayTarget({ entry, tag });
   };
@@ -474,6 +497,11 @@ function SharedFeed() {
             Trips, events, and memories others have invited you to collaborate on.
           </p>
         </div>
+        {pendingCount > 0 && (
+          <Button size="sm" variant="outline-primary" onClick={handleAcceptAll} style={{ whiteSpace: "nowrap" }}>
+            Accept all
+          </Button>
+        )}
       </div>
 
       {/* Info */}
